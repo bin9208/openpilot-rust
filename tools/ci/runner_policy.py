@@ -35,6 +35,15 @@ def require_github_native_arm(*, env=None):
         raise ValueError('GitHub-hosted Linux ARM64 Actions runner required for AGNOS validation')
 
 
+def github_native_arm_context(*, env=None):
+    value = os.environ if env is None else env
+    require_github_native_arm(env=value)
+    # The isolated DBC oracle needs admission metadata, never tokens or the
+    # parent's PATH/PYTHONPATH. Preserve actual values only after validation.
+    return {key: value[key] for key in
+            ('GITHUB_ACTIONS', 'RUNNER_ENVIRONMENT', 'RUNNER_OS', 'RUNNER_ARCH')}
+
+
 def require_resource_scope_environment(*, env=None):
     value = os.environ if env is None else env
     if not (environment_allowed(value, self_hosted_only=True) or github_native_arm_allowed(value)):

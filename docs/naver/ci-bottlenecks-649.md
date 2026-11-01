@@ -22,6 +22,12 @@ Rust `solver/api.rs`와 독립 ctypes 기준이 실제로 여는 `libacados_ocp_
 
 같은 artifact의 batch 본체는 warm 150.337초, 원본 순회·원본 읽기·HTTP body 전송 모두 0을 기록했다. 이는 본체 시간이며 도구 컴파일을 포함한 외부 step 전체 시간과 구분한다.
 
+### DBC 원본 도구의 최소 runner context — #659
+
+`d3e7c7e7cc2ddd972676273ed266b86f3d6ec395`의 [AGNOS 41262958993](https://github.com/bin9208/openpilot-rust/actions/runs/41262958993)은 MPC·Panda를 통과한 뒤 DBC 원본 도구의 Actions admission에서 실패했다. artifact `13068570172`에 `env -i`가 runner context를 지워 원래 generator 실행 전에 거부한 증거를 보존했다. provider 103개 DB 검증과 source contract·재사용 검사는 성공했으나 원본 비교는 미실행이므로 전체 성공으로 인정하지 않는다.
+
+부모가 GitHub-hosted Linux ARM64임을 다시 확인한 뒤 네 실제 메타데이터만 해당 도구에 전달한다. 고정 guest 환경·기존 admission·140입력/103출력의 byte 비교는 유지하고 token·부모 PATH/PYTHONPATH는 전달하지 않는다. 잘못된/누락된 context 거부와 실제 표준 ARM의 `env -i` 재현, 전체 AGNOS 결과를 [#659](https://github.com/bin9208/openpilot-rust/issues/659)에 기록한다.
+
 - [x] 같은 원본의 15개 provider를 한 번 순회하고 검증된 작은 component를 재사용한다.
 - [x] 기존 단일 provider의 descriptor/archive/tree와 동등성을 Actions에서 확인한다.
 - [x] 실제 같은 입력·러너에서 cold 12분 이하, warm 3분 이하를 확인한다.

@@ -92,6 +92,18 @@ def main():
   for request in mpc_requests:
     execute(request['argv'], 'mpc-'+request['name'])
     verify_report(request, json.loads(request['output'].read_bytes()))
+  # Reproduce the DBC oracle's env -i boundary on real ARM before the long
+  # AGNOS run; its original generator and all 103 byte comparisons stay intact.
+  context = runpy.run_path(str(source/'tools/ci/runner_policy.py'))['github_native_arm_context']()
+  dbc_plan = json.loads((source/'rust/native-dbc-provider.json').read_bytes())
+  dbc_root = Path(batch['exports'][dbc_plan['profile']]['origin']['root'])
+  execute(['/usr/bin/env', '-i', 'PATH=/usr/bin:/bin',
+      *(f'{key}={value}' for key,value in context.items()), '/usr/bin/python3',
+      source/'tools/ci/fixtures/native-dbc-inputs.py', '--source', source,
+      '--provider', dbc_root, '--work', args.work, '--output', args.work/'dbc-reference.json'], 'dbc-oracle')
+  dbc = json.loads((args.work/'dbc-reference.json').read_bytes())
+  assert dbc['source_inputs_checked'] == 140 and dbc['original_databases_regenerated_for_oracle'] == 103
+  assert dbc['exact_byte_comparison'] and not dbc['runtime_data_regenerated']
   result = dict(source_commit=os.environ['GITHUB_SHA'], foreign_api=actual,
       ownerless_missing_math_rejected=True, original_roots=len(elf_roots)+1,
       scopes=[dict(name=row['name'], roots=len(row['roots']),
@@ -100,6 +112,7 @@ def main():
           original_roots=len(mpc_roots)+1,
           scopes=[dict(name=row['name'], roots=len(row['roots']),
               load_owner=None if row['load_owner'] is None else str(row['load_owner'])) for row in mpc_requests]),
+      dbc=dbc,
       commands=commands)
   (args.work/'result.json').write_text(json.dumps(result, indent=2)+'\n')
   print(json.dumps(result))

@@ -2155,7 +2155,9 @@ def native_dbc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_w
   assert rows[0]['root']==rows[1]['root']
   execute([work/'project-target/debug/openpilot-runtime-inputs','--verify-dbcs','--root',source_mount,
       '--store',rows[0]['root']],'native-dbc-core-verification.json')
-  execute(['/usr/bin/python3',f'{source_mount}/tools/ci/fixtures/native-dbc-inputs.py',
+  context=runpy.run_path(str(source/'tools/ci/runner_policy.py'))['github_native_arm_context']()
+  execute(['/usr/bin/env',*(f'{key}={value}' for key,value in context.items()),
+      '/usr/bin/python3',f'{source_mount}/tools/ci/fixtures/native-dbc-inputs.py',
       '--source',source_mount,'--provider',rows[0]['root'],'--work',work,
       '--output',work/'native-dbc-reference.json'],'native-dbc-reference.txt')
   reference=json.loads((work/'native-dbc-reference.json').read_text())

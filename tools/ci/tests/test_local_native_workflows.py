@@ -351,7 +351,8 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                                  'tools/ci/prepare_native_provider_batch.py',
                                  'tools/ci/native_provider_batch.py',
                                  'tools/ci/agnos_phases.py',
-                                 'tools/ci/companion_elf_scope.py'):
+                                 'tools/ci/companion_elf_scope.py',
+                                 'tools/ci/runner_policy.py'):
                         self.assertEqual(paths.count(path), 1)
                         paths.remove(path)
                     restore_provider_batch_steps(new)

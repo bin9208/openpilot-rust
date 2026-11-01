@@ -508,6 +508,21 @@ class PublicSourceReuseTests(unittest.TestCase):
 
 
 class NativeArmAdmissionTests(unittest.TestCase):
+  def test_oracle_context_forwards_only_validated_parent_metadata(self):
+    hosted = dict(GITHUB_ACTIONS='true', RUNNER_ENVIRONMENT='github-hosted', RUNNER_OS='Linux', RUNNER_ARCH='ARM64')
+    actual = runner_policy.github_native_arm_context(env=dict(hosted,
+        GITHUB_TOKEN='must-not-cross', PATH='/parent/path', PYTHONPATH='/parent/modules'))
+    self.assertEqual(actual, hosted)
+    for changed in (dict(RUNNER_ARCH='X64'), dict(RUNNER_ENVIRONMENT='self-hosted'),
+                    dict(GITHUB_ACTIONS='false')):
+      with self.assertRaises(ValueError):
+        runner_policy.github_native_arm_context(env=dict(hosted, **changed))
+    for missing in hosted:
+      incomplete = dict(hosted)
+      del incomplete[missing]
+      with self.assertRaises(ValueError):
+        runner_policy.github_native_arm_context(env=incomplete)
+
   def test_agnos_requires_hosted_linux_arm_and_scope_preserves_registered_x64(self):
     hosted = dict(GITHUB_ACTIONS='true', RUNNER_ENVIRONMENT='github-hosted', RUNNER_OS='Linux', RUNNER_ARCH='ARM64')
     runner_policy.require_github_native_arm(env=hosted)
