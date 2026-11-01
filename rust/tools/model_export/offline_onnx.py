@@ -29,7 +29,7 @@ class OfflineOnnx:
 class InlineOnnxParser(OnnxPBParser):
     """The input contract binds this ONNX object, not arbitrary external files."""
 
-    def __init__(self, path: Path, load_external_data: bool = False) -> None:
+    def __init__(self, path: Path | Tensor, load_external_data: bool = False) -> None:
         if load_external_data:
             raise ExportError("offline ONNX external reads must remain disabled")
         super().__init__(path, load_external_data=False)
@@ -45,7 +45,7 @@ class InlineOnnxParser(OnnxPBParser):
 
 
 class InlineOnnxRunner(OnnxRunner):
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path | Tensor) -> None:
         # Match the original constructor, with external reads disabled before
         # any tensor (including one nested in an attribute) can be loaded.
         self._init_from_graph(InlineOnnxParser(path, load_external_data=False).parse()["graph"])
@@ -53,10 +53,13 @@ class InlineOnnxRunner(OnnxRunner):
 
 @host_build
 def load_runner(path: Path, expected_sha256: str) -> OfflineOnnx:
-    if hashlib.sha256(path.read_bytes()).hexdigest() != expected_sha256:
+    payload = path.read_bytes()
+    if hashlib.sha256(payload).hexdigest() != expected_sha256:
         raise ExportError("ONNX model identity differs from the pinned object")
     with Context(DEV="CPU:LLVM", IMAGE=1, FLOAT16=1, OPENPILOT_HACKS=1):
-        runner = InlineOnnxRunner(path)
+        # The original DISK Tensor opens paths read/write. Parse the exact
+        # authenticated bytes without granting writes to the immutable cache.
+        runner = InlineOnnxRunner(Tensor(payload, device="CPU"))
         if runner.is_training:
             raise ExportError("offline ONNX training graph is unsupported")
         original_values = dict(runner.graph_values)

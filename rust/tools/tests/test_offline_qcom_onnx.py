@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import errno
 import hashlib
+import os
 import struct
 from pathlib import Path
 
 import onnx
 import pytest
 from onnx import TensorProto, helper
+from tinygrad.nn.onnx import OnnxPBParser
 
 from model_export import ExportError
 from model_export.offline_onnx import load_model
@@ -35,6 +38,51 @@ def test_original_onnx_loader_retains_weights_when_control_values_are_static(tmp
     assert model.bindings.outputs["output"].shape == (4, 4)
     assert all(tensor.device == "QCOM" for tensor in model.bindings.inputs.values())
     assert struct.pack("<16f", *((1.25, -2.5, 3.75, 0.125) * 4)) in tuple(item.data for item in model.initialized)
+
+
+def test_loader_reads_authenticated_model_without_write_access(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    path = tmp_path / "immutable.onnx"
+    digest = static_model(path)
+    before = path.read_bytes()
+    path.chmod(0o444)
+    original_open = os.open
+    write_attempts = []
+
+    def readonly_open(filename, flags, *args, **kwargs):
+        if os.fsdecode(filename) == str(path) and flags & os.O_ACCMODE != os.O_RDONLY:
+            write_attempts.append(flags)
+            raise PermissionError(errno.EACCES, "immutable model cache", str(path))
+        return original_open(filename, flags, *args, **kwargs)
+
+    monkeypatch.setattr(os, "open", readonly_open)
+    # Reproduce the real DISK-parser failure even when this test runs as root.
+    with pytest.raises(PermissionError, match="immutable model cache"):
+        OnnxPBParser(path, load_external_data=False).parse()
+    denied = len(write_attempts)
+    assert denied > 0
+
+    model = load_model(path, digest)
+    assert len(write_attempts) == denied
+    assert path.read_bytes() == before
+    assert path.stat().st_mode & 0o777 == 0o444
+    assert set(tmp_path.iterdir()) == {path}
+    assert model.bindings.inputs["input"].shape == (16,)
+    assert model.bindings.outputs["output"].shape == (4, 4)
+    assert struct.pack("<16f", *((1.25, -2.5, 3.75, 0.125) * 4)) in tuple(item.data for item in model.initialized)
+
+
+def test_readonly_loader_still_rejects_unbound_external_tensors(tmp_path: Path) -> None:
+    path = tmp_path / "external.onnx"
+    weight = TensorProto(name="weight", data_type=TensorProto.FLOAT, dims=[16], data_location=TensorProto.EXTERNAL)
+    weight.external_data.add(key="location", value="unbound.weights")
+    graph = helper.make_graph([helper.make_node("Add", ["input", "weight"], ["output"])], "external",
+                              [helper.make_tensor_value_info("input", TensorProto.FLOAT, [16])],
+                              [helper.make_tensor_value_info("output", TensorProto.FLOAT, [16])], [weight])
+    path.write_bytes(helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)]).SerializeToString())
+    path.chmod(0o444)
+    with pytest.raises(ExportError, match="self-contained|external"):
+        load_model(path, hashlib.sha256(path.read_bytes()).hexdigest())
+    assert set(tmp_path.iterdir()) == {path}
 
 
 def test_original_onnx_loader_rejects_file_when_pinned_identity_differs(tmp_path: Path) -> None:

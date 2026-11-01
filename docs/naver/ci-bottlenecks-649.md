@@ -168,3 +168,9 @@ UI/Card의 같은 하위 실행 경로도 대조했다. DBC 준비는 기존 `4 
 [#657](https://github.com/bin9208/openpilot-rust/issues/657)은 기존 `runtime-elf-audit --load-owner`를 두 실제 acados 의존성에만 적용한다. 나머지 11 root는 독립 검사하고, acados owner도 독립 검사를 통과해야 한다. 모든 원래 root의 집합·개수와 성공을 확인하며, 관련 없는 component export를 합치지 않는다. 일반 ELF validator·provider 바이트·원본 pin·모델 정밀도는 유지한다.
 
 집중 CI에서 기존 ELF owner/version/strong-symbol·잘못된 owner·관계 없는 plugin 격리 회귀를 실행한다. 별도 수동 ARM 재현은 같은 검증 component와 실제 외부 API·maps를 사용해 owner 없는 두 leaf의 정확한 `sqrt/sqrtf` 실패와 acados owner 범위의 성공을 함께 요구한다. production probe의 모든 실행은 종료 코드 0을 요구하며, ARM 진단의 owner 없는 실행만 명시적인 음성 회귀다. 독립 root 누락·교체·중복, 잘못된 owner, root 실패를 숨긴 report도 거부한다. push 집중 검증과 수동 ARM 진단은 입력 의존성이 없으므로 같은 SHA의 일반 집중 작업을 중복 실행하지 않는다. benchmark는 기존 component 선행 검사를 유지한다.
+
+## 읽기 전용 ONNX 입력과 원본 DISK parser — #660
+
+공통 `a9295fee82d5dff6dd4b0b4c112950b78c941c5b`는 [필수 Rust 전체 47개](https://github.com/bin9208/openpilot-rust/actions/runs/41327914371)와 Integration/docs/foundation/kernel 검사를 성공했다. [전체 AGNOS job 124911645930](https://github.com/bin9208/openpilot-rust/actions/runs/41327909368/job/124911645930)의 artifact `13097176346`에서는 실제 bootstrap 13개 도구의 initial/reused/docs/small이 모두 성공했다. 재사용·docs의 13개 binary가 모두 fresh/저장 0, 작은 변경은 해당 도구 하나만 재빌드하고 다른 12개를 재사용했다. DBC/MPC/eGPU/catalog 원본 검증도 성공했다.
+
+그 뒤 실제 모델 생성의 첫 ONNX 파싱에서 읽기 전용 캐시를 tinygrad DISK Tensor가 `O_RDWR|O_CREAT`로 열어 `EACCES`가 발생했다. [#660](https://github.com/bin9208/openpilot-rust/issues/660)은 기존 SHA-256 확인에 읽은 동일 바이트를 CPU uint8 Tensor로 원래 parser에 전달한다. 캐시 권한·원본 tinygrad·연산/shape/정밀도·외부 tensor 금지 조건은 유지한다. 쓰기 거부를 강제로 재현한 뒤 정확 weight 바이트와 입출력 shape·파일 내용/권한 보존, 잘못된 hash·runtime shape·외부 tensor 거부를 집중 Actions에서 확인한다. 전체 genuine AGNOS의 모델 4개·재사용·layout·production이 성공하기 전 #649 완료와 #598 재개는 계속 보류한다.
