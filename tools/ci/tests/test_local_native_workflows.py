@@ -350,7 +350,8 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     for path in ('rust/crates/dev-tools/src/native_provider/**',
                                  'tools/ci/prepare_native_provider_batch.py',
                                  'tools/ci/native_provider_batch.py',
-                                 'tools/ci/agnos_phases.py'):
+                                 'tools/ci/agnos_phases.py',
+                                 'tools/ci/companion_elf_scope.py'):
                         self.assertEqual(paths.count(path), 1)
                         paths.remove(path)
                     restore_provider_batch_steps(new)
