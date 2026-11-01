@@ -3,17 +3,32 @@ from pathlib import Path
 
 
 def audit_requests(auditor, probe, elf_roots, acados, libraries, work):
-  roots = [Path(probe), *map(Path, elf_roots)]
   owner = Path(acados) / 'libacados.so'
+  return _audit_requests(auditor, probe, elf_roots, acados, libraries, work,
+      [('acados', owner)], 'native-companion-elf')
+
+
+def mpc_audit_requests(auditor, probe, elf_roots, acados, libraries, work):
+  # Both the Rust API and the independent ctypes reference dlopen these roots.
+  owners = [(name, Path(acados) / f'libacados_ocp_solver_{name}.so')
+      for name in ('lat', 'long')]
+  return _audit_requests(auditor, probe, elf_roots, acados, libraries, work,
+      owners, 'native-mpc-elf')
+
+
+def _audit_requests(auditor, probe, elf_roots, acados, libraries, work, owners, prefix):
+  roots = [Path(probe), *map(Path, elf_roots)]
   dependencies = [Path(acados) / name for name in ('libblasfeo.so', 'libhpipm.so')]
-  if len(set(roots)) != len(roots) or not {owner, *dependencies}.issubset(roots):
+  required = {Path(acados) / 'libacados.so', *dependencies, *(owner for _, owner in owners)}
+  if len(set(roots)) != len(roots) or not required.issubset(roots):
     raise ValueError('all distinct companion roots and the actual acados owner are required')
   independent = [root for root in roots if root not in dependencies]
   search = [argument for path in libraries for argument in ('--library', path)]
   requests = []
-  for name, selected, load_owner in (
-      ('independent', independent, None), ('acados', dependencies, owner)):
-    output = Path(work) / f'native-companion-elf-{name}.json'
+  scopes = [('independent', independent, None)]
+  scopes += [(name, dependencies, owner) for name, owner in owners]
+  for name, selected, load_owner in scopes:
+    output = Path(work) / f'{prefix}-{name}.json'
     argv = [auditor]
     if load_owner is not None:
       argv += ['--load-owner', load_owner]

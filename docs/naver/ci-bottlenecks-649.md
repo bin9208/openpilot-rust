@@ -14,6 +14,14 @@
 
 이 문서는 커밋 시점의 단계별 증거다. 이후 최종 SHA·Actions·시간·남은 실패는 [#649의 작업 기록](https://github.com/bin9208/openpilot-rust/issues/649)에 이어서 갱신한다.
 
+### AGNOS의 MPC load-owner 후속 수정
+
+`73f230dde6e1a641c36469ab88c4ff3c39be7045`의 [41255972219](https://github.com/bin9208/openpilot-rust/actions/runs/41255972219)는 companion의 독립 11개·acados 문맥 3개 root(고유 13개)를 모두 통과했다. 이어지는 source-bound MPC에서도 실제 Rust/C ABI solve 12회가 비트 단위로 일치했지만, 기존 독립 ELF 감사가 BLASFEO/HPIPM의 `sqrt`·`sqrtf`를 다시 누락으로 판정했다. artifact `13065053512`에 원래 실패와 단계별 시간을 보존했다. 전체 실행은 실패이며 bootstrap 자식은 이 실패 뒤 소유 scope 정리로 종료됐으므로 bootstrap 자체 결함으로 해석하지 않는다.
+
+Rust `solver/api.rs`와 독립 ctypes 기준이 실제로 여는 `libacados_ocp_solver_lat.so`·`libacados_ocp_solver_long.so` 각각의 기존 `--load-owner` 문맥에서 두 의존성을 검사한다. 원래 8개 MPC root와 alias는 모두 유지하며 나머지 6개 root의 독립 검사도 유지한다. 범용 ELF validator·provider pin·solver 정밀도·12회 비트 일치 조건은 바꾸지 않는다. 실제 표준 ARM 재현에 같은 solver 비교, ownerless 거부 및 두 owner의 전체 root 검증을 추가한다. 전체 AGNOS 재성공은 별도 필수 조건으로 남긴다.
+
+같은 artifact의 batch 본체는 warm 150.337초, 원본 순회·원본 읽기·HTTP body 전송 모두 0을 기록했다. 이는 본체 시간이며 도구 컴파일을 포함한 외부 step 전체 시간과 구분한다.
+
 - [x] 같은 원본의 15개 provider를 한 번 순회하고 검증된 작은 component를 재사용한다.
 - [x] 기존 단일 provider의 descriptor/archive/tree와 동등성을 Actions에서 확인한다.
 - [x] 실제 같은 입력·러너에서 cold 12분 이하, warm 3분 이하를 확인한다.

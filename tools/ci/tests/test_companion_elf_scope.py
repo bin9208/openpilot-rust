@@ -4,7 +4,7 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from companion_elf_scope import audit_requests, verify_report
+from companion_elf_scope import audit_requests, mpc_audit_requests, verify_report
 
 
 class CompanionScopeTests(unittest.TestCase):
@@ -68,3 +68,31 @@ class CompanionScopeTests(unittest.TestCase):
     report['roots'][-1]['failures'] = [{'missing_strong_symbols': ['unknown_symbol']}]
     with self.assertRaises(AssertionError):
       verify_report(request, report)
+
+  def test_mpc_checks_both_actual_solver_owners_and_every_original_root(self):
+    owners = [self.acados / f'libacados_ocp_solver_{name}.so' for name in ('lat', 'long')]
+    roots = [*self.roots, *owners]
+    requests = mpc_audit_requests('/work/audit', '/work/rust-solver', roots,
+        self.acados, ['/work/libs'], '/work')
+    self.assertEqual(set().union(*(set(row['roots']) for row in requests)),
+        {Path('/work/rust-solver'), *roots})
+    independent, lateral, longitudinal = requests
+    self.assertNotIn('--load-owner', independent['argv'])
+    self.assertTrue(set(owners).issubset(independent['roots']))
+    self.assertIn(Path('/work/brotli/libblasfeo.so'), independent['roots'])
+    self.assertEqual([lateral['load_owner'], longitudinal['load_owner']], owners)
+    for request in requests:
+      verify_report(request, self.report(request))
+    for request, other in ((lateral, owners[1]), (longitudinal, owners[0])):
+      report = self.report(request)
+      report['load_owner'] = str(other)
+      with self.assertRaises(AssertionError):
+        verify_report(request, report)
+
+  def test_mpc_requires_both_generated_solver_roots(self):
+    owners = [self.acados / f'libacados_ocp_solver_{name}.so' for name in ('lat', 'long')]
+    for missing in owners:
+      roots = [*self.roots, *(owner for owner in owners if owner != missing)]
+      with self.assertRaises(ValueError):
+        mpc_audit_requests('/work/audit', '/work/rust-solver', roots,
+            self.acados, [], '/work')

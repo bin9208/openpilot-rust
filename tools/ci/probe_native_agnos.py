@@ -20,7 +20,7 @@ import subprocess
 import time
 from pathlib import Path
 from agnos_phases import phase as record_phase, independent_bootstrap
-from companion_elf_scope import audit_requests, verify_report
+from companion_elf_scope import audit_requests, mpc_audit_requests, verify_report
 
 RAW_BYTES = 4718592000
 SPARSE_SHA = 'a67410a888105ecce7bcc05e17cda77fd10572aa4380e9de242a7c92f3497114'
@@ -2022,17 +2022,16 @@ def native_mpc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_w
   maps=(work/'native-mpc-abi-cases/provider-maps.txt').read_text()
   assert len(maps)<8*1024**2
   mapped_paths={row[5] for line in maps.splitlines() if len(row:=line.split(maxsplit=5))==6}
-  for filename in ('libacados.so','libacados_ocp_solver_lat.so','libacados_ocp_solver_long.so'):
+  for filename in ('libacados.so','libacados_ocp_solver_lat.so','libacados_ocp_solver_long.so',
+      'libblasfeo.so','libhpipm.so','libqpOASES_e.so.3.1'):
     assert {str(prefix/filename),str((actual_prefix/filename).resolve())}&mapped_paths, f'wrong MPC provider mapping: {filename}'
-  audit=work/'native-mpc-elf-audit.json'
-  audit_command=[work/'project-target/debug/runtime-elf-audit','--root',binary]
-  for path in plan['members']:
-    if '.so' in Path(path).name:
-      audit_command+=['--root',Path(rows[0]['root'])/path]
-  for path in (prefix,'/usr/lib/aarch64-linux-gnu','/lib/aarch64-linux-gnu'):
-    audit_command+=['--library',path]
-  execute([*audit_command,'--output',audit],'native-mpc-elf-summary.json')
-  assert read('native-mpc-elf-audit.json')['compatible']
+  elf_roots=[Path(rows[0]['root'])/path for path in plan['members'] if '.so' in Path(path).name]
+  requests=mpc_audit_requests(work/'project-target/debug/runtime-elf-audit',binary,
+      elf_roots,prefix,[prefix,'/usr/lib/aarch64-linux-gnu','/lib/aarch64-linux-gnu'],work)
+  for request in requests:
+    execute(request['argv'],f'native-mpc-elf-{request["name"]}-summary.json')
+    verify_report(request,read(request['output'].name),
+        lambda path: str(path).replace(str(work),guest_work))
   execute(build,'native-mpc-build-reused.jsonl')
   repeated=artifact('native-mpc-build-reused.jsonl')
   assert repeated['fresh'] and repeated['executable']==str(binary) and digest(local_binary)==initial_sha
@@ -2055,6 +2054,9 @@ def native_mpc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_w
       actual_arm_preparer=True,actual_current_rust_solver_compiled_and_executed=True,
       rust_example_sha256=initial_sha,direct_c_abi_comparison=comparison,
       strict_elf_audit_compatible=True,actual_provider_maps_verified=True,
+      elf_audit_scopes=[dict(name=request['name'],roots=len(request['roots']),
+          load_owner=None if request['load_owner'] is None else str(request['load_owner']))
+          for request in requests],
       repeated_cargo_artifact_fresh=True,repeated_http_body_bytes=0,repeated_copied_bytes=0,
       consumer_origin_archive_downloaded=False,generated_mpc_solvers_reused=True,
       solvers_regenerated=False,original_cython_regression=False,

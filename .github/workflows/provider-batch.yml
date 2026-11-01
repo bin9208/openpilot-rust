@@ -100,6 +100,7 @@ jobs:
           sudo apt-get install -y capnproto libcapnp-dev clang libclang-dev pkg-config liblzma-dev libssl-dev
           rustup toolchain install 1.94.0 --profile minimal
           cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg --bin runtime-elf-audit
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-plannerd --example plannerd_solver_trace
       - uses: ./.github/actions/native-cache
         id: numerics-provider-cache
         with:
@@ -125,7 +126,7 @@ jobs:
       - name: Reproduce ownerless rejection and the exact acados load scope
         run: |
           native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
-          python3 tools/ci/reproduce_companion_elf.py --auditor "$native_target/debug/runtime-elf-audit" --probe "$CI_JOB_TEMP/numerics-probe" --batch "$NATIVE_PROVIDER_BATCH" --work "$CI_JOB_TEMP/companion-elf-repro"
+          python3 tools/ci/reproduce_companion_elf.py --auditor "$native_target/debug/runtime-elf-audit" --probe "$CI_JOB_TEMP/numerics-probe" --mpc-binary "$native_target/debug/examples/plannerd_solver_trace" --batch "$NATIVE_PROVIDER_BATCH" --work "$CI_JOB_TEMP/companion-elf-repro"
       - uses: actions/upload-artifact@v6
         if: always()
         with:
