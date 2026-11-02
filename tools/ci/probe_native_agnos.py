@@ -2248,15 +2248,24 @@ def native_provider_layout_abi(work, guest_work, layout, execute):
   libraries = [prefix / 'lib']
   libraries += sorted({path.parent for path in roots} - set(libraries))
   libraries += list(map(Path, layout['libraries']))
+  auditor = work / 'project-target/debug/runtime-elf-audit'
+  probe = prefix / 'ffmpeg'
+  assert probe in roots, 'original FFmpeg tool missing from complete layout'
+  others = [path for path in roots if path != probe]
+  acados = prefix / 'plannerd-acados'
+  requests = audit_requests(auditor, probe, others, acados, libraries, work)
+  mpc = mpc_audit_requests(auditor, probe, others, acados, libraries, work)
+  assert requests[0]['roots'] == mpc[0]['roots']
+  requests += mpc[1:]
+  reports = []
+  for request in requests:
+    execute(request['argv'], 'native-complete-provider-'+request['name']+'-summary.json')
+    report = json.loads(request['output'].read_text())
+    verify_report(request, report)
+    reports.append(dict(path=str(request['output']), sha256=digest(request['output'])))
+  assert set().union(*(set(request['roots']) for request in requests)) == set(roots)
   output = work / 'native-complete-provider-abi.json'
-  execute([work / 'project-target/debug/runtime-elf-audit',
-      *(arg for path in roots for arg in ('--root', path)),
-      *(arg for path in libraries for arg in ('--library', path)), '--output', output],
-      'native-complete-provider-abi-summary.json')
-  report = json.loads(output.read_text())
-  assert report['compatible'] is True and len(report['roots']) == len(roots)
-  assert {row['root'] for row in report['roots']} == {str(path) for path in roots}
-  assert all(row['compatible'] is True and not row['failures'] for row in report['roots'])
+  output.write_text(json.dumps(dict(compatible=True, roots=list(map(str, roots)), reports=reports), indent=2)+'\n')
   return dict(success=True, roots=len(roots), report_sha256=digest(output), full_runtime_build=False)
 
 

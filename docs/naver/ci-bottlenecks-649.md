@@ -339,3 +339,11 @@ command deadline도 보존한다. 기존 check-disk-space를 fetch 직전에 같
 672 후보bea8780390a6ed8c40c6246c1c33671353450ba4의 기존집중41502107535는 actualattempt1 세job 모두 성공했다. artifact13169546336 전체ZIP SHA256 `9bfbd3d75e06862df5d92b9e23b03770c4e51fff96e8b934daff80ad80b24af5`, generation6/원래SDK9·ELF·seal10·provider17·ONNX22/실제544initializer·metadata 및recovery를 대조했다.673수정도 실제집중/전체Actions검증 후 최종PRsource로 반영하며 아직649완료가 아니다.
 
 673의 기존192+24 status 비교도 같은 focused component job에서 원래script/기한/firmware pin 그대로 실행하고 작은 JSON을 기존 artifact에 남긴다. 긴 전체workspace를 기다리기 전에 실제previous fallback을 확인하며 원래전체workspace의 같은 비교도 유지한다.
+
+8d27e06ec41d4b72051ec10cf07a676daef690a9의 [집중41504487986](https://github.com/bin9208/openpilot-rust/actions/runs/41504487986)은 attempt1 세job 모두 성공했다. artifact13170797072 전체ZIP SHA256 `29c0294b4c7078dced65110273c932c3256e8d2ef7339bad48f6d3ef6655aa10`에서 원래192+24 status 전부 통과, filesystem 회귀3개, USBGPU all-targets Clippy, generation6/SDK9/seal10/provider17/ONNX22/실제544initializer·metadata/recovery를 확인했다. 이 결과는 최신 전체workspace 성공을 대체하지 않는다.
+
+### #672 후속: 원래 acados/MPC ABI load owner를 최종 검사에도 연결
+
+기존 실제 ARM [41255134425/job124696587349](https://github.com/bin9208/openpilot-rust/actions/runs/41255134425/job/124696587349), artifact13062448370의 전체ZIP SHA256 `a26d26e0583d8de8933670391c36ec6844fb64d17b1714ed85484568be08ce0e`에는 owner 없이 두 acados leaf를 검사할 때 sqrt/sqrtf가 실패하는 음성과 실제 acados/MPC owner에서 원래 strong-symbol 검사가 통과하는 양성이 남아 있다. 해당 acados/MPC provider plan은 현재와 바이트가 동일하다. 기존 component 검사는 이 범위를 보존했으나 최종 generation caller가 모든 ELF를 독립 root로 넘겨 같은 원래 범위를 누락했다.
+
+최종 caller와 사전검사에 기존 범위를 연결한다. 다른 ELF는 모두 독립 root로 검사하고 `plannerd-acados/libblasfeo.so`, `libhpipm.so` 두 개만 실제 libacados/lat MPC/long MPC owner 각각에서 검사한다. 다른 경로의 같은 이름 라이브러리에 적용하지 않는다. 원래 runtime-elf-audit와 Python companion scope helper, 수치 라이브러리·연산·정밀도·ABI/pin/strong-symbol 정책은 바꾸지 않는다. 모든 원래 root와 세 owner의 원문 report를 함께 보존하고 누락·실패·다른 owner·서로 다른 object 해시를 거부한다. 저장된 generation 재검증에도 같은 인증된 provider 디렉터리 검색을 사용한다. 기존 focused job에서 scope 양성/음성과 all-targets Clippy를 검증하고 새 source 전체검사를 이어간다.

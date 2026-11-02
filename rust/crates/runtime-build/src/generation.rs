@@ -590,6 +590,122 @@ fn runtime_provider_libraries(
     Ok(libraries)
 }
 
+struct AbiScope {
+    name: &'static str,
+    owner: Option<PathBuf>,
+    roots: Vec<PathBuf>,
+}
+
+fn abi_scopes(root: &Path, roots: &[PathBuf]) -> Result<Vec<AbiScope>> {
+    let prefix = root.join("rust/bin/plannerd-acados");
+    let leaves = [prefix.join("libblasfeo.so"), prefix.join("libhpipm.so")];
+    let present = leaves.iter().filter(|path| roots.contains(path)).count();
+    if present != 0 && present != leaves.len() {
+        return Err("incomplete acados ABI dependency roster".into());
+    }
+    let mut scopes = vec![AbiScope {
+        name: "independent",
+        owner: None,
+        roots: roots
+            .iter()
+            .filter(|path| !leaves.contains(path))
+            .cloned()
+            .collect(),
+    }];
+    if present != 0 {
+        // The original companion and both MPC audits check these same two
+        // leaves in their actual dlopen owners. Unrelated roots stay separate.
+        for (name, filename) in [
+            ("acados", "libacados.so"),
+            ("lat", "libacados_ocp_solver_lat.so"),
+            ("long", "libacados_ocp_solver_long.so"),
+        ] {
+            let owner = prefix.join(filename);
+            if !roots.contains(&owner) {
+                return Err("actual acados/MPC load owner missing from runtime ABI roots".into());
+            }
+            scopes.push(AbiScope {
+                name,
+                owner: Some(owner),
+                roots: leaves.to_vec(),
+            });
+        }
+    }
+    Ok(scopes)
+}
+
+fn check_abi_scope(scope: &AbiScope, report: &Value) -> Result<()> {
+    let expected_owner = serde_json::to_value(&scope.owner)?;
+    if report["compatible"] != true || report["load_owner"] != expected_owner {
+        return Err("ABI scope failed or has the wrong load owner".into());
+    }
+    let expected: BTreeSet<_> = scope.owner.iter().chain(&scope.roots).cloned().collect();
+    let rows = report["roots"]
+        .as_array()
+        .ok_or("ABI scope roots missing")?;
+    let mut actual = BTreeSet::new();
+    for row in rows {
+        if row["compatible"] != true
+            || !row["failures"].as_array().is_some_and(Vec::is_empty)
+            || !actual.insert(PathBuf::from(
+                row["root"].as_str().ok_or("ABI scope root path missing")?,
+            ))
+        {
+            return Err("ABI scope omitted, duplicated or failed a root".into());
+        }
+    }
+    if actual != expected {
+        return Err("ABI scope replaced an original root".into());
+    }
+    Ok(())
+}
+
+fn combine_abi_scopes(scopes: &[AbiScope], reports: Vec<Value>) -> Result<Value> {
+    if scopes.len() != reports.len() || scopes.is_empty() {
+        return Err("ABI scope report count mismatch".into());
+    }
+    let mut roots = BTreeMap::new();
+    let mut objects = BTreeMap::new();
+    let audits = reports.clone();
+    for (scope, report) in scopes.iter().zip(reports) {
+        check_abi_scope(scope, &report)?;
+        for row in report["objects"]
+            .as_array()
+            .ok_or("ABI scope objects missing")?
+        {
+            let path = row["path"]
+                .as_str()
+                .ok_or("ABI object path missing")?
+                .to_owned();
+            if objects.get(&path).is_some_and(|previous| previous != row) {
+                return Err("ABI object changed between load scopes".into());
+            }
+            objects.insert(path, row.clone());
+        }
+        for row in report["roots"]
+            .as_array()
+            .ok_or("ABI scope roots missing")?
+        {
+            let path = row["root"]
+                .as_str()
+                .ok_or("ABI root path missing")?
+                .to_owned();
+            if !roots.contains_key(&path) {
+                let mut first = row.clone();
+                if let Some(owner) = &scope.owner {
+                    first["load_owner"] = serde_json::to_value(owner)?;
+                }
+                roots.insert(path, first);
+            }
+        }
+    }
+    Ok(
+        json!({"compatible":true,"roots":roots.into_values().collect::<Vec<_>>(),
+        "objects":objects.into_values().collect::<Vec<_>>(),"audits":audits,
+        "scope":"independent runtime ELF roots; the two original acados leaves additionally checked under acados and both MPC owners"}),
+    )
+}
+
 fn tool_error(reason: &str, status: ExitStatus, stdout: &Path) -> String {
     let mut message = format!("{reason} ({status}); evidence: {}", stdout.display());
     for path in [stdout.to_owned(), stdout.with_extension("stderr")] {
@@ -787,8 +903,8 @@ impl Sealed {
             return Err("invalid ABI object count".into());
         }
         let mut paths = BTreeSet::new();
-        let mut libraries = vec![root.join("rust/bin/lib")];
-        libraries.extend(self.layout.libraries.iter().cloned());
+        let libraries =
+            runtime_provider_libraries(root, &self.layout.files, &self.layout.libraries)?;
         for row in rows {
             let path = PathBuf::from(row["path"].as_str().ok_or("ABI object path missing")?);
             let sha = row["sha256"].as_str().ok_or("ABI object digest missing")?;
@@ -856,7 +972,11 @@ fn validate_abi(
     root: &Path,
     files: &BTreeMap<PathBuf, objects::Object>,
 ) -> Result<()> {
-    if report["compatible"] != true {
+    if report["compatible"] != true
+        || report
+            .get("load_owner")
+            .is_some_and(|owner| !owner.is_null())
+    {
         return Err("source-build ABI closure is incompatible".into());
     }
     let rows = report["roots"].as_array().ok_or("ABI roots missing")?;
@@ -881,6 +1001,22 @@ fn validate_abi(
     }
     if actual != expected || actual.is_empty() {
         return Err("ABI report does not cover every runtime ELF".into());
+    }
+    if let Some(audits) = report.get("audits") {
+        let scopes = abi_scopes(root, &expected.into_iter().collect::<Vec<_>>())?;
+        let audits = audits
+            .as_array()
+            .ok_or("ABI scope evidence missing")?
+            .clone();
+        let checked = combine_abi_scopes(&scopes, audits)?;
+        if ["compatible", "roots", "objects", "audits"]
+            .iter()
+            .any(|key| checked[*key] != report[*key])
+        {
+            return Err("ABI combined evidence differs from its checked original scopes".into());
+        }
+    } else if rows.iter().any(|row| row.get("load_owner").is_some()) {
+        return Err("ABI load owner has no original scope evidence".into());
     }
     Ok(())
 }
@@ -1122,32 +1258,43 @@ pub fn seal(
     }
     crate::source_lfs::verify_recorded(&prepared.source.root, &files)?;
     let libraries = runtime_provider_libraries(&runtime.root, &layout.files, &layout.libraries)?;
-    let abi = evidence.join("abi.json");
-    let mut audit = tool(
-        &runtime.root,
-        "runtime-elf-audit",
-        &evidence.join("abi.stdout"),
-    )?;
+    let mut roots = Vec::new();
     for path in files.keys() {
         let path = runtime.root.join(path);
         let mut magic = [0; 4];
         if regular_file(&path)?.read(&mut magic)? == 4 && magic == *b"\x7fELF" {
-            audit.arg("--root").arg(path);
+            roots.push(path);
         }
     }
-    for library in &libraries {
-        audit.arg("--library").arg(library);
+    let scopes = abi_scopes(&runtime.root, &roots)?;
+    let mut reports = Vec::new();
+    for scope in &scopes {
+        let stdout = evidence.join(format!("abi-{}.stdout", scope.name));
+        let output = evidence.join(format!("abi-{}.json", scope.name));
+        let mut audit = tool(&runtime.root, "runtime-elf-audit", &stdout)?;
+        if let Some(owner) = &scope.owner {
+            audit.arg("--load-owner").arg(owner);
+        }
+        for path in &scope.roots {
+            audit.arg("--root").arg(path);
+        }
+        for library in &libraries {
+            audit.arg("--library").arg(library);
+        }
+        let status = audit.arg("--output").arg(&output).status()?;
+        if !status.success() {
+            return Err(tool_error(
+                "runtime ABI audit failed; previous generation retained",
+                status,
+                &stdout,
+            )
+            .into());
+        }
+        reports.push(read::<Value>(&output)?);
     }
-    let status = audit.arg("--output").arg(&abi).status()?;
-    if !status.success() {
-        return Err(tool_error(
-            "runtime ABI audit failed; previous generation retained",
-            status,
-            &evidence.join("abi.stdout"),
-        )
-        .into());
-    }
-    let report: Value = read(&abi)?;
+    let report = combine_abi_scopes(&scopes, reports)?;
+    let abi = evidence.join("abi.json");
+    write(&abi, &report, false)?;
     validate_abi(&report, &runtime.root, &files)?;
     let mut system = BTreeMap::new();
     for object in report["objects"]
@@ -1282,6 +1429,130 @@ pub fn load(stores: &Stores, id: &str) -> Result<Sealed> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn scoped_paths(root: &Path) -> Vec<PathBuf> {
+        [
+            "rust/bin/program",
+            "rust/bin/unrelated/libhpipm.so",
+            "rust/bin/plannerd-acados/libacados.so",
+            "rust/bin/plannerd-acados/libblasfeo.so",
+            "rust/bin/plannerd-acados/libhpipm.so",
+            "rust/bin/plannerd-acados/libacados_ocp_solver_lat.so",
+            "rust/bin/plannerd-acados/libacados_ocp_solver_long.so",
+        ]
+        .iter()
+        .map(|path| root.join(path))
+        .collect()
+    }
+
+    #[test]
+    fn only_the_two_original_acados_dependencies_receive_the_three_real_owners() {
+        let root = Path::new("/runtime");
+        let paths = scoped_paths(root);
+        let scopes = abi_scopes(root, &paths).unwrap();
+        assert_eq!(scopes.len(), 4);
+        assert!(scopes[0].owner.is_none());
+        assert!(scopes[0].roots.contains(&root.join("rust/bin/program")));
+        assert!(scopes[0]
+            .roots
+            .contains(&root.join("rust/bin/unrelated/libhpipm.so")));
+        let all: BTreeSet<_> = scopes
+            .iter()
+            .flat_map(|scope| scope.owner.iter().chain(&scope.roots).cloned())
+            .collect();
+        assert_eq!(all, paths.into_iter().collect());
+        for scope in &scopes[1..] {
+            assert_eq!(scope.roots, scopes[1].roots);
+            assert_eq!(scope.roots.len(), 2);
+            assert!(scopes[0].roots.contains(scope.owner.as_ref().unwrap()));
+        }
+        let mut incomplete = scoped_paths(root);
+        incomplete.pop();
+        assert!(abi_scopes(root, &incomplete).is_err());
+    }
+
+    #[test]
+    fn scoped_abi_evidence_cannot_hide_bad_owners_roots_objects_or_failed_checks() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("runtime");
+        let paths = scoped_paths(&root);
+        let mut files = BTreeMap::new();
+        for path in &paths {
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            fs::copy("/bin/true", path).unwrap();
+            files.insert(
+                path.strip_prefix(&root).unwrap().to_owned(),
+                objects::import(&temp.path().join("objects"), path, 0)
+                    .unwrap()
+                    .object,
+            );
+        }
+        let scopes = abi_scopes(&root, &paths).unwrap();
+        let reports: Vec<Value> = scopes
+            .iter()
+            .map(|scope| {
+                let paths: Vec<_> = scope.owner.iter().chain(&scope.roots).cloned().collect();
+                let roots: Vec<_> = paths
+                    .iter()
+                    .map(|path| {
+                        let mut closure = vec![path.clone()];
+                        if let Some(owner) = scope.owner.as_ref().filter(|owner| *owner != path) {
+                            closure.push(owner.clone());
+                        }
+                        json!({"root":path,"closure":closure,"compatible":true,"failures":[]})
+                    })
+                    .collect();
+                let objects: Vec<_> = paths
+                    .iter()
+                    .map(
+                        |path| json!({"path":path,"needed":[],"sha256":digest_file(path).unwrap()}),
+                    )
+                    .collect();
+                json!({"compatible":true,"load_owner":scope.owner,"roots":roots,"objects":objects})
+            })
+            .collect();
+        let combined = combine_abi_scopes(&scopes, reports.clone()).unwrap();
+        validate_abi(&combined, &root, &files).unwrap();
+        for change in ["missing", "owner", "failed", "object"] {
+            let mut bad = reports.clone();
+            match change {
+                "missing" => {
+                    bad[1]["roots"].as_array_mut().unwrap().pop();
+                }
+                "owner" => bad[1]["load_owner"] = json!(root.join("rust/bin/program")),
+                "failed" => bad[2]["roots"][1]["failures"] = json!(["missing symbol"]),
+                "object" => bad[1]["objects"][0]["sha256"] = json!("f".repeat(64)),
+                _ => unreachable!(),
+            }
+            assert!(combine_abi_scopes(&scopes, bad).is_err(), "{change}");
+        }
+        for change in [
+            "missing",
+            "global-owner",
+            "hidden-failure",
+            "unrelated-owner",
+        ] {
+            let mut bad = combined.clone();
+            match change {
+                "missing" => {
+                    bad["audits"].as_array_mut().unwrap().pop();
+                }
+                "global-owner" => bad["load_owner"] = json!(root.join("rust/bin/program")),
+                "hidden-failure" => bad["audits"][2]["roots"][1]["compatible"] = json!(false),
+                "unrelated-owner" => {
+                    let row = bad["roots"]
+                        .as_array_mut()
+                        .unwrap()
+                        .iter_mut()
+                        .find(|row| row["root"] == json!(root.join("rust/bin/program")))
+                        .unwrap();
+                    row["load_owner"] = json!(root.join("rust/bin/plannerd-acados/libacados.so"));
+                }
+                _ => unreachable!(),
+            }
+            assert!(validate_abi(&bad, &root, &files).is_err(), "{change}");
+        }
+    }
 
     #[test]
     fn runtime_audit_includes_bound_component_elf_directories_only() {
