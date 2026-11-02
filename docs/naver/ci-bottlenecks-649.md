@@ -301,3 +301,16 @@ SSL handshake timeout이 계속됐고 Buildroot의 동일6.1.1 archive는1045860
 script hash만 정확히 갱신하고 원래 전체 명령 비교를 유지한다. 기존 FFmpeg archive
 변조 거부 테스트도 기존 집중 component 작업에 포함한다. 실제 Actions의 집중·전체
 ARM 성공은 아직 필요하며, 진행 중0753 genuine은 취소하지 않는다.
+
+## 복구 비교기의 알림/출력 수신 순서 경합 — #671
+
+[dee0 집중41486679391/recovery125418774938](https://github.com/bin9208/openpilot-rust/actions/runs/41486679391/job/125418774938)의
+지원 단말 승인 marker 대기는8초 timeout으로 실패했다. artifact13162063576의 작은
+wire member/CRC에서 command_approved28 → 실제 APPROVED 출력30 → command_running33
+순서와 approved.txt12bytes를 확인했다. 검사기의 event 대기가 다른 유형의 PTY 출력을
+버렸던 것이며 원래 source/native 모두 쓰기 뒤 알림을 보내는 runtime 정책은 바꾸지 않는다.
+
+기존 비교 도구의 연결별 출력만 보존해 다음 출력 소비에서 순서대로 읽는다. 원래 raw기록·
+8초 deadline·승인/거부/만료/marker/파일/close와 모든 시나리오는 유지한다. 기존 EOF
+회귀 실행에 선행/후행·분할 출력, marker 부재 timeout, peer 격리·close 거부3개 회귀를
+추가하며 새 재시도나 성공 허용은 없다. 실제 회귀·복구 전체 Actions 성공은 아직 필요하다.
