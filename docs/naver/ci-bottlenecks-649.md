@@ -319,3 +319,11 @@ wire member/CRC에서 command_approved28 → 실제 APPROVED 출력30 → comman
 command deadline도 보존한다. 기존 check-disk-space를 fetch 직전에 같은 예산으로
 호출하고 curl을600초 timeout으로 감싼다. retry3/connect15/max180/32MiB와 SHA 및
 원래 build/probe는 그대로이며, archive를 받기 전에 원래 예산/전체 한도가 적용된다.
+
+### #672: 완전한 generation의 provider ABI 검색 경로 연결
+
+0753의 AGNOS [41450144600/job125293043310](https://github.com/bin9208/openpilot-rust/actions/runs/41450144600/job/125293043310)은 2026-11-02 18:24:24UTC에 실패했다. artifact13167783316의 실제 sealer stdout은 aarch64/1123 artifacts/source0753를 기록하고 stderr는 비어 있었다. 이어진 ABI stderr는 torqued-numerics의 원래 OpenBLAS가 요구하는 libgfortran-e1b7dfc8-d8198c01.so.5.0.0 provider를 찾지 못했다고 기록했다. 원래 수치 라이브러리 자체는 layout의 card/controlsd/radarcan/torqued 네 경로에 모두 매핑되어 있지만 generation caller가 중앙 rust/bin/lib와 두 외부 AGNOS 경로만 검색에 전달했다. 새로운 수치 연산/정밀도/버전/바이트 변경이 아니다.
+
+[이슈672](https://github.com/bin9208/openpilot-rust/issues/672) 수정은 인증된 layout에 나열된 ELF provider destination의 디렉터리만 기존 ABI 도구에 추가한다. 중앙 디렉터리 우선과 외부 system library 순서, 각 root의 독립 closure/strong symbol/version 검사와 전체 ELF roster 검증은 유지한다. 비인증 디렉터리는 검색하지 않으며 누락/redirect를 거부한다. ABI 오류에도 기존 bounded child status/stdout/stderr 진단을 재사용한다. 같은 원래 provider ELF 검사를 완전한 compile 전에 실행해 input 의존성 오류를5시간 뒤에 반복 발견하지 않도록 한다. 기존 전체 generation/seal/ABI/reuse/docs/small/final-production은 그대로 실행한다.
+
+로컬은 Rust 서식·Python AST·diff만 확인했다. 새 기능 검증은 기존 집중 Actions와 최신 source 전체 Actions 결과로 확인하며, 진행 중96c9 전체Rust41497469920/AGNOS41498014004는 취소하지 않는다.649/598/기기 수용은 아직 완료가 아니다.

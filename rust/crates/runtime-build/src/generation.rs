@@ -159,7 +159,7 @@ pub struct Layout {
     pub provider_receipt: PathBuf,
     /// Runtime destination -> provider-relative file (not directory).
     pub files: BTreeMap<PathBuf, PathBuf>,
-    /// Ordered external AGNOS library directories. rust/bin/lib precedes these.
+    /// Ordered external AGNOS directories, after the bound runtime providers.
     pub libraries: Vec<PathBuf>,
     pub expected_source_growth_bytes: u64,
     pub remaining_object_growth_bytes: u64,
@@ -566,6 +566,28 @@ fn tool(root: &Path, name: &str, log: &Path) -> Result<Command> {
         .stdout(Stdio::from(File::create(log)?))
         .stderr(Stdio::from(File::create(log.with_extension("stderr"))?));
     Ok(command)
+}
+
+fn runtime_provider_libraries(
+    root: &Path,
+    files: &BTreeMap<PathBuf, PathBuf>,
+    external: &[PathBuf],
+) -> Result<Vec<PathBuf>> {
+    let central = root.join("rust/bin/lib");
+    let mut providers = BTreeSet::new();
+    // Only destinations in the verified layout may extend the audit search.
+    // In particular, numerics providers live beside each of their consumers.
+    for relative in files.keys() {
+        let path = root.join(relative);
+        let mut magic = [0; 4];
+        if regular_file(&path)?.read(&mut magic)? == 4 && magic == *b"\x7fELF" {
+            providers.insert(path.parent().ok_or("provider parent missing")?.to_owned());
+        }
+    }
+    let mut libraries = vec![central.clone()];
+    libraries.extend(providers.into_iter().filter(|path| path != &central));
+    libraries.extend(external.iter().cloned());
+    Ok(libraries)
 }
 
 fn tool_error(reason: &str, status: ExitStatus, stdout: &Path) -> String {
@@ -1099,8 +1121,7 @@ pub fn seal(
         }
     }
     crate::source_lfs::verify_recorded(&prepared.source.root, &files)?;
-    let mut libraries = vec![runtime.root.join("rust/bin/lib")];
-    libraries.extend(layout.libraries.iter().cloned());
+    let libraries = runtime_provider_libraries(&runtime.root, &layout.files, &layout.libraries)?;
     let abi = evidence.join("abi.json");
     let mut audit = tool(
         &runtime.root,
@@ -1117,8 +1138,14 @@ pub fn seal(
     for library in &libraries {
         audit.arg("--library").arg(library);
     }
-    if !audit.arg("--output").arg(&abi).status()?.success() {
-        return Err("runtime ABI audit failed; previous generation retained".into());
+    let status = audit.arg("--output").arg(&abi).status()?;
+    if !status.success() {
+        return Err(tool_error(
+            "runtime ABI audit failed; previous generation retained",
+            status,
+            &evidence.join("abi.stdout"),
+        )
+        .into());
     }
     let report: Value = read(&abi)?;
     validate_abi(&report, &runtime.root, &files)?;
@@ -1255,6 +1282,56 @@ pub fn load(stores: &Stores, id: &str) -> Result<Sealed> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn runtime_audit_includes_bound_component_elf_directories_only() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path();
+        let mut files = BTreeMap::new();
+        for relative in [
+            "rust/bin/lib/central.so",
+            "rust/bin/torqued-numerics/blas.so",
+            "rust/bin/torqued-numerics/fortran.so",
+            "rust/bin/card-numerics/blas.so",
+        ] {
+            let path = root.join(relative);
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            fs::copy("/bin/true", path).unwrap();
+            files.insert(
+                PathBuf::from(relative),
+                PathBuf::from("bound-provider-file"),
+            );
+        }
+        fs::create_dir(root.join("unlisted")).unwrap();
+        fs::copy("/bin/true", root.join("unlisted/foreign.so")).unwrap();
+        fs::create_dir(root.join("metadata")).unwrap();
+        fs::write(root.join("metadata/receipt.json"), b"{}\n").unwrap();
+        files.insert("metadata/receipt.json".into(), "bound-receipt".into());
+        let external = vec![
+            PathBuf::from("/factory/second"),
+            PathBuf::from("/factory/first"),
+        ];
+        let mut expected = vec![
+            root.join("rust/bin/lib"),
+            root.join("rust/bin/card-numerics"),
+            root.join("rust/bin/torqued-numerics"),
+        ];
+        expected.extend(external.iter().cloned());
+        assert_eq!(
+            runtime_provider_libraries(root, &files, &external).unwrap(),
+            expected
+        );
+    }
+
+    #[test]
+    fn runtime_audit_rejects_missing_or_redirected_bound_providers() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path();
+        let files = BTreeMap::from([(PathBuf::from("provider.so"), PathBuf::from("bound"))]);
+        assert!(runtime_provider_libraries(root, &files, &[]).is_err());
+        std::os::unix::fs::symlink("/bin/true", root.join("provider.so")).unwrap();
+        assert!(runtime_provider_libraries(root, &files, &[]).is_err());
+    }
 
     #[test]
     fn failed_sealer_preserves_child_status_and_bounded_original_diagnostics() {

@@ -2235,6 +2235,31 @@ def plan_model(source):
   return json.loads((source/'rust/native-usbgpu-model.json').read_text())['assets']['usbgpu-model']
 
 
+def native_provider_layout_abi(work, guest_work, layout, execute):
+  """Inspect the actual bound providers before compiling all runtime groups."""
+  prefix = Path(layout['provider_root'])
+  actual = work / prefix.relative_to(guest_work)
+  roots = []
+  for relative in sorted(set(layout['files'].values())):
+    with (actual / relative).open('rb') as stream:
+      if stream.read(4) == b'\x7fELF':
+        roots.append(prefix / relative)
+  assert roots, 'complete layout has no ELF providers'
+  libraries = [prefix / 'lib']
+  libraries += sorted({path.parent for path in roots} - set(libraries))
+  libraries += list(map(Path, layout['libraries']))
+  output = work / 'native-complete-provider-abi.json'
+  execute([work / 'project-target/debug/runtime-elf-audit',
+      *(arg for path in roots for arg in ('--root', path)),
+      *(arg for path in libraries for arg in ('--library', path)), '--output', output],
+      'native-complete-provider-abi-summary.json')
+  report = json.loads(output.read_text())
+  assert report['compatible'] is True and len(report['roots']) == len(roots)
+  assert {row['root'] for row in report['roots']} == {str(path) for path in roots}
+  assert all(row['compatible'] is True and not row['failures'] for row in report['roots'])
+  return dict(success=True, roots=len(roots), report_sha256=digest(output), full_runtime_build=False)
+
+
 def native_complete_layout_probe(guest_command,work,source_mount,evidence,log,guest_work):
   """Compose every real input and hand a complete layout to the 99-target build."""
   room(work,64*1024**2)
@@ -2278,6 +2303,7 @@ def native_complete_layout_probe(guest_command,work,source_mount,evidence,log,gu
   assert rows[0]['identity']==rows[1]['identity'] and rows[0]['root']==rows[1]['root']
   assert rows[1]['copied_bytes']==rows[1]['linked_bytes']==0
   (work/'native-complete-layout.json').write_text(json.dumps(rows[0]['layout'],indent=2)+'\n')
+  evidence['native_complete_provider_abi'] = native_provider_layout_abi(work, guest_work, rows[0]['layout'], execute)
   pins['runtime_inputs']=rows[0]['runtime_inputs']
   (work/'native-complete-input-pins.json').write_text(json.dumps(pins,indent=2)+'\n')
   planner=work/'project-target/debug/openpilot-runtime-plan'
