@@ -709,7 +709,7 @@ attempt1의 component/recovery/execution 세 job이 모두 성공했다. 실제 
 시작을 기다리게 하지 않는다. 후속 수정은 이미 있는 Rust 모델 전달 흐름에 맞춰야 한다.
 고정 모델·원본 비교·패키지 검증을 일괄 제거하거나 별도 다운로드 서비스를 만들지 않는다.
 
-현재 우선 실행은 #649의14069 source 전체 검증이며 그 결과와 이 후속 source를 섞지 않는다.
+현재 우선 실행은 #649의23f8 source 전체 검증이며 그 결과와 이 후속 source를 섞지 않는다.
 사용자는 자동화 없이 직접 #598을 재개한다. 이 준비 브랜치나 CI 성공만으로 #598을
 완료 처리하거나 기존 채팅을 자동으로 재개하지 않는다.
 
@@ -721,3 +721,17 @@ source/artifact/모든 gate를 확인한 뒤 이 Git 입력 파일도 검증해 
 release 공개·Git commit·기기 접속을 자동 수행하지 않는다. 구 producer에 이 출력이 없으면
 설치 입력 준비 성공으로 표시하지 않는다. 이 연결과 실제 처음부터의 offline source-entry
 전체 검증은 새 Actions 결과 확인 전 성공으로 간주하지 않는다.
+
+공통23f8을 정상 merge한 설치 준비 source `9a3bc2bcc2a1d4f76b15965d58ba3bd2712fbc3a`의
+[집중41418135681](https://github.com/bin9208/openpilot-rust/actions/runs/41418135681)은
+실제 세 job/attempt1 전부 성공했다. publication36개/source-entry27개 회귀가 원래
+producer→bundle→publisher 검증과 큰 분할 입력의 정확 바이트·source/metadata 거부 및
+기존 cache/설정 재사용을 포함한다. 실제 입력 artifact·기기 policy·전체 시작 성공은 아니다.
+
+전체 production source-entry 검증의 기존 factory 빌드 구간에는 별도 network namespace를
+적용한다. 해당 프로세스와 모든 자식은 loopback 이외 interface가 없고 host와 namespace
+inode가 다른지 확인한다. 공개 metadata의 원래 사전 검증은 host에서 유지하되, Git 수신
+이후 최초/재사용/docs/작은 변경/패키지 시작 검증은 외부 네트워크 없이 수행한다.
+현재는 AST/diff만 확인했으며 이 실제 ARM 구간은 완전한 Git 입력을 준비한 뒤 기존
+source-entry Actions에서 검증해야 한다. 기기 runtime·설치 경로에 network 설정을
+추가하거나 Wi-Fi를 제어하지 않는다.

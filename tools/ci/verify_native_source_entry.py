@@ -18,6 +18,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 CLEANUP_RESERVE_SECONDS = 60
+CLONE_NEWNET = 0x40000000
 FIELDS = {'schema', 'maximum_memory_bytes', 'minimum_available_memory_bytes',
           'maximum_growth_bytes', 'minimum_free_bytes', 'expected_source_growth_bytes',
           'expected_compile_growth_bytes', 'remaining_object_growth_bytes',
@@ -433,12 +434,16 @@ def arm():
     import platform
     import pwd
     import grp
+    import socket
     assert platform.machine() == 'aarch64' and os.getuid() == os.geteuid() == 1000
     assert not os.getgroups() and Path('/VERSION').read_text().strip() == '19.8-carrot-bt1'
     assert pwd.getpwuid(1000).pw_name == 'comma' and pwd.getpwuid(1000).pw_gid == os.getgid()
     assert grp.getgrgid(os.getgid()).gr_name == 'comma'
     source, state = Path('/native/source'), Path('/native/state')
     request = json.loads((state/'request.json').read_text())
+    network_namespace = Path('/proc/self/ns/net').stat().st_ino
+    assert network_namespace != request['host_network_namespace_inode']
+    assert {name for _, name in socket.if_nameindex()} == {'lo'}
     estimates = request['estimates']
     deadline_ns = request['payload_deadline_monotonic_ns']
     remaining(deadline_ns)
@@ -572,6 +577,8 @@ def arm():
         public_metadata_verified=True, warm_same_path_entry_completed=True,
         public_metadata_preflight_transferred_bytes=request['public_metadata_transferred_bytes'],
         cross_job_cargo_cache_reused=False, warm_zero_download_claimed=True,
+        offline_network_namespace_inode=network_namespace,
+        external_network_available_during_build=False,
         docs_and_small_change_reuse_tested=True, update_and_recovery_tested=False,
         physical_arm_cpu=False, agnos_kernel=False, proot_used=False,
         native_arm_execution=True, emulated=False, factory_identity=request['factory_identity'],
@@ -588,7 +595,10 @@ def namespace_child(transport, uid, gid, work, factory, source, ready, go, group
     os.write(ready, b'U')
     assert os.read(go, 1) == b'M'
     assert os.getuid() == os.geteuid() == 0
-    transport.unshare(transport.NEWNS | transport.NEWCGROUP)
+    # The Git checkout already contains every build input. Keep the existing
+    # factory test, but give its entire process tree only a private loopback
+    # interface so a missing local input cannot be hidden by an HTTP download.
+    transport.unshare(transport.NEWNS | transport.NEWCGROUP | CLONE_NEWNET)
     mount = lambda *args: transport.command('/usr/bin/mount', *args)
     mount('--make-rprivate', '/')
     memory = work/'memory'
@@ -657,11 +667,7 @@ def run():
     assert (factory/'VERSION').read_text().strip() == '19.8-carrot-bt1'
     request['factory_identity'] = transport.remap_factory_owners(factory, uid, gid)
     request['factory_sudo'] = transport.restore_factory_sudo(raw, factory/'usr/bin/sudo')
-    # Only the private extracted image's resolver is updated. The host is read.
-    resolver = factory/'etc/resolv.conf'
-    if resolver.is_symlink():
-        resolver.unlink()
-    resolver.write_bytes(Path('/etc/resolv.conf').read_bytes())
+    request['host_network_namespace_inode'] = Path('/proc/self/ns/net').stat().st_ino
     request['payload_started_monotonic_ns'] = time.monotonic_ns()
     request['payload_deadline_monotonic_ns'] = request['payload_started_monotonic_ns']+request['estimates']['build_timeout_seconds']*1_000_000_000
     save(state/'request.json', request)
