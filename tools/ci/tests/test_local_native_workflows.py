@@ -417,7 +417,10 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                                  '${{ env.CI_JOB_TEMP }}/native-provider-batch.json',
                                  '${{ env.CI_JOB_TEMP }}/native-agnos/bootstrap-parallel.log',
                                  '${{ env.CI_JOB_TEMP }}/native-bootstrap-seed-abi-preflight.json',
-                                 '${{ env.CI_JOB_TEMP }}/native-bootstrap-seed-abi-preflight/']
+                                 '${{ env.CI_JOB_TEMP }}/native-bootstrap-seed-abi-preflight/',
+                                 '${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-stores/generations/evidence-*/*.json',
+                                 '${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-stores/generations/evidence-*/*.stdout',
+                                 '${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-stores/generations/evidence-*/*.stderr']
                     paths = artifact['with']['path'].splitlines()
                     for path in additions:
                         self.assertEqual(paths.count(path), 1)
