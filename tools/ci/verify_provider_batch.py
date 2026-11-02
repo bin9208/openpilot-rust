@@ -64,6 +64,18 @@ def main():
     for profile, value in warm['exports'].items():
       assert value['origin']['copied_bytes'] == 0
       assert value['component_sha256'] == cold['exports'][profile]['component_sha256']
+    summary['cold_all_profiles_seconds'] = summary['cases']['cold']['seconds']
+    summary['warm_all_profiles_seconds'] = summary['cases']['warm']['seconds']
+    summary['cold_including_prefetch_seconds'] = summary['cold_all_profiles_seconds'] + summary['cases']['prefetch']['seconds']
+    print(json.dumps(dict(phase='preparation', cold_seconds=summary['cold_all_profiles_seconds'],
+        warm_seconds=summary['warm_all_profiles_seconds'],
+        cold_including_prefetch_seconds=summary['cold_including_prefetch_seconds'],
+        equivalence_complete=False)), flush=True)
+    # Do not spend another two hours comparing legacy exports after timing has
+    # already failed. Every successful run still requires all fifteen below.
+    assert summary['cold_all_profiles_seconds'] <= 12*60
+    assert summary['cold_including_prefetch_seconds'] <= 12*60
+    assert summary['warm_all_profiles_seconds'] <= 3*60
     companions = {'numerics', 'geos', 'brotli', 'acados', 'sdl', 'turbojpeg', 'ffmpeg-tools', 'freesans'}
     baseline_seconds = 0
     for path, pin in pins.items():
@@ -83,10 +95,6 @@ def main():
         baseline_seconds += summary['cases']['legacy-'+name]['seconds']
       (work/'summary.json').write_text(json.dumps(summary, indent=2)+'\n')
     summary['legacy_companions_seconds'] = baseline_seconds
-    summary['cold_all_profiles_seconds'] = summary['cases']['cold']['seconds']
-    summary['warm_all_profiles_seconds'] = summary['cases']['warm']['seconds']
-    assert summary['cold_all_profiles_seconds'] <= 12*60
-    assert summary['warm_all_profiles_seconds'] <= 3*60
     assert not subprocess.check_output(['git','-C',str(source),'status','--porcelain','--untracked-files=all'],text=True).strip()
     summary['success'] = True
   finally:

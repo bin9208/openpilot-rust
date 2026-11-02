@@ -220,3 +220,15 @@ UI/Card의 같은 하위 실행 경로도 대조했다. DBC 준비는 기존 `4 
 보존한 이전 `92d4fc9c0f418e1a52be27b2e603afd6a45723e3`의 [AGNOS124999191284](https://github.com/bin9208/openpilot-rust/actions/runs/41357030154/job/124999191284)는 모델 생성29.938917초에서 실패했다. 최종 artifact13107899653의 `commands.log`는 `offline_pipeline.driving_pipeline → make_metadata_dict → MetadataOnnxPBParser → DISK._might_open`에서 같은 인증 ONNX 캐시를 `O_RDWR|O_CREAT`로 열어 EACCES가 난 것을 보존한다. #660에서 수정한 initializer 로더 뒤에 메타데이터를 다시 읽는 두 번째 경로가 남아 있었다. 최신 bbfa의 두 pipeline 호출도 같은 코드이며, BOOL/FP16 바이트 수정의 회귀라고 판단하지 않는다.
 
 두 offline pipeline의 metadata 읽기에도 현재 SHA로 인증한 동일 바이트의 CPU Tensor를 전달한다. 원래 MetadataOnnxPBParser의 metadata 필드 파싱과 원래 shape/slice 변환을 유지하면서 private inline decoder를 함께 사용한다. 원본 runtime/tinygrad·캐시 권한·모델 pin/연산/정밀도·외부 tensor 거부는 바꾸지 않는다. 집중 검증은 원본 metadata parser의 쓰기 거부 음성과 새 경로의 정확 metadata·원본 바이트/권한 보존, 잘못된 hash와 외부 tensor 거부를 추가한다. 기존 실제544 initializer 비교도 유지하고 두 실제 모델의 checkpoint·모든 입출력 shape·모든 output slice를 독립 ONNX protobuf 결과와 비교한다. 로컬 AST/YAML/diff만 확인했으며 기능 성공은 새 Actions 결과로 확인해야 한다. 진행 중 provider benchmark의 exporter·15 profile·contract·actual ARM job과 production FileLock은 변경하지 않는다.
+
+## Warm 성능 기준 미달과 실패 판정 순서 — #665
+
+metadata 수정 `623637f319aea7ab1859c2082e377d912e6d759b`의 [집중41369776098](https://github.com/bin9208/openpilot-rust/actions/runs/41369776098)은 실제 세 job/attempt1 모두 성공했다. ONNX22개·계약59개·FileLock2개/provider17개/Clippy/공개gate33개/독립recovery와 실제 두모델544 initializer 및 모든 metadata의 독립 비교가 성공했다. PR611에 정상 FF 반영했으며, 최신 전체 Rust/AGNOS/UI 성공은 별도로 필요하다.
+
+기존 잠금 수정 source f8f3의 [controlled ARM41360240886](https://github.com/bin9208/openpilot-rust/actions/runs/41360240886/job/125010225379), artifact13110006073은15개 tree/descriptor/archive가 모두 기존 방식과 동일하고cold원본1순회/warm원본·bytes·HTTP0을 확인했다. 그러나 warm186.371657초가180초 기준을6.371657초 넘겨 실패했다. cold558.178522초와prefetch117.915167초의 합은676.093689초(11분16초)로12분 목표 안이다. 같은 실행의 기존8companion 합은3689.405469초다. 내부 elapsed_ms171991만 골라 성공으로 처리하지 않는다.
+
+[#665](https://github.com/bin9208/openpilot-rust/issues/665)는 dev profile의 canonical gzip 검증에 쓰는 잠긴 flate2 1.1.10/miniz_oxide 0.9.1/crc32fast 1.5.2만opt-level3으로 빌드한다. 현재 원본 로그의 두 preparer는 `dev [unoptimized + debuginfo]`다. [Cargo package override](https://doc.rust-lang.org/cargo/reference/profiles.html#overrides)를 사용하며 버전/backend/compression level6/canonical bytes·멤버/해시/경로/권한/링크/끝검사·debug assertions/overflow 검사·release profile·모델/runtime정책·병렬 제한은 바꾸지 않는다. 효과는 새 Actions 측정 전에는 확정하지 않는다. actual ARM Cargo JSON으로 세 dependency의 실제 opt-level/assertions를 검증하고 artifact에 기록한다.
+
+기존 verifier는 이미 warm 목표 미달을 알 수 있는데도15개 legacy 비교를2시간 수행한 뒤 마지막에 실패했다. 시간 기준은 그대로 유지해cold/warm 측정 직후 먼저 판정하며prefetch포함12분도 강제한다. 통과한 실행은 기존15개 동등성 비교를 빠짐없이 수행한다. 변경 없는 실패 실행을 재시도하지 않고 빌드 설정을 바꾼 source를 집중검증한 뒤 기존controlled ARM으로1회 검증한다. 전체 최신 source gate/AGNOS 및 성능까지 실제로 통과하기 전 #649/#598 완료로 처리하지 않는다.
+
+00:23:40/47 UTC의 두 러너 연결 끊김은 사용자가 정비가 아닌 예상치 못한 끊김이라고 확인했다. 원인은 아직 미확인이다. 세 X64는 이후online으로 현재 실행을 수행하며 서비스·SSH·취소·재시작은 하지 않았다. 기기 설치나 #598 재개도 하지 않았다.

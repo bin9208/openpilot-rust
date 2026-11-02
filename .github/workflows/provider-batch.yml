@@ -5,6 +5,7 @@ on:
     paths:
       - 'rust/crates/dev-tools/src/native_provider.rs'
       - 'rust/crates/dev-tools/src/native_provider/**'
+      - 'rust/Cargo.toml'
       - 'rust/crates/dev-tools/src/ffmpeg_build.rs'
       - 'tools/ci/verify_provider_batch.py'
       - 'tools/ci/native_provider_batch.py'
@@ -258,7 +259,25 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y capnproto libcapnp-dev clang libclang-dev pkg-config liblzma-dev libssl-dev
           rustup toolchain install 1.94.0 --profile minimal
-          cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg --message-format=json > "$CI_JOB_TEMP/provider-build.jsonl"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          wanted = {'flate2': '1.1.10', 'miniz_oxide': '0.9.1', 'crc32fast': '1.5.2'}
+          packages = {}
+          for line in (Path(os.environ['CI_JOB_TEMP'])/'provider-build.jsonl').read_text().splitlines():
+            row = json.loads(line)
+            if row.get('reason') != 'compiler-artifact': continue
+            name = row['target']['name']
+            if name not in wanted: continue
+            assert row['package_id'].endswith('#'+name+'@'+wanted[name]), row
+            assert row['profile']['opt_level'] == '3' and row['profile']['debug_assertions'] is True, row
+            packages[name] = dict(package_id=row['package_id'], profile=row['profile'])
+          assert set(packages) == set(wanted), packages
+          report = dict(source_commit=os.environ['GITHUB_SHA'], packages=packages)
+          (Path(os.environ['CI_JOB_TEMP'])/'provider-codec-build.json').write_text(json.dumps(report, indent=2)+'\n')
+          print(json.dumps(report), flush=True)
+          PY
           cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --bin openpilot-runtime-assets
       - name: Compare every production profile and measure real cold and warm reuse
         run: |
@@ -272,6 +291,7 @@ jobs:
           path: |
             ${{ env.CI_JOB_TEMP }}/provider-benchmark/*.json
             ${{ env.CI_JOB_TEMP }}/provider-benchmark/*.stderr
+            ${{ env.CI_JOB_TEMP }}/provider-codec-build.json
           if-no-files-found: warn
       - uses: ./.github/actions/job-temp
         if: always()
