@@ -46,6 +46,7 @@
     "usr/lib/gcc": true,
     "usr/lib/llvm-18": true,
     "usr/lib/pkgconfig": true,
+    "usr/libexec/gcc": true,
     "usr/local/include": true,
     "usr/local/lib": false,
     "usr/local/lib/pkgconfig": true,

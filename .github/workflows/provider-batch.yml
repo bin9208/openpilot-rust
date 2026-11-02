@@ -175,6 +175,7 @@ jobs:
         run: |
           set -o pipefail
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --lib file_lock::tests:: -- --nocapture
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --test system_sdk -- --nocapture
           cargo +1.94.0 clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --all-targets -- -D warnings
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_provider:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/provider-tests.log"
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-logging --test git_source_stamp

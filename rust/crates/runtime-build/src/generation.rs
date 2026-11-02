@@ -505,7 +505,11 @@ impl Layout {
             }
             for (path, sha) in &report.native_tools {
                 if !pins.contains(path, sha) {
-                    return Err("native linker/compiler tool is not bound to build inputs".into());
+                    return Err(format!(
+                        "native linker/compiler tool is not bound to build inputs: {}",
+                        path.display()
+                    )
+                    .into());
                 }
             }
         }

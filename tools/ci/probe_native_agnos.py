@@ -418,6 +418,10 @@ def native_system_sdk_probe(guest_command, work, source_mount, rootfs, evidence,
     execute(argv,name)
     report = json.loads((work/name).read_text())
     assert report['verified_input_trees'] == {'/':expected}
+    for path, sha256 in report['native_tools'].items():
+      entry = snapshot['entries'].get(str(Path(path).relative_to('/')))
+      assert entry is not None and entry['kind'] == 'file' and entry['sha256'] == sha256, \
+          f'actual native compiler helper is absent from the pinned SDK: {path}'
     artifacts = {Path(row['executable']).name:row for row in report['artifacts']}
     assert artifacts.keys() == {'first','second'}
     assert all(row['fresh'] == (phase == 'reused') for row in artifacts.values())
@@ -472,6 +476,7 @@ def native_system_sdk_probe(guest_command, work, source_mount, rootfs, evidence,
       factory_image_sha256=RAW_SHA,namespace_entries=len(snapshot['entries']),
       pinned_files=sum(e['kind']=='file' for e in snapshot['entries'].values()),
       initial_and_repeat_actual_native_driver=True,repeated_artifacts_fresh=True,
+      actual_native_compiler_helpers_bound=True,
       same_size_header_tamper_rejected=True,previous_executables_preserved=True,
       factory_namespace_restored=True,scope='declared compiler namespaces only',
       complete_compiler_search_closure_proven=False,full_runtime_build=False,device_execution=False)

@@ -232,3 +232,23 @@ metadata 수정 `623637f319aea7ab1859c2082e377d912e6d759b`의 [집중41369776098
 기존 verifier는 이미 warm 목표 미달을 알 수 있는데도15개 legacy 비교를2시간 수행한 뒤 마지막에 실패했다. 시간 기준은 그대로 유지해cold/warm 측정 직후 먼저 판정하며prefetch포함12분도 강제한다. 통과한 실행은 기존15개 동등성 비교를 빠짐없이 수행한다. 변경 없는 실패 실행을 재시도하지 않고 빌드 설정을 바꾼 source를 집중검증한 뒤 기존controlled ARM으로1회 검증한다. 전체 최신 source gate/AGNOS 및 성능까지 실제로 통과하기 전 #649/#598 완료로 처리하지 않는다.
 
 00:23:40/47 UTC의 두 러너 연결 끊김은 사용자가 정비가 아닌 예상치 못한 끊김이라고 확인했다. 원인은 아직 미확인이다. 세 X64는 이후online으로 현재 실행을 수행하며 서비스·SSH·취소·재시작은 하지 않았다. 기기 설치나 #598 재개도 하지 않았다.
+
+## GCC helper가 SDK 입력에서 빠진 최종 봉인 실패 — #667
+
+source `1273137267dc90ec3b2cbabbcd195c1df02940e8`의 genuine AGNOS
+[41373575291/job125048961560](https://github.com/bin9208/openpilot-rust/actions/runs/41373575291/job/125048961560)은
+전체99개/13그룹의 컴파일 결과를 남긴 뒤 실제 native compiler/linker 입력 결속에서 실패했다.
+artifact13121616306의 `prepared.json`과 원본 SDK snapshot을 대조하니
+`/usr/libexec/gcc/aarch64-linux-gnu/13/{cc1,cc1plus,collect2}`가 실제 사용 목록에는 있지만
+기존 `usr/lib/gcc` 중심 SDK profile에는 없었다. 같은 factory image와 원래 도구를 유지하고
+`usr/libexec/gcc`를 기존 snapshot 범위에 포함한다. 해시·경로·SDK/ABI 검증을 생략하지 않는다.
+
+기존 SDK 통합 검사에 helper 포함과 같은 크기 변조 거부/이전 profile 누락 회귀를 추가한다.
+작은 실제 SDK driver 단계에서 사용한 모든 compiler helper의 경로·해시를 대조해
+전체 컴파일 뒤에야 누락을 발견하지 않도록 한다. 수정 후 집중/전체 Actions 성공은 아직 대기다.
+이 실패 전 모델4개 생성·반복/docs/작은 변경과 bootstrap13개×네 경우 결과가 남았으나
+해당 과거 source의 부분 성공은 새 source 전체 검증을 대체하지 않는다.
+
+사용자의 최신 지시에 따라 #649를 먼저 마치며, 후속 #598은 기존 당근파일럿의 설치·업데이트·
+재부팅·의존성 기반 빌드·정상 시작 흐름에 기존 Rust 빌드를 연결하는 범위로 한정한다.
+별도 설치 절차·prefetch 서비스·새 dependency engine을 추가하지 않는다.

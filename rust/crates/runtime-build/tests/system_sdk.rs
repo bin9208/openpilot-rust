@@ -66,6 +66,7 @@ fn repository_profile_retains_the_verified_factory_image_and_declared_scopes() {
     for path in [
         "usr/include",
         "usr/lib/gcc",
+        "usr/libexec/gcc",
         "usr/lib/llvm-18",
         "usr/lib/aarch64-linux-gnu",
     ] {
@@ -73,6 +74,35 @@ fn repository_profile_retains_the_verified_factory_image_and_declared_scopes() {
     }
     assert_eq!(profile.roots.get(Path::new("usr/lib")), Some(&false));
     assert!(!profile.roots.contains_key(Path::new("usr/lib/python3")));
+}
+
+#[test]
+fn repository_profile_binds_gcc_helpers_and_rejects_same_size_changes() {
+    let image = image();
+    let root = image.path();
+    let profile =
+        Plan::read(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../native-system-sdk.json"))
+            .unwrap();
+    let directory = root.join("usr/libexec/gcc/aarch64-linux-gnu/13");
+    fs::create_dir_all(&directory).unwrap();
+    for name in ["cc1", "cc1plus", "collect2"] {
+        fs::write(directory.join(name), b"helper01").unwrap();
+    }
+    let snapshot = Snapshot::capture(root, &profile).unwrap();
+    for name in ["cc1", "cc1plus", "collect2"] {
+        let path = PathBuf::from("usr/libexec/gcc/aarch64-linux-gnu/13").join(name);
+        assert!(matches!(snapshot.entries[&path], Entry::File { .. }));
+        fs::write(root.join(&path), b"helper02").unwrap();
+        assert!(snapshot.verify(root).is_err());
+        fs::write(root.join(&path), b"helper01").unwrap();
+        snapshot.verify(root).unwrap();
+    }
+    let mut omitted = profile;
+    omitted.roots.remove(Path::new("usr/libexec/gcc"));
+    let reduced = Snapshot::capture(root, &omitted).unwrap();
+    assert!(!reduced
+        .entries
+        .contains_key(Path::new("usr/libexec/gcc/aarch64-linux-gnu/13/cc1")));
 }
 
 #[test]
