@@ -314,3 +314,8 @@ wire member/CRC에서 command_approved28 → 실제 APPROVED 출력30 → comman
 8초 deadline·승인/거부/만료/marker/파일/close와 모든 시나리오는 유지한다. 기존 EOF
 회귀 실행에 선행/후행·분할 출력, marker 부재 timeout, peer 격리·close 거부3개 회귀를
 추가하며 새 재시도나 성공 허용은 없다. 실제 회귀·복구 전체 Actions 성공은 아직 필요하다.
+
+#670의 다운로드 이동은 원래 build tool의3GiB 사전 disk admission과600초 전체
+command deadline도 보존한다. 기존 check-disk-space를 fetch 직전에 같은 예산으로
+호출하고 curl을600초 timeout으로 감싼다. retry3/connect15/max180/32MiB와 SHA 및
+원래 build/probe는 그대로이며, archive를 받기 전에 원래 예산/전체 한도가 적용된다.
