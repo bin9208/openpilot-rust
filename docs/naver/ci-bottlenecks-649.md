@@ -327,3 +327,15 @@ command deadline도 보존한다. 기존 check-disk-space를 fetch 직전에 같
 [이슈672](https://github.com/bin9208/openpilot-rust/issues/672) 수정은 인증된 layout에 나열된 ELF provider destination의 디렉터리만 기존 ABI 도구에 추가한다. 중앙 디렉터리 우선과 외부 system library 순서, 각 root의 독립 closure/strong symbol/version 검사와 전체 ELF roster 검증은 유지한다. 비인증 디렉터리는 검색하지 않으며 누락/redirect를 거부한다. ABI 오류에도 기존 bounded child status/stdout/stderr 진단을 재사용한다. 같은 원래 provider ELF 검사를 완전한 compile 전에 실행해 input 의존성 오류를5시간 뒤에 반복 발견하지 않도록 한다. 기존 전체 generation/seal/ABI/reuse/docs/small/final-production은 그대로 실행한다.
 
 로컬은 Rust 서식·Python AST·diff만 확인했다. 새 기능 검증은 기존 집중 Actions와 최신 source 전체 Actions 결과로 확인하며, 진행 중96c9 전체Rust41497469920/AGNOS41498014004는 취소하지 않는다.649/598/기기 수용은 아직 완료가 아니다.
+
+### #673: local model admission과 무관한 ancestor directory 변경 분리
+
+96c9 [Rust41497469920/workspace125456069425](https://github.com/bin9208/openpilot-rust/actions/runs/41497469920/job/125456069425)의 실제 원본 USB GPU status 비교는192개 legacy 정책과24개 native controls 중23개를 통과했지만 유효한 previous fallback에서 원본compiled=true/native=false를 기록했다. 소형artifact13169836171 전체ZIPdigest와 status-parity.json을 대조했고5초한도 process는exit0이었다. 출력불일치를 그대로 실패로 보존한다.
+
+[이슈673](https://github.com/bin9208/openpilot-rust/issues/673)의 조사 대상은 admission snapshot이다. 모델과 package 경로 이외에 /tmp와/까지 모든 ancestor의 크기/mtime/ctime을 비교해 다른job의 sibling 생성도 package 변경으로 처리할 수 있었다. 기존 실행은 내부admission오류를 상태false로 변환했으므로 원문만으로 특정 sibling PID를 추정하지 않는다. 실제filesystem 음성/양성 회귀와 최신전체192+24비교로 원인을 검증한다.
+
+모델파일/chunk/manifest/current pointer/firmware/kernel과 모델 directory·package 내부 directory의 전체stamp 및 기존hash검사는 유지한다. 그 바깥 ancestor는 device/inode/mode/owner와 symlink·교체 거부를 유지하며 무관한 entry 변경 시각/크기만 package 내용과 구분한다. 이전모델 선택·거부·무결성/연산/정밀도·재시도/시간한도는 바꾸지 않는다. 결정적인 ancestor 변경 음성대조, 수정 양성 및 rejection marker/unlisted member/kernel/pointer 변경·ancestor redirection 음성을 기존집중job에서 확인한다.
+
+672 후보bea8780390a6ed8c40c6246c1c33671353450ba4의 기존집중41502107535는 actualattempt1 세job 모두 성공했다. artifact13169546336 전체ZIP SHA256 `9bfbd3d75e06862df5d92b9e23b03770c4e51fff96e8b934daff80ad80b24af5`, generation6/원래SDK9·ELF·seal10·provider17·ONNX22/실제544initializer·metadata 및recovery를 대조했다.673수정도 실제집중/전체Actions검증 후 최종PRsource로 반영하며 아직649완료가 아니다.
+
+673의 기존192+24 status 비교도 같은 focused component job에서 원래script/기한/firmware pin 그대로 실행하고 작은 JSON을 기존 artifact에 남긴다. 긴 전체workspace를 기다리기 전에 실제previous fallback을 확인하며 원래전체workspace의 같은 비교도 유지한다.

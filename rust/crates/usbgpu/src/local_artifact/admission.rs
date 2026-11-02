@@ -22,6 +22,7 @@ struct Stamp {
     modified: [i64; 2],
     changed: [i64; 2],
     mode: u32,
+    owner: [u32; 2],
 }
 fn stamp(path: &Path) -> Result<Stamp, Error> {
     let value = path.symlink_metadata()?;
@@ -35,17 +36,27 @@ fn stamp(path: &Path) -> Result<Stamp, Error> {
         modified: [value.mtime(), value.mtime_nsec()],
         changed: [value.ctime(), value.ctime_nsec()],
         mode: value.mode(),
+        owner: [value.uid(), value.gid()],
     })
 }
 struct Verified {
     identity: Identity,
     files: Vec<(PathBuf, Stamp)>,
+    ancestors: Vec<(PathBuf, Stamp)>,
 }
 impl Verified {
     fn unchanged(&self) -> bool {
         self.files
             .iter()
             .all(|(path, previous)| stamp(path).is_ok_and(|current| current == *previous))
+            && self.ancestors.iter().all(|(path, previous)| {
+                stamp(path).is_ok_and(|current| {
+                    current.device == previous.device
+                        && current.inode == previous.inode
+                        && current.mode == previous.mode
+                        && current.owner == previous.owner
+                })
+            })
     }
     fn capture(identity: Identity, package: &Package) -> Result<Self, Error> {
         let mut paths = BTreeSet::new();
@@ -80,12 +91,31 @@ impl Verified {
             .iter()
             .flat_map(|path| path.ancestors().skip(1).map(Path::to_path_buf))
             .collect::<Vec<_>>();
-        paths.extend(parents);
+        let mut ancestors = BTreeSet::new();
+        for parent in parents {
+            if parent.starts_with(&package.root) {
+                // Package membership, including newly added unlisted files,
+                // remains part of the full content snapshot.
+                paths.insert(parent);
+            } else if !paths.contains(&parent) {
+                // Unrelated entries under /tmp, /data or / must not revoke a
+                // model. Still reject redirected/replaced ancestor directories.
+                ancestors.insert(parent);
+            }
+        }
         let files = paths
             .into_iter()
             .map(|path| stamp(&path).map(|value| (path, value)))
             .collect::<Result<Vec<_>, _>>()?;
-        Ok(Self { identity, files })
+        let ancestors = ancestors
+            .into_iter()
+            .map(|path| stamp(&path).map(|value| (path, value)))
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Self {
+            identity,
+            files,
+            ancestors,
+        })
     }
 }
 static VERIFIED: OnceLock<Mutex<Vec<Verified>>> = OnceLock::new();
@@ -127,4 +157,96 @@ pub fn ready(model: &Path, assets: &Path, selected: &str) -> Result<(), Error> {
     }
     verified.push(entry);
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{fs, fs::FileTimes, time::UNIX_EPOCH};
+
+    fn snapshot(parent: &Path) -> Verified {
+        let root = parent.join("owned");
+        let model = root.join("models/model.pkl");
+        let package_root = root.join("assets/local/model/generation");
+        fs::create_dir_all(model.parent().unwrap()).unwrap();
+        fs::create_dir_all(package_root.join("kernels")).unwrap();
+        fs::write(&model, b"model").unwrap();
+        fs::write(package_root.join("kernels/code.bin"), b"code").unwrap();
+        fs::write(package_root.join("manifest.json"), b"manifest").unwrap();
+        fs::write(
+            package_root.parent().unwrap().join("current.json"),
+            b"pointer",
+        )
+        .unwrap();
+        // The content verifier supplies Package; these tests exercise only its
+        // immutable filesystem snapshot, without a model, firmware or GPU run.
+        let package = Package {
+            root: package_root,
+            assets: root.join("assets"),
+            manifest_sha256: "0".repeat(64),
+            manifest: serde_json::from_value(serde_json::json!({
+                "version":1,"format":"run-policy","model_sha256":"0".repeat(64),
+                "pickle_sha256":"0".repeat(64),"pickle_bytes":5,"filename":"model.pkl",
+                "checkpoint":"snapshot-only","scalar_inputs":[],"output_count":0,
+                "output_slices":{},"cameras":[],
+                "files":[{"path":"kernels/code.bin","bytes":4,"sha256":"0".repeat(64)}]
+            }))
+            .unwrap(),
+        };
+        Verified::capture(
+            Identity {
+                model,
+                assets: package.assets.clone(),
+                selected: "0".repeat(64),
+            },
+            &package,
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn unrelated_ancestor_entries_do_not_revoke_a_verified_package() {
+        let temp = tempfile::tempdir().unwrap();
+        let verified = snapshot(temp.path());
+        let old = &verified
+            .ancestors
+            .iter()
+            .find(|(path, _)| path == temp.path())
+            .unwrap()
+            .1;
+        fs::create_dir(temp.path().join("unrelated-job")).unwrap();
+        fs::File::open(temp.path())
+            .unwrap()
+            .set_times(FileTimes::new().set_modified(UNIX_EPOCH))
+            .unwrap();
+        // The previous whole-ancestor stamp comparison rejects this input.
+        assert!(stamp(temp.path()).unwrap() != *old);
+        assert!(verified.unchanged());
+    }
+
+    #[test]
+    fn model_rejection_package_membership_and_pointer_changes_still_invalidate() {
+        for relative in [
+            "models/model.pkl.native_rejected",
+            "assets/local/model/generation/kernels/unlisted.bin",
+            "assets/local/model/generation/kernels/code.bin",
+            "assets/local/model/current.json",
+        ] {
+            let temp = tempfile::tempdir().unwrap();
+            let verified = snapshot(temp.path());
+            assert!(verified.unchanged());
+            fs::write(temp.path().join("owned").join(relative), b"changed input").unwrap();
+            assert!(!verified.unchanged(), "{relative}");
+        }
+    }
+
+    #[test]
+    fn ancestor_redirection_still_invalidates_identical_owned_files() {
+        let temp = tempfile::tempdir().unwrap();
+        let verified = snapshot(temp.path());
+        fs::rename(temp.path().join("owned"), temp.path().join("original")).unwrap();
+        std::os::unix::fs::symlink(temp.path().join("original"), temp.path().join("owned"))
+            .unwrap();
+        assert!(!verified.unchanged());
+    }
 }

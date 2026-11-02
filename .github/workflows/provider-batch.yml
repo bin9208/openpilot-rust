@@ -176,6 +176,8 @@ jobs:
           set -o pipefail
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --lib file_lock::tests:: -- --nocapture
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --lib generation::tests:: -- --nocapture
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-usbgpu --lib local_artifact::admission::tests:: -- --nocapture
+          cargo +1.94.0 clippy --manifest-path rust/Cargo.toml --locked -p openpilot-usbgpu --all-targets -- -D warnings
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --test system_sdk -- --nocapture
           cargo +1.94.0 clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --all-targets -- -D warnings
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_provider:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/provider-tests.log"
@@ -224,6 +226,11 @@ jobs:
           mode: save
           name: native-model-assets
           key: native-model-assets-${{ hashFiles('openpilot/selfdrive/modeld/models/*.onnx') }}-v1
+      - name: Require the original USB GPU status and admission controls
+        run: |
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-usbgpu --example model_status
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/opendbc_repo:$GITHUB_WORKSPACE/rust/tools" python3 rust/tools/check_usbgpu_status.py --binary "$native_target/debug/examples/model_status" --evidence "$CI_JOB_TEMP/usbgpu-status-parity.json"
       - name: Preserve batch validation evidence
         if: always()
         uses: actions/upload-artifact@v6
@@ -236,6 +243,7 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/model-initializer-mismatch.json
             ${{ env.CI_JOB_TEMP }}/model-initializer-preflight.log
             ${{ env.CI_JOB_TEMP }}/native-model-assets-*.json
+            ${{ env.CI_JOB_TEMP }}/usbgpu-status-parity.json
           if-no-files-found: warn
       - uses: ./.github/actions/job-temp
         if: always()
