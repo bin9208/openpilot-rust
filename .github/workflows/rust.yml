@@ -3544,7 +3544,9 @@ jobs:
         run: |
           python -m pip install cargo-zigbuild==0.23.4 ziglang==0.16.0 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0
           rustup target add --toolchain 1.94.0 aarch64-unknown-linux-musl
-          cargo run --locked -p openpilot-dev-tools --bin build-loggerd-ffmpeg -- --root "$RUNNER_TEMP/logger-ffmpeg-musl" --cc 'python-zig cc -target aarch64-linux-musl' --ar 'python-zig ar' --ranlib 'python-zig ranlib'
+          curl --fail --location --retry 3 --connect-timeout 15 --max-time 180 --max-filesize 33554432 https://sources.buildroot.net/ffmpeg/ffmpeg-6.1.1.tar.xz --output "$RUNNER_TEMP/ffmpeg-6.1.1.tar.xz"
+          printf '%s  %s\n' 8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968 "$RUNNER_TEMP/ffmpeg-6.1.1.tar.xz" | sha256sum --check
+          cargo run --locked -p openpilot-dev-tools --bin build-loggerd-ffmpeg -- --root "$RUNNER_TEMP/logger-ffmpeg-musl" --archive "$RUNNER_TEMP/ffmpeg-6.1.1.tar.xz" --cc 'python-zig cc -target aarch64-linux-musl' --ar 'python-zig ar' --ranlib 'python-zig ranlib'
           FFMPEG_DIR="$RUNNER_TEMP/logger-ffmpeg-musl/install" cargo zigbuild --workspace --release --locked --features openpilot-loggerd/static-ffmpeg --target aarch64-unknown-linux-musl
           python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_aarch64.py \

@@ -38,7 +38,7 @@ HOSTED_CLEANUP = 'sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet'
 NATIVE_ARM_SCRIPTS = {
     'Reserve capacity for generic ARM build dependencies': '46080f5ced2551f300410fa298ee641be5ceeecbd575fbd435eff28998f3369d',
     'Stage native GNU aarch64 startup renderer and portable loader headers': 'b58cbf4a49bf163229feaffaa33307f20e360a29143e71503235b25a0512fd54',
-    'Build and inspect the static C3X probe candidate': 'e8ea9b91195f5dc37280f9c9eeb33ee198a241d330559dc378c038b5093ec94d',
+    'Build and inspect the static C3X probe candidate': '96bb4c7c047f3e46bee9654a28b4d2cf65a1a1366d1f19b221c4d22af82e32bf',
 }
 # These workflows postdate BASE. Freeze their exact reviewed host preparation
 # against H27547 separately; the inherited fixture and its comparisons stay intact.

@@ -284,3 +284,20 @@ webjoystick binding은 비활성 항목에도 `rust/bin/openssl`을 요구한다
 AArch64 ELF/ABI 감사와 모든 catalog 검사를 유지한다. 실제 SDK 단계에서 tool pin과
 원래 `openssl version`을 먼저 확인한다. 집중·최신 전체 Actions 성공 전에는
 manager 봉인이나 #649 완료를 주장하지 않는다.
+
+## 필수 ARM의 원본 FFmpeg SSL timeout — #670
+
+0753 [Rust41450149373/job125293063246](https://github.com/bin9208/openpilot-rust/actions/runs/41450149373/job/125293063246)은
+실제47개 중46개 성공/ARM1개 실패다. static C3X 준비의 원래 FFmpeg 다운로드가
+exit28로 끝났으며 컴파일 오류가 아니다. 원본 job log와 읽기 전용 추가 확인을
+[#670](https://github.com/bin9208/openpilot-rust/issues/670)에 기록했다. 원래 두 host는
+SSL handshake timeout이 계속됐고 Buildroot의 동일6.1.1 archive는10458600bytes,
+기존 SHA256 `8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968`와 일치했다.
+
+기존 ARM step이 이 동일 archive를 받고 해시를 검사한 뒤 이미 있는 `--archive`를
+사용하도록 좁힌다. curl의 기존 retry3/connect15/max180/32MiB, FFmpeg pin/설정,
+원래 static workspace compile/ARM probe/산출물과 deadline은 유지한다. runtime/provider
+코드나 설치 흐름을 바꾸거나 새 cache/서비스/workflow를 추가하지 않는다. 검토한
+script hash만 정확히 갱신하고 원래 전체 명령 비교를 유지한다. 기존 FFmpeg archive
+변조 거부 테스트도 기존 집중 component 작업에 포함한다. 실제 Actions의 집중·전체
+ARM 성공은 아직 필요하며, 진행 중0753 genuine은 취소하지 않는다.
