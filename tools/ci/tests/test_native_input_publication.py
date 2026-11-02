@@ -203,8 +203,9 @@ class Releases:
 class PublicationTests(unittest.TestCase):
   def test_existing_producer_retains_only_consumed_inputs_for_git_and_keeps_large_chunks(self):
     with tempfile.TemporaryDirectory() as temporary:
-      root = Path(temporary)/'job'
+      root = Path('/tmp')/('openpilot-ci.'+hashlib.sha256(temporary.encode()).hexdigest())
       root.mkdir()
+      self.addCleanup(shutil.rmtree, root)
       fixture = Fixture(root)
       receipts = fixture.installed_producer(large=True)
       staged = payload.stage(root, SOURCE, 42, 1)
