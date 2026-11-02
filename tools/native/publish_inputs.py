@@ -570,6 +570,70 @@ def stage(bundle, files, root):
   return result
 
 
+def installed_source(bundle, root, source, index, rows, raw_index):
+  """Materialize the producer's existing-flow Git inputs, without publishing them."""
+  if 'installed-source.json' not in bundle.members:
+    return None  # Older completed producers supply release inputs only.
+  report = bundle.json('installed-source.json', 4*1024**2)
+  if (set(report) != {'schema', 'source_commit', 'index_sha256', 'files',
+                     'consumed_asset_categories', 'project_runtime_binaries_included'}
+      or report['schema'] != 1 or report['source_commit'] != source
+      or report['index_sha256'] != hashlib.sha256(raw_index).hexdigest()
+      or report['project_runtime_binaries_included'] is not False
+      or not isinstance(report['files'], dict) or not 1 <= len(report['files']) <= 20000):
+    raise ValueError('installed Git inputs differ from the verified producer')
+  expected = {'rust/native-bootstrap-inputs.json': dict(bytes=len(raw_index), sha256=report['index_sha256'])}
+  for pin in [index['seed'], index['system_sdk'], *index['providers'].values()]:
+    expected['third_party/native_inputs/metadata/'+pin['sha256']+'.json'] = {k: pin[k] for k in ('bytes', 'sha256')}
+  seed_rows = [row for row in rows if row['sha256'] == index['seed']['sha256']]
+  if len(seed_rows) != 1:
+    raise ValueError('installed Git inputs lack their verified seed descriptor')
+  seed = decode(Path(seed_rows[0]['path']).read_bytes())
+  for pin in seed['assets'].values():
+    name = Path(urlsplit(pin['url']).path).name
+    expected[f'third_party/native_inputs/seeds/{index["seed"]["sha256"]}/{name}'] = {k: pin[k] for k in ('bytes', 'sha256')}
+  categories = set()
+  for name, pin in report['files'].items():
+    if (set(pin) != {'bytes', 'sha256'} or not positive(pin['bytes']) or not checksum(pin['sha256'])
+        or pin['bytes'] > 100*1024**2):
+      raise ValueError('installed Git member exceeds its byte/hash bounds')
+    if name in expected:
+      if pin != expected[name]:
+        raise ValueError('installed metadata or seed differs from its independent pin')
+    else:
+      match = re.fullmatch(r'third_party/native_inputs/assets/([a-z][a-z0-9-]*-assets)/[0-9a-f]{64}(?:\.chunkmanifest|\.chunk[0-9]+of[0-9]+)?', name)
+      if match is None:
+        raise ValueError('installed Git input contains a foreign source or runtime file')
+      categories.add(match[1])
+  if (not expected.keys() <= report['files'].keys()
+      or sorted(categories) != report['consumed_asset_categories'] or not categories):
+    raise ValueError('installed Git input roster is incomplete')
+  logical = sum(pin['bytes'] for pin in report['files'].values())
+  if logical > 4*1024**3:
+    raise ValueError('installed Git inputs exceed this operation envelope')
+  room(root, logical)
+  target = root/'installed-source'
+  target.mkdir()
+  for name, pin in report['files'].items():
+    member = bundle.member('installed-source/'+name)
+    if member.file_size != pin['bytes']:
+      raise ValueError('installed Git input member changed size')
+    destination = target/name
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    count, digest = 0, hashlib.sha256()
+    with bundle.zip.open(member) as incoming, destination.open('xb') as output:
+      while chunk := incoming.read(1024**2):
+        count += len(chunk)
+        if count > pin['bytes']:
+          raise ValueError('installed Git input exceeds its declared bytes')
+        digest.update(chunk)
+        output.write(chunk)
+    if count != pin['bytes'] or digest.hexdigest() != pin['sha256']:
+      raise ValueError('installed Git input failed its pinned digest')
+  return dict(source_commit=source, files=len(report['files']), logical_bytes=logical,
+              consumed_asset_categories=sorted(categories), committed=False, device_contacted=False)
+
+
 def remote_asset(client, release, row, allow_starter=False):
   matches = [a for a in release['assets'] if a['name'] == row['name']]
   if len(matches) > 1:
@@ -766,11 +830,12 @@ def main():
       raise ValueError('native source commit/tree identity differs')
     bundle = Bundle(archive)
     try:
-      _, files = validate_bundle(bundle, args.source_commit, producer, args.index_sha256, profiles, sdk_plan, commit['tree']['sha'])
+      index, files = validate_bundle(bundle, args.source_commit, producer, args.index_sha256, profiles, sdk_plan, commit['tree']['sha'])
       staged = root/'verified-assets'
       staged.mkdir()
       rows = stage(bundle, files, staged)
       raw_index = bundle.zip.read(PREFIX+'native-bootstrap-inputs.candidate.json')
+      report['installed_git_inputs'] = installed_source(bundle, root, args.source_commit, index, rows, raw_index)
     finally:
       bundle.close()
     report.update(artifact_id=selected['id'], artifact_digest=selected['digest'], assets_verified=True,

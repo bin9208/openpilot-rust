@@ -65,6 +65,7 @@ jobs:
           path: |
             ${{ env.CI_JOB_TEMP }}/native-input-publication/report.json
             ${{ env.CI_JOB_TEMP }}/native-input-publication/native-bootstrap-inputs*.json
+            ${{ env.CI_JOB_TEMP }}/native-input-publication/installed-source/
           if-no-files-found: warn
       - uses: ./.github/actions/job-temp
         if: always()

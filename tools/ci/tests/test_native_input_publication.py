@@ -128,6 +128,46 @@ class Fixture:
     finally:
       bundle.close()
 
+  def installed_producer(self, large=False):
+    for row in self.manifest['files']:
+      row['path'] = str(self.root.joinpath(*Path(row['path']).parts[3:]))
+    self.write()
+    for name, data in self.entries.items():
+      path = self.root/name
+      path.parent.mkdir(parents=True, exist_ok=True)
+      path.write_bytes(data)
+    work, guest = self.root/'native-agnos', Path('/owned-guest')
+    (work/'native-bootstrap-context.json').write_bytes(encode(dict(source_commit=SOURCE, guest_work=str(guest))))
+    aliases = {
+        'rust-assets': 'native-rust-assets', 'cargo-assets': 'native-cargo-assets',
+        'python-assets': 'native-python-assets', 'capnp-assets': 'native-capnp-assets',
+        'raylib-sdk-assets': 'native-raylib-assets', 'ffmpeg-headers-assets': 'native-ffmpeg-source',
+        'opencv-headers-assets': 'native-opencv-source', 'model-wheel-assets': 'native-model-wheel-assets',
+        'model-assets': 'native-model-assets', 'source-lfs-assets': 'native-source-lfs-assets',
+        'usbgpu-model-assets': 'native-usbgpu-model-assets',
+        'codecs-assets': 'native-agnos/bootstrap-current-cache/codecs-assets',
+        'component-assets': 'native-agnos/bootstrap-current-cache/component-assets',
+    }
+    receipts = []
+    for name, cache in aliases.items():
+      data = b'Owned actual consumed '+name.encode()
+      if large and name == 'model-assets':
+        data = b'x'*(45*1024**2+1)
+      checksum = hashlib.sha256(data).hexdigest()
+      path = self.root/cache/'sha256'/checksum/'blob'
+      path.parent.mkdir(parents=True)
+      path.write_bytes(data)
+      path.chmod(0o444)
+      receipts.append(dict(path=str(guest/'bootstrap-current-cache'/name/'sha256'/checksum/'blob'),
+          bytes=len(data), sha256=checksum, transferred_bytes=0, stored_bytes=0))
+    initial = dict(runtime_inputs=dict(source=dict(commit=SOURCE),
+        native_configuration=str(guest/'owned-attempt/native-config.json')), preparations=dict(assets=receipts))
+    (self.root/(publication.PREFIX+'initial.json')).write_bytes(encode(initial))
+    (work/'owned-attempt').mkdir()
+    (work/'owned-attempt/operations.json').write_bytes(encode({}))
+    (self.root/'native-model-wheels-initial.json').write_bytes(encode({}))
+    return receipts
+
 
 class Releases:
   def __init__(self):
@@ -161,6 +201,84 @@ class Releases:
 
 
 class PublicationTests(unittest.TestCase):
+  def test_existing_producer_retains_only_consumed_inputs_for_git_and_keeps_large_chunks(self):
+    with tempfile.TemporaryDirectory() as temporary:
+      root = Path(temporary)/'job'
+      root.mkdir()
+      fixture = Fixture(root)
+      receipts = fixture.installed_producer(large=True)
+      staged = payload.stage(root, SOURCE, 42, 1)
+      output = Path(staged['staged'])
+      result = payload.git_inputs(root, output, SOURCE)
+      self.assertEqual(len(result['consumed_asset_categories']), 13)
+      archive = root/'prepared.zip'
+      with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as zipped:
+        for path in output.rglob('*'):
+          if path.is_file():
+            zipped.write(path, path.relative_to(output).as_posix())
+      bundle = publication.Bundle(archive)
+      try:
+        index, files = publication.validate_bundle(bundle, SOURCE, fixture.run, fixture.pin,
+            fixture.profiles, fixture.sdk_plan, TREE)
+        verified = root/'verified'
+        verified.mkdir()
+        rows = publication.stage(bundle, files, verified)
+        candidate = root/'candidate'
+        candidate.mkdir()
+        report = publication.installed_source(bundle, candidate, SOURCE, index, rows, fixture.index_bytes)
+        self.assertEqual(report['consumed_asset_categories'], result['consumed_asset_categories'])
+        self.assertFalse(report['committed'])
+        installed = candidate/'installed-source'
+        self.assertEqual((installed/'rust/native-bootstrap-inputs.json').read_bytes(), fixture.index_bytes)
+        large = next(row for row in receipts if row['bytes'] > 45*1024**2)
+        raw = installed/'third_party/native_inputs/assets/model-assets'/large['sha256']
+        self.assertFalse(raw.exists())
+        self.assertEqual(Path(str(raw)+'.chunkmanifest').read_text(), '2')
+        digest = hashlib.sha256()
+        for path in sorted(raw.parent.glob(raw.name+'.chunk[0-9]*')):
+          with path.open('rb') as stream:
+            while data := stream.read(1024**2):
+              digest.update(data)
+        self.assertEqual(digest.hexdigest(), large['sha256'])
+        original = bundle.json('installed-source.json')
+        for fault in ('foreign-source', 'wrong-source', 'wrong-metadata'):
+          changed = copy.deepcopy(original)
+          if fault == 'foreign-source':
+            changed['files']['launch_openpilot.sh'] = dict(bytes=1, sha256='a'*64)
+          elif fault == 'wrong-source':
+            changed['source_commit'] = 'b'*40
+          else:
+            changed['files']['rust/native-bootstrap-inputs.json']['sha256'] = 'c'*64
+          rejected = root/('rejected-'+fault)
+          rejected.mkdir()
+          with mock.patch.object(bundle, 'json', return_value=changed), self.assertRaises(ValueError):
+            publication.installed_source(bundle, rejected, SOURCE, index, rows, fixture.index_bytes)
+          self.assertFalse((rejected/'installed-source').exists())
+      finally:
+        bundle.close()
+
+  def test_installed_input_capture_rejects_corruption_and_missing_categories_before_copy(self):
+    for fault in ('corrupt', 'missing'):
+      with self.subTest(fault=fault), tempfile.TemporaryDirectory() as temporary:
+        root = Path(temporary)/'job'
+        root.mkdir()
+        fixture = Fixture(root)
+        receipts = fixture.installed_producer()
+        output = root/'payload'
+        output.mkdir()
+        if fault == 'corrupt':
+          path = root/'native-rust-assets/sha256'/receipts[0]['sha256']/'blob'
+          path.chmod(0o644)
+          path.write_bytes(b'X'*receipts[0]['bytes'])
+        else:
+          path = root/(publication.PREFIX+'initial.json')
+          initial = json.loads(path.read_bytes())
+          initial['preparations']['assets'].pop()
+          path.write_bytes(encode(initial))
+        with self.assertRaises(ValueError):
+          payload.git_inputs(root, output, SOURCE)
+        self.assertFalse((output/'installed-source').exists())
+
   def test_input_only_payload_links_exact_files_without_copying_or_following_a_redirect(self):
     for redirected in (False, True):
       with self.subTest(redirected=redirected), tempfile.TemporaryDirectory() as temp:

@@ -712,3 +712,12 @@ attempt1의 component/recovery/execution 세 job이 모두 성공했다. 실제 
 현재 우선 실행은 #649의14069 source 전체 검증이며 그 결과와 이 후속 source를 섞지 않는다.
 사용자는 자동화 없이 직접 #598을 재개한다. 이 준비 브랜치나 CI 성공만으로 #598을
 완료 처리하거나 기존 채팅을 자동으로 재개하지 않는다.
+
+기존 producer의 입력 보존 단계는 실제 production 준비 영수증에 나온 원본 cache blob만
+`installed-source` 출력에 담도록 연결한다. 별도 입력 관리자를 만들거나 전체 runtime
+원본 archive를 덤프하지 않는다. metadata와 고정 seed는 기존 발행 manifest의 정확한
+바이트를 사용하고, 큰 raw 입력만 기존 file_chunker 형식으로 나눈다. 기존 수동 입력 발행은
+source/artifact/모든 gate를 확인한 뒤 이 Git 입력 파일도 검증해 artifact로 제공하며,
+release 공개·Git commit·기기 접속을 자동 수행하지 않는다. 구 producer에 이 출력이 없으면
+설치 입력 준비 성공으로 표시하지 않는다. 이 연결과 실제 처음부터의 offline source-entry
+전체 검증은 새 Actions 결과 확인 전 성공으로 간주하지 않는다.
