@@ -163,7 +163,7 @@ def stage(job, source, run_id, attempt):
 
 
 def main():
-  runpy.run_path(str(Path(__file__).with_name('runner_policy.py')))['require_environment'](self_hosted_only=True)
+  runpy.run_path(str(Path(__file__).with_name('runner_policy.py')))['require_github_native_arm']()
   if os.environ.get('GITHUB_REPOSITORY') != 'bin9208/openpilot-rust':
     raise ValueError('native input payload staging requires the registered Actions context')
   job = Path(os.environ['CI_JOB_TEMP'])
