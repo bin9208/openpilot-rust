@@ -676,3 +676,23 @@ attempt를 복제 표시하므로 최신 숫자만 바꾸지 않는다. 원래 a
 원문 commit/digest 검증 완화는 하지 않으며, 실제 job이 다시 실행됐으면 오래된 receipt를
 거부하는 회귀를 유지한다. 이 정정도 전체 성공 검사를 불필요하게 재실행하지 않기 위한
 기존 #598 발행 경로의 수정이다. 입력 공개 발행·Git pin 완료를 뜻하지 않는다.
+
+## 기존 설치 흐름에 로컬 입력을 연결하는 준비 — 2026-11-02
+
+사용자는 기존 당근파일럿처럼 브랜치를 받은 뒤 Wi-Fi 없이 필요한 부분을 빌드하고
+시작하는 흐름을 유지하라고 정정했다. 새 installer/prefetch 서비스나 dependency engine은
+추가하지 않는다. 별도 작업 트리에서 기존 launcher가 커밋된 native 입력 index를 감지하면
+이미 있는 source entry로 들어가도록 연결했다. 처음 필요한 기기 설정은 커밋된
+`rust/native-machine.json`에서 기존 지속 경로로 준비하며 설치된 설정은 덮어쓰지 않는다.
+
+입력은 기존 offline wheel과 같은 원칙으로 `third_party/native_inputs`에 함께 받아야 한다.
+`metadata`는 기존 source-entry offline descriptor 형식, `seeds/<descriptor SHA>`는
+기존 bootstrap offline 파일명, `assets/<기존 cache명>/<asset SHA>`는 기존 content cache의
+입력 바이트다. 큰 파일은 기존 `openpilot/common/file_chunker.py` 형식을 그대로 사용한다.
+로컬 입력은 기존 캐시에 바이트·SHA 확인과 원자적 게시를 거쳐 넣으며, 이미 검증된
+입력은 다시 복사하지 않는다. Cargo·SDK·ABI·세대 전환 및 cache 경로는 변경하지 않는다.
+
+현재는 consumer 코드 준비와 구문 확인만 마쳤다. 후보용 기기 policy와 완전한 Git 입력 묶음,
+기존 Actions에서의 기능 회귀, 실제 normal entry의 최초/반복/작은 변경 오프라인 빌드 및
+기존 수동 공개 경계 검증이 남아 있다. 코드 연결만으로 설치 가능한 후보라고 표시하지 않는다.
+현재 우선 실행은 #649의14069 source 전체 검증이며 그 결과와 이 후속 source를 섞지 않는다.

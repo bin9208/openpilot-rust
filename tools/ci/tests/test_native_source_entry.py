@@ -90,6 +90,83 @@ class Fixture:
 
 
 class SourceEntryTests(unittest.TestCase):
+  def test_installed_git_inputs_reuse_assets_and_only_copy_new_content(self):
+    with tempfile.TemporaryDirectory() as temp:
+      f = Fixture(Path(temp))
+      assets = f.source/entry.INSTALLED_INPUTS/'assets/rust-assets'
+      assets.mkdir(parents=True)
+      data = b'owned installed compiler input'
+      checksum = hashlib.sha256(data).hexdigest()
+      (assets/checksum).write_bytes(data)
+      f.commit()
+      with mock.patch.object(seed, 'fetch', side_effect=AssertionError('installed input used network')):
+        self.assertEqual(entry.import_installed_assets(f.machine, f.source, lambda: None), len(data))
+        cached = Path(f.machine['cache'])/'rust-assets/sha256'/checksum/'blob'
+        first = cached.stat()
+        self.assertEqual(cached.read_bytes(), data)
+        self.assertEqual(first.st_mode & 0o777, 0o444)
+        self.assertEqual(entry.import_installed_assets(f.machine, f.source, lambda: None), 0)
+        self.assertEqual((cached.stat().st_ino, cached.stat().st_mtime_ns), (first.st_ino, first.st_mtime_ns))
+        changed = b'owned changed provider input'
+        other = hashlib.sha256(changed).hexdigest()
+        (assets/other).write_bytes(changed)
+        f.commit()
+        self.assertEqual(entry.import_installed_assets(f.machine, f.source, lambda: None), len(changed))
+        self.assertEqual(cached.stat().st_ino, first.st_ino)
+        cached.chmod(0o644)
+        cached.write_bytes(b'corrupt cache retained')
+        with self.assertRaisesRegex(ValueError, 'corrupt'):
+          entry.import_installed_assets(f.machine, f.source, lambda: None)
+        self.assertEqual(cached.read_bytes(), b'corrupt cache retained')
+
+  def test_installed_inputs_keep_existing_chunks_and_reuse_previous_verified_cache(self):
+    with tempfile.TemporaryDirectory() as temp:
+      f = Fixture(Path(temp))
+      assets = f.source/entry.INSTALLED_INPUTS/'assets/rust-assets'
+      assets.mkdir(parents=True)
+      data = b'first chunksecond chunk'
+      checksum = hashlib.sha256(data).hexdigest()
+      (assets/(checksum+'.chunkmanifest')).write_text('2')
+      (assets/(checksum+'.chunk01of02')).write_bytes(b'first chunk')
+      (assets/(checksum+'.chunk02of02')).write_bytes(b'second chunk')
+      f.commit()
+      self.assertEqual(entry.import_installed_assets(f.machine, f.source, lambda: None), len(data))
+      previous_data = b'previous immutable Rust input'
+      previous_sha = hashlib.sha256(previous_data).hexdigest()
+      previous = Path(f.machine['cache'])/'rust-assets/sha256'/previous_sha/'blob'
+      previous.parent.mkdir(parents=True, exist_ok=True)
+      previous.write_bytes(previous_data)
+      previous.chmod(0o444)
+      (assets/previous_sha).write_bytes(previous_data)
+      f.commit()
+      self.assertEqual(entry.import_installed_assets(f.machine, f.source, lambda: None), 0)
+      current = Path(f.machine['cache'])/'rust-assets/sha256'/previous_sha/'blob'
+      self.assertEqual(current.stat().st_ino, previous.stat().st_ino)
+      self.assertEqual(previous.read_bytes(), previous_data)
+      broken = hashlib.sha256(b'correct expected input').hexdigest()
+      (assets/broken).write_bytes(b'wrong content')
+      f.commit()
+      with self.assertRaisesRegex(ValueError, 'content identity'):
+        entry.import_installed_assets(f.machine, f.source, lambda: None)
+      self.assertFalse((Path(f.machine['cache'])/'rust-assets/sha256'/broken/'blob').exists())
+
+  def test_existing_installer_provisions_only_missing_committed_machine_policy(self):
+    with tempfile.TemporaryDirectory() as temp:
+      f = Fixture(Path(temp))
+      path = f.root/'machine.json'
+      f.put('rust/native-machine.json', f.machine)
+      f.commit()
+      with mock.patch.object(entry, 'DEFAULT_MACHINE', path):
+        machine, pin = entry.installed_machine_configuration(f.source, path)
+        self.assertEqual(machine, f.machine)
+        first = path.stat()
+        (f.source/'README').write_text('uncommitted updater checkout')
+        self.assertEqual(entry.installed_machine_configuration(f.source, path), (machine, pin))
+        self.assertEqual((path.stat().st_ino, path.stat().st_mtime_ns), (first.st_ino, first.st_mtime_ns))
+        path.chmod(0o644)
+        path.write_bytes(seed.json_bytes(dict(retained='existing policy')))
+        self.assertEqual(entry.installed_machine_configuration(f.source, path)[0], dict(retained='existing policy'))
+
   def test_machine_configuration_cannot_redirect_or_change_during_the_request(self):
     with tempfile.TemporaryDirectory() as temp:
       root = Path(temp)

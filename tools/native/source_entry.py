@@ -22,6 +22,7 @@ import shutil
 import stat
 import subprocess
 import tempfile
+import time
 from urllib.parse import urlsplit
 
 _BYTECODE = None
@@ -34,6 +35,8 @@ _SPEC.loader.exec_module(runtime)
 seed = runtime.seed
 
 INDEX = 'rust/native-bootstrap-inputs.json'
+DEFAULT_MACHINE = Path('/data/openpilot-native/machine.json')
+INSTALLED_INPUTS = Path('third_party/native_inputs')
 ROLES = ('ffmpeg', 'raylib', 'opencv', 'numerics', 'geos', 'brotli', 'acados', 'sdl',
          'turbojpeg', 'ffmpeg-tools', 'freesans', 'panda', 'mpc', 'dbc', 'usbgpu')
 MACHINE_FIELDS = {'schema', 'stores', 'cache', 'seed_cache', 'updater_staging', 'expected_source_growth_bytes',
@@ -130,6 +133,92 @@ def git_json(source, name):
   if len(result.stdout) != size:
     raise ValueError('native Git input changed while reading its exact blob')
   return json.loads(result.stdout, object_pairs_hook=runtime.pairs), hashlib.sha256(result.stdout).hexdigest()
+
+
+def installed_machine_configuration(source, path, expected=None):
+  if os.path.lexists(path) or path != DEFAULT_MACHINE:
+    return machine_configuration(path, expected)
+  # The existing Git installer receives this policy with the branch. It is not
+  # a second setup flow, nor permission to replace an installed device policy.
+  runtime.source_identity(source)
+  machine, _ = git_json(source, 'rust/native-machine.json')
+  directory(path.parent)
+  validate_machine(machine, source)
+  with tempfile.TemporaryDirectory(prefix='.pending-machine-', dir=path.parent) as temporary:
+    pending = Path(temporary)/'machine.json'
+    seed.write(pending, seed.json_bytes(machine), 0o444)
+    try:
+      seed.publish(pending, path)
+    except FileExistsError:
+      pass
+  return machine_configuration(path, expected)
+
+
+def import_installed_assets(machine, source, observe, metadata_growth=0):
+  """Fill the existing asset caches from inputs received with the Git branch."""
+  origin = source/INSTALLED_INPUTS/'assets'
+  if not origin.is_dir() or origin.resolve(strict=True) != origin:
+    raise ValueError('installed branch is missing its local native build inputs')
+  specification = importlib.util.spec_from_file_location('native_input_chunks',
+      Path(__file__).resolve().parents[2]/'openpilot/common/file_chunker.py')
+  chunks = importlib.util.module_from_spec(specification)
+  specification.loader.exec_module(chunks)
+  admission = Metadata(machine, None, observe)
+  admission.growth = metadata_growth
+  copied = 0
+  for category in sorted(origin.iterdir()):
+    if (re.fullmatch('[a-z][a-z0-9-]*-assets', category.name) is None
+        or not category.is_dir() or category.resolve(strict=True) != category):
+      raise ValueError('installed native input is outside an existing asset cache')
+    objects = directory(directory(Path(machine['cache'])/category.name)/'sha256')
+    checksums = {path.name.split('.', 1)[0] for path in category.iterdir()}
+    if any(re.fullmatch('[0-9a-f]{64}', checksum) is None for checksum in checksums):
+      raise ValueError('installed native input has an invalid content name')
+    for checksum in sorted(checksums):
+      observe()
+      parent = directory(objects/checksum)
+      destination = parent/'blob'
+      if os.path.lexists(destination):
+        with seed.regular(destination) as stream:
+          if (stat.S_IMODE(os.fstat(stream.fileno()).st_mode) != 0o444
+              or hashlib.file_digest(stream, 'sha256').hexdigest() != checksum):
+            raise ValueError('cached native input is corrupt; previous data retained')
+        continue
+      blob = category/checksum
+      parts = chunks.get_existing_chunks(blob)
+      for part in parts:
+        with seed.regular(Path(part)):
+          pass
+      size = sum(Path(part).stat().st_size for part in parts if not str(part).endswith('.chunkmanifest'))
+      admission.admit(size+65536)
+      with tempfile.TemporaryDirectory(prefix='.pending-', dir=parent) as temporary:
+        pending = Path(temporary)/'blob'
+        digest, count = hashlib.sha256(), 0
+        checked = time.monotonic()
+        with chunks.open_file_chunked(blob) as incoming, pending.open('xb') as output:
+          while block := incoming.read(65536):
+            if time.monotonic()-checked >= 1:
+              observe()
+              checked = time.monotonic()
+            count += len(block)
+            if count > size:
+              raise ValueError('installed native input exceeded its declared local files')
+            digest.update(block)
+            output.write(block)
+          output.flush()
+          os.fsync(output.fileno())
+        if count != size or digest.hexdigest() != checksum:
+          raise ValueError('installed native input differs from its content identity')
+        observe()
+        pending.chmod(0o444)
+        try:
+          seed.publish(pending, destination)
+          copied += size
+        except FileExistsError:
+          with seed.regular(destination) as stream:
+            if hashlib.file_digest(stream, 'sha256').hexdigest() != checksum:
+              raise ValueError('concurrent native input differs from its content identity')
+  return copied
 
 
 def input_index(source):
@@ -264,16 +353,18 @@ def build_requested(args, machine, source, pin):
   generations = directory(Path(machine['stores']['generations']))
   with runtime.operation(generations) as attempt:
     # Release the resolver's lock before entering the full driver's same lock.
-    resolved = resolve(machine, source, attempt, commands, observe)
+    resolved = resolve(machine, source, attempt, commands, observe, source/INSTALLED_INPUTS/'metadata')
+    local_input_bytes = import_installed_assets(machine, source, observe,
+        sum(row['stored_bytes'] for row in resolved['receipts'].values()))
     seed.write(attempt/'resolved.json', seed.json_bytes(resolved))
   prepared, plan = seed.prepare(Path(resolved['receipts']['seed']['path']), resolved['receipts']['seed']['sha256'],
-      Path(machine['seed_cache']), download=lambda asset, path: seed.fetch(asset, path, run=commands.run))
+      Path(machine['seed_cache']), offline=source/INSTALLED_INPUTS/'seeds'/resolved['receipts']['seed']['sha256'])
   observe()
   result = runtime.build_runtime(prepared, plan, Path(resolved['configuration']), resolved['configuration_sha256'],
       source, owner, args.running_config, args.running_configuration_sha256, args.previous,
       expected_source=before, observe=observe)
   result.update(input_index_sha256=resolved['index_sha256'], metadata=resolved['receipts'],
-      machine_configuration_sha256=pin, resolver_evidence=str(attempt))
+      machine_configuration_sha256=pin, resolver_evidence=str(attempt), local_input_copied_bytes=local_input_bytes)
   seed.write(attempt/'result.json', seed.json_bytes(result))
   return result
 
@@ -321,12 +412,12 @@ def retain_startup(machine, result):
   return startup_record(machine)
 
 
-def boot_seed(machine, commands, observe):
+def boot_seed(machine, commands, observe, source):
   if 'boot_seed' not in machine:
     raise ValueError('native launch needs an independently pinned boot seed in machine settings')
-  receipt = Metadata(machine, commands, observe).asset(machine['boot_seed'])
+  receipt = Metadata(machine, commands, observe, source/INSTALLED_INPUTS/'metadata').asset(machine['boot_seed'])
   prepared, plan = seed.prepare(Path(receipt['path']), receipt['sha256'], Path(machine['seed_cache']),
-      download=lambda asset, path: seed.fetch(asset, path, run=commands.run))
+      offline=source/INSTALLED_INPUTS/'seeds'/receipt['sha256'])
   if plan.get('protocols', {}).get('generation_boot') != 1:
     raise ValueError('pinned native seed does not implement generation boot')
   observe()
@@ -343,7 +434,7 @@ def launch(args, machine, source, pin):
     seed.verify_owners(owner)
     machine_configuration(args.machine_config, pin)
   observe()
-  prepared = boot_seed(machine, commands, observe)
+  prepared = boot_seed(machine, commands, observe, source)
   record = startup_record(machine)
   if record is None:
     result = build_requested(args, machine, source, pin)
@@ -388,7 +479,7 @@ def main():
   if os.geteuid() == 0:
     raise ValueError('native source entry requires the original non-root user')
   source = args.source.resolve(strict=True)
-  machine, pin = machine_configuration(args.machine_config, args.machine_configuration_sha256)
+  machine, pin = installed_machine_configuration(source, args.machine_config, args.machine_configuration_sha256)
   if args.machine_config.is_relative_to(source):
     raise ValueError('device-local machine policy must be outside the source checkout')
   if not args.launch and args.machine_configuration_sha256 is None:

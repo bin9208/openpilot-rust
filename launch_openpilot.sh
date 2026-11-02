@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 RUST_LAUNCH_ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd) || exit 1
 if [[ -z ${OPENPILOT_NATIVE_MACHINE_CONFIG:-} &&
-      ( -e /data/openpilot-native/machine.json || -L /data/openpilot-native/machine.json ) ]]; then
+      ( -e /data/openpilot-native/machine.json || -L /data/openpilot-native/machine.json ||
+        -e "$RUST_LAUNCH_ROOT/rust/native-bootstrap-inputs.json" ) ]]; then
   export OPENPILOT_NATIVE_MACHINE_CONFIG=/data/openpilot-native/machine.json
 fi
 if [[ -n ${OPENPILOT_NATIVE_MACHINE_CONFIG:-} ]]; then
