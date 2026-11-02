@@ -161,6 +161,28 @@ class Releases:
 
 
 class PublicationTests(unittest.TestCase):
+  def test_payload_entry_matches_the_approved_native_arm_producer(self):
+    with tempfile.TemporaryDirectory(prefix='openpilot-ci.', dir='/tmp') as temporary:
+      job = Path(temporary)
+      (job/'owner').write_text('42:1:compiler')
+      env = dict(GITHUB_ACTIONS='true', RUNNER_ENVIRONMENT='github-hosted', RUNNER_OS='Linux',
+          RUNNER_ARCH='ARM64', GITHUB_REPOSITORY=publication.REPO, GITHUB_RUN_ID='42',
+          GITHUB_RUN_ATTEMPT='1', GITHUB_JOB='compiler', GITHUB_SHA=SOURCE, CI_JOB_TEMP=str(job))
+      # Stop at the real protected operation: this guard test executes no input
+      # generation, native binary, network request or publication mutation.
+      with mock.patch.dict(os.environ, env, clear=True), \
+           mock.patch.object(payload, 'stage', side_effect=RuntimeError('owned protected stage reached')) as stage:
+        with self.assertRaisesRegex(RuntimeError, 'owned protected stage reached'):
+          payload.main()
+        stage.assert_called_once_with(job, SOURCE, 42, 1)
+      for changed in ({'GITHUB_ACTIONS': 'false'}, {'RUNNER_ARCH': 'X64'}, {'RUNNER_OS': 'Windows'},
+                      {'RUNNER_ENVIRONMENT': 'self-hosted', 'RUNNER_NAME': 'bin-actions', 'RUNNER_ARCH': 'X64'}):
+        with self.subTest(changed=changed), mock.patch.dict(os.environ, {**env, **changed}, clear=True), \
+             mock.patch.object(payload, 'stage') as stage:
+          with self.assertRaisesRegex(ValueError, 'GitHub-hosted Linux ARM64'):
+            payload.main()
+          stage.assert_not_called()
+
   def test_input_only_payload_links_exact_files_without_copying_or_following_a_redirect(self):
     for redirected in (False, True):
       with self.subTest(redirected=redirected), tempfile.TemporaryDirectory() as temp:

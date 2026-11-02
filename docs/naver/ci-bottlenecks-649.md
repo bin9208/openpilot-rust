@@ -252,3 +252,16 @@ artifact13121616306의 `prepared.json`과 원본 SDK snapshot을 대조하니
 사용자의 최신 지시에 따라 #649를 먼저 마치며, 후속 #598은 기존 당근파일럿의 설치·업데이트·
 재부팅·의존성 기반 빌드·정상 시작 흐름에 기존 Rust 빌드를 연결하는 범위로 한정한다.
 별도 설치 절차·prefetch 서비스·새 dependency engine을 추가하지 않는다.
+
+## 마지막 입력 보존 단계의 runner 조건 정합 — #668
+
+source14069의 전체 Rust47개/최종 gate와 UI13/Card32·IPC19×80/소스 영수증4개는
+실제 성공과 metadata를 대조했다. Genuine AGNOS41404935182는 계속 진행 중이며
+현재 실행을 중단하거나 끝단에서 이미 실패했다고 단정하지 않는다.
+
+끝단 코드 감사로 `stage_native_input_payload.py`가 여전히 self-hosted 전용 guard를
+호출하여 현재 승인된 `ubuntu-24.04-arm` producer를 거부하는 불일치를 찾았다.
+같은 단계에 기존 `require_github_native_arm` guard를 재사용하고 실제 main 진입 회귀에
+hosted Linux ARM64 양성 및 로컬/hosted X64/Windows ARM/등록 X64 음성을 추가한다.
+별도 수동 publication job의 등록 X64 조건과 모든 원래 바이트·source·정상 종료 검사는
+변경하지 않는다. 새 source의 집중/전체 성공은 실제 Actions 결과 확인 뒤 기록한다.
