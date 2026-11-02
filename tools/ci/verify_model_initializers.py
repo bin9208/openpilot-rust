@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Read both exact source ONNX objects before expensive AGNOS validation."""
 import argparse
+import codecs
 import hashlib
 import json
 import os
+import pickle
 from pathlib import Path
 import time
 
@@ -12,7 +14,7 @@ from onnx import numpy_helper
 from tinygrad import dtypes
 from tinygrad.nn.onnx import OnnxDataType
 
-from model_export.offline_onnx import load_runner
+from model_export.offline_onnx import load_metadata, load_runner
 from native_model_generation import model_inputs
 from native_model_inputs import digest, source_identity
 
@@ -71,9 +73,22 @@ def main():
       checked.append(dict(name=name, data_type=tensor.data_type, shape=list(tensor.dims),
           bytes=len(blob), sha256=hashlib.sha256(blob).hexdigest()))
     assert checked and len(checked) == len(data) == len(loaded.initialized)
+    properties = {item.key: item.value for item in proto.metadata_props}
+    expected_metadata = dict(model_checkpoint=properties.get('model_checkpoint'),
+        output_slices=pickle.loads(codecs.decode(properties['output_slices'].encode(), 'base64')),
+        input_shapes={item.name: tuple(dim.dim_value if dim.HasField('dim_value') else 0
+            for dim in item.type.tensor_type.shape.dim) for item in proto.graph.input},
+        output_shapes={item.name: tuple(dim.dim_value if dim.HasField('dim_value') else 0
+            for dim in item.type.tensor_type.shape.dim) for item in proto.graph.output})
+    metadata = load_metadata(path, spec['sha256'])
+    assert metadata == expected_metadata, f'model metadata differs from original ONNX: {kind}'
     assert digest(path, spec['bytes']) == spec['sha256'] and path.stat().st_mode == mode
     rows[kind] = dict(model_sha256=spec['sha256'], bytes=spec['bytes'],
         loaded_initializers=len(data), independently_compared_constants=checked,
+        metadata=dict(model_checkpoint=metadata['model_checkpoint'], input_shapes=metadata['input_shapes'],
+            output_shapes=metadata['output_shapes'], output_slices={name: dict(start=value.start,
+                stop=value.stop, step=value.step) for name, value in metadata['output_slices'].items()}),
+        independently_compared_metadata=True,
         elapsed_seconds=time.monotonic()-started)
   assert set(rows) == {'driving', 'driver'} and source_identity(source) == origin
   report = dict(schema=1, source=origin, models=rows, gpu_executed=False,

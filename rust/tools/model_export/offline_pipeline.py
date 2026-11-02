@@ -14,13 +14,12 @@ from openpilot.common.transformations.model import DM_INPUT_SIZE, MEDMODEL_INPUT
 from openpilot.selfdrive.modeld.compile_dm_warp import make_warp_dm
 from openpilot.selfdrive.modeld.compile_modeld import NV12Frame, make_input_queues, make_run_policy, make_warp
 from openpilot.selfdrive.modeld.constants import ModelConstants
-from openpilot.selfdrive.modeld.get_model_metadata import make_metadata_dict
 from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
 
 from .offline_capability import static_movement_capability
 from .offline_model import InitializedBuffer, OfflineModel
 from .offline_devices import host_build
-from .offline_onnx import OfflineOnnx, load_runner
+from .offline_onnx import OfflineOnnx, load_metadata, load_runner
 from .offline_schedule import export_pipeline as export_pipeline
 from .original import Metadata
 from .schema import Bindings, ExportError
@@ -81,7 +80,7 @@ def capture_stage(name: str, function: Callable[[], tuple[Tensor, ...]]) -> tupl
 
 def driver_pipeline(loaded: OfflineOnnx, spec: OfflinePipelineSpec, nv12: NV12Frame) -> OfflinePipeline:
     with Context(DEV="CPU:LLVM"):
-        metadata = Metadata.from_original(make_metadata_dict(spec.model))
+        metadata = Metadata.from_original(load_metadata(spec.model, spec.sha256))
     frame = Tensor.empty(nv12.size, dtype=dtypes.uint8, device="QCOM")
     transform = Tensor.empty(3, 3, dtype=dtypes.float32, device="NPY")
     calib = Tensor.empty(*metadata.input_shapes["calib"], dtype=dtypes.float32, device="NPY")
@@ -96,7 +95,7 @@ def driver_pipeline(loaded: OfflineOnnx, spec: OfflinePipelineSpec, nv12: NV12Fr
 
 def driving_pipeline(loaded: OfflineOnnx, spec: OfflinePipelineSpec, nv12: NV12Frame) -> OfflinePipeline:
     with Context(DEV="CPU:LLVM"):
-        raw = make_metadata_dict(spec.model)
+        raw = load_metadata(spec.model, spec.sha256)
     frame_skip = ModelConstants.MODEL_RUN_FREQ // ModelConstants.MODEL_CONTEXT_FREQ
     with Context(DEV="CPU:LLVM"):
         original_queues, _ = make_input_queues(raw["input_shapes"], frame_skip, "CPU")

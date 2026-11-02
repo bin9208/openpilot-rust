@@ -30,6 +30,7 @@ on:
       - 'rust/tools/check_joystickd_runtime.py'
       - 'rust/tools/check_cweb_address.py'
       - 'rust/tools/model_export/offline_onnx.py'
+      - 'rust/tools/model_export/offline_pipeline.py'
       - 'rust/tools/tests/test_offline_qcom_onnx.py'
       - 'tinygrad_repo/tinygrad/nn/onnx.py'
       - 'tools/ci/verify_model_initializers.py'

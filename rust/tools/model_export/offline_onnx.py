@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import codecs
 import hashlib
+import pickle
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
@@ -8,6 +10,8 @@ from typing import Final
 from tinygrad import Context, Tensor, dtypes
 from tinygrad.device import Device
 from tinygrad.nn.onnx import OnnxDataType, OnnxPBParser, OnnxRunner, _to_python_const, required_input_python_consts
+
+from openpilot.selfdrive.modeld.get_model_metadata import MetadataOnnxPBParser, get_metadata_value_by_name, get_name_and_shape
 
 from .offline_model import InitializedBuffer, OfflineModel
 from .offline_devices import host_build
@@ -87,11 +91,37 @@ class InlineOnnxRunner(OnnxRunner):
         self._init_from_graph(InlineOnnxParser(path, load_external_data=False).parse()["graph"])
 
 
-@host_build
-def load_runner(path: Path, expected_sha256: str) -> OfflineOnnx:
+class InlineMetadataParser(MetadataOnnxPBParser, InlineOnnxParser):
+    """Retain original metadata parsing with the same inline tensor decoder."""
+
+
+def authenticated_bytes(path: Path, expected_sha256: str) -> bytes:
     payload = path.read_bytes()
     if hashlib.sha256(payload).hexdigest() != expected_sha256:
         raise ExportError("ONNX model identity differs from the pinned object")
+    return payload
+
+
+@host_build
+def load_metadata(path: Path, expected_sha256: str) -> dict:
+    payload = authenticated_bytes(path, expected_sha256)
+    with Context(DEV="CPU:LLVM", IMAGE=1, FLOAT16=1, OPENPILOT_HACKS=1):
+        model = InlineMetadataParser(Tensor(payload, device="CPU")).parse()
+    # Match make_metadata_dict's fields and decoding without opening a DISK
+    # Tensor on the immutable cache. The shared original implementation stays unchanged.
+    output_slices = get_metadata_value_by_name(model, "output_slices")
+    assert output_slices is not None, "output_slices not found in metadata"
+    return {
+        "model_checkpoint": get_metadata_value_by_name(model, "model_checkpoint"),
+        "output_slices": pickle.loads(codecs.decode(output_slices.encode(), "base64")),
+        "input_shapes": dict(get_name_and_shape(value) for value in model["graph"]["input"]),
+        "output_shapes": dict(get_name_and_shape(value) for value in model["graph"]["output"]),
+    }
+
+
+@host_build
+def load_runner(path: Path, expected_sha256: str) -> OfflineOnnx:
+    payload = authenticated_bytes(path, expected_sha256)
     with Context(DEV="CPU:LLVM", IMAGE=1, FLOAT16=1, OPENPILOT_HACKS=1):
         # The original DISK Tensor opens paths read/write. Parse the exact
         # authenticated bytes without granting writes to the immutable cache.
