@@ -955,6 +955,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-bound-plan/*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-generation-evidence/*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-*-evidence/*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-stores/generations/evidence-*/*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-stores/generations/evidence-*/*.stdout
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-stores/generations/evidence-*/*.stderr
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-input-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-dbc-*.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-dbc-prefixes/**/generation/tree.json

@@ -32,6 +32,7 @@
     "usr/bin/nm": false,
     "usr/bin/objcopy": false,
     "usr/bin/objdump": false,
+    "usr/bin/openssl": false,
     "usr/bin/pkg-config": false,
     "usr/bin/python3": false,
     "usr/bin/ranlib": false,

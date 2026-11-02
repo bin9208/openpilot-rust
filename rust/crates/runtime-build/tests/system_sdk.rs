@@ -73,7 +73,31 @@ fn repository_profile_retains_the_verified_factory_image_and_declared_scopes() {
         assert_eq!(profile.roots.get(Path::new(path)), Some(&true));
     }
     assert_eq!(profile.roots.get(Path::new("usr/lib")), Some(&false));
+    assert_eq!(
+        profile.roots.get(Path::new("usr/bin/openssl")),
+        Some(&false)
+    );
     assert!(!profile.roots.contains_key(Path::new("usr/lib/python3")));
+}
+
+#[test]
+fn repository_profile_pins_the_original_openssl_tool_bytes() {
+    let image = image();
+    let root = image.path();
+    let path = root.join("usr/bin/openssl");
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    fs::write(&path, b"owned original tool").unwrap();
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
+    let profile =
+        Plan::read(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../native-system-sdk.json"))
+            .unwrap();
+    let snapshot = Snapshot::capture(root, &profile).unwrap();
+    assert!(matches!(
+        snapshot.entries[Path::new("usr/bin/openssl")],
+        Entry::File { .. }
+    ));
+    fs::write(&path, b"owned modified tool").unwrap();
+    assert!(snapshot.verify(root).is_err());
 }
 
 #[test]

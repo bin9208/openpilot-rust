@@ -15,7 +15,7 @@ use std::{
     io::{Read, Write},
     os::unix::fs::{OpenOptionsExt, PermissionsExt},
     path::{Component, Path, PathBuf},
-    process::{Command, Stdio},
+    process::{Command, ExitStatus, Stdio},
 };
 
 const LIMIT: u64 = 4 * 1024 * 1024;
@@ -568,6 +568,55 @@ fn tool(root: &Path, name: &str, log: &Path) -> Result<Command> {
     Ok(command)
 }
 
+fn tool_error(reason: &str, status: ExitStatus, stdout: &Path) -> String {
+    let mut message = format!("{reason} ({status}); evidence: {}", stdout.display());
+    for path in [stdout.to_owned(), stdout.with_extension("stderr")] {
+        match regular_file(&path).and_then(|file| {
+            let mut bytes = Vec::new();
+            file.take(8193).read_to_end(&mut bytes)?;
+            Ok(bytes)
+        }) {
+            Ok(bytes) => {
+                let length = bytes.len().min(8192);
+                message.push_str(&format!(
+                    "\n{}{}: {}",
+                    path.display(),
+                    if bytes.len() > length {
+                        " (first 8192 bytes)"
+                    } else {
+                        ""
+                    },
+                    String::from_utf8_lossy(&bytes[..length])
+                ));
+            }
+            Err(error) => message.push_str(&format!("\n{}: {error}", path.display())),
+        }
+    }
+    message
+}
+
+fn stage_sdk_executable(
+    source: &Path,
+    destination: &Path,
+    store: &Path,
+    pins: &Pins,
+    remaining_growth_bytes: u64,
+) -> Result<objects::Imported> {
+    let source = source.canonicalize()?;
+    let mode = regular_file(&source)?.metadata()?.permissions().mode();
+    let expected = digest_file(&source)?;
+    if mode & 0o111 == 0 || mode & 0o7000 != 0 || !pins.contains(&source, &expected) {
+        return Err("runtime OS executable is not bound to the verified native SDK".into());
+    }
+    openpilot_runtime_installer::verify_native_elf(&source, true)?;
+    let imported = objects::import(store, &source, remaining_growth_bytes)?;
+    if imported.object.sha256 != expected || imported.object.mode != 0o555 {
+        return Err("runtime OS executable changed while copying".into());
+    }
+    imported.object.materialize(store, destination)?;
+    Ok(imported)
+}
+
 /// All paths are owned and have already been checked. Flush source data and Git
 /// worktree metadata before a durable descriptor can refer to this execution root.
 fn sync_source(snapshot: &Snapshot) -> Result<()> {
@@ -849,6 +898,22 @@ pub fn seal(
         openpilot_runtime_installer::verify_native_elf(&runtime.root.join(&destination), true)?;
         files.insert(destination, object.clone());
     }
+    if prepared.binaries.contains_key("openpilot-webjoystick") {
+        // The existing webjoystick binding uses the factory OpenSSL CLI. It is
+        // an original OS tool, not a missing project binary or a new provider.
+        let destination = PathBuf::from("rust/bin/openssl");
+        let imported = stage_sdk_executable(
+            Path::new("/usr/bin/openssl"),
+            &runtime.root.join(&destination),
+            &stores.objects,
+            &pins,
+            layout.remaining_object_growth_bytes,
+        )?;
+        stored_output_bytes = stored_output_bytes
+            .checked_add(imported.stored_bytes)
+            .ok_or("generation accounting overflow")?;
+        files.insert(destination, imported.object);
+    }
     for (destination, source) in &layout.files {
         if files.contains_key(destination) {
             return Err("provider cannot replace a source-built runtime binary".into());
@@ -1009,7 +1074,12 @@ pub fn seal(
     .arg(&source_input)
     .status()?;
     if !status.success() {
-        return Err("manager inventory/runtime seal failed; previous generation retained".into());
+        return Err(tool_error(
+            "manager inventory/runtime seal failed; previous generation retained",
+            status,
+            &evidence.join("seal.stdout"),
+        )
+        .into());
     }
     let manifest = verify_source_build(&runtime.root, &runtime.source.commit)?;
     for artifact in &manifest.files {
@@ -1185,6 +1255,79 @@ pub fn load(stores: &Stores, id: &str) -> Result<Sealed> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn failed_sealer_preserves_child_status_and_bounded_original_diagnostics() {
+        let temp = tempfile::tempdir().unwrap();
+        let stdout = temp.path().join("seal.stdout");
+        let stderr = stdout.with_extension("stderr");
+        let status = Command::new("/bin/sh")
+            .args([
+                "-c",
+                "printf 'owned output'; printf 'owned missing input' >&2; exit 7",
+            ])
+            .stdout(Stdio::from(File::create(&stdout).unwrap()))
+            .stderr(Stdio::from(File::create(&stderr).unwrap()))
+            .status()
+            .unwrap();
+        assert_eq!(status.code(), Some(7));
+        let failure = tool_error("owned sealer failed", status, &stdout);
+        assert!(failure.contains("exit status: 7"));
+        assert!(failure.contains("owned output") && failure.contains("owned missing input"));
+        assert!(failure.contains(stdout.to_str().unwrap()));
+        fs::write(&stderr, vec![b'x'; 20000]).unwrap();
+        let failure = tool_error("owned sealer failed", status, &stdout);
+        assert!(failure.contains("first 8192 bytes") && failure.len() < 9000);
+        assert_eq!(fs::metadata(stderr).unwrap().len(), 20000);
+    }
+
+    #[test]
+    fn original_sdk_executable_requires_bound_unchanged_native_bytes() {
+        let temp = tempfile::tempdir().unwrap();
+        let source = temp.path().join("openssl");
+        let destination = temp.path().join("runtime/openssl");
+        fs::create_dir(destination.parent().unwrap()).unwrap();
+        let mut elf = [0_u8; 65];
+        elf[..7].copy_from_slice(b"\x7fELF\x02\x01\x01");
+        elf[18..20].copy_from_slice(&183_u16.to_le_bytes());
+        elf[20..24].copy_from_slice(&1_u32.to_le_bytes());
+        elf[52..54].copy_from_slice(&64_u16.to_le_bytes());
+        fs::write(&source, elf).unwrap();
+        fs::set_permissions(&source, fs::Permissions::from_mode(0o755)).unwrap();
+        let mut pins = Pins {
+            files: BTreeMap::new(),
+            plain_trees: BTreeSet::new(),
+        };
+        let store = temp.path().join("objects");
+        assert!(stage_sdk_executable(&source, &destination, &store, &pins, 0).is_err());
+        assert!(!destination.exists());
+        pins.files
+            .insert(source.clone(), digest_file(&source).unwrap());
+        let first = stage_sdk_executable(&source, &destination, &store, &pins, 0).unwrap();
+        assert_eq!(fs::read(&destination).unwrap(), elf);
+        assert_eq!(first.object.mode, 0o555);
+        assert_eq!(first.object.sha256, pins.files[&source]);
+        let next = temp.path().join("runtime/next");
+        let second = stage_sdk_executable(&source, &next, &store, &pins, 0).unwrap();
+        assert_eq!(second.stored_bytes, 0);
+        elf[64] = 1;
+        fs::write(&source, elf).unwrap();
+        let rejected = temp.path().join("runtime/rejected");
+        assert!(stage_sdk_executable(&source, &rejected, &store, &pins, 0).is_err());
+        assert!(!rejected.exists());
+        assert_eq!(fs::read(&destination).unwrap()[64], 0);
+        pins.files
+            .insert(source.clone(), digest_file(&source).unwrap());
+        fs::set_permissions(&source, fs::Permissions::from_mode(0o644)).unwrap();
+        assert!(stage_sdk_executable(&source, &rejected, &store, &pins, 0).is_err());
+        fs::set_permissions(&source, fs::Permissions::from_mode(0o755)).unwrap();
+        elf[18..20].copy_from_slice(&62_u16.to_le_bytes());
+        fs::write(&source, elf).unwrap();
+        pins.files
+            .insert(source.clone(), digest_file(&source).unwrap());
+        assert!(stage_sdk_executable(&source, &rejected, &store, &pins, 0).is_err());
+        assert!(!rejected.exists());
+    }
 
     #[test]
     fn compatible_abi_report_must_cover_every_actual_runtime_elf() {

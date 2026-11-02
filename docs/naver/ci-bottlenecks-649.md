@@ -265,3 +265,22 @@ source14069의 전체 Rust47개/최종 gate와 UI13/Card32·IPC19×80/소스 영
 hosted Linux ARM64 양성 및 로컬/hosted X64/Windows ARM/등록 X64 음성을 추가한다.
 별도 수동 publication job의 등록 X64 조건과 모든 원래 바이트·source·정상 종료 검사는
 변경하지 않는다. 새 source의 집중/전체 성공은 실제 Actions 결과 확인 뒤 기록한다.
+
+## manager 봉인 진단과 원래 OpenSSL 입력 — #669
+
+14069의 genuine41404935182/job125144715266은 SDK GCC helper 결속과
+bootstrap13개×4/실제 모델4개 및 재사용/docs/작은 변경을 통과한 뒤,
+전체99개 준비 다음 manager inventory/runtime seal 단계에서 실패했다.
+artifact13141801488의 metadata와 commands.log tail은 이 실패를 보존하지만,
+자식 sealer의 stdout/stderr 저장 폴더가 기존 artifact 경로에 빠져 구체적인
+자식 오류는 미수집이다. 부모 오류에는 실제 종료 status와 제한된 원문 진단·경로를
+포함하고, 기존 artifact에 이 작은 evidence 파일들만 추가한다.
+
+별도로 같은 prepared99와 실제 layout에는 `openssl`이 없는데 manager의 기존
+webjoystick binding은 비활성 항목에도 `rust/bin/openssl`을 요구한다.
+이 입력 결손은 정적으로 확인했으며 미수집 자식 오류의 실제 문구라고 단정하지 않는다.
+새 provider나 암호 구현을 만들지 않고 원래 factory의 `/usr/bin/openssl`을 SDK에
+결속해 기존 content object와 generation에 바이트 그대로 보존한다. 원래 SHA/실행 권한/
+AArch64 ELF/ABI 감사와 모든 catalog 검사를 유지한다. 실제 SDK 단계에서 tool pin과
+원래 `openssl version`을 먼저 확인한다. 집중·최신 전체 Actions 성공 전에는
+manager 봉인이나 #649 완료를 주장하지 않는다.

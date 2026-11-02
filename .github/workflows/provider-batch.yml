@@ -175,11 +175,13 @@ jobs:
         run: |
           set -o pipefail
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --lib file_lock::tests:: -- --nocapture
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --lib generation::tests:: -- --nocapture
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --test system_sdk -- --nocapture
           cargo +1.94.0 clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --all-targets -- -D warnings
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_provider:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/provider-tests.log"
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-logging --test git_source_stamp
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test elf_audit
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test seal_runtime
           cargo +1.94.0 clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib -- -D warnings
           cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg
       - name: Require unchanged address ABI and sanitizer checks with operation growth

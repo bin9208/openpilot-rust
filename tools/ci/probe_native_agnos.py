@@ -412,6 +412,24 @@ def native_system_sdk_probe(guest_command, work, source_mount, rootfs, evidence,
     evidence['commands'].append(result)
     return result
 
+  openssl_code = """import hashlib,json
+from pathlib import Path
+p=Path('/usr/bin/openssl').resolve(strict=True)
+digest=hashlib.sha256()
+with p.open('rb') as stream:
+  while block:=stream.read(65536): digest.update(block)
+print(json.dumps(dict(path=str(p),sha256=digest.hexdigest(),bytes=p.stat().st_size,mode=p.stat().st_mode & 4095)))
+"""
+  execute(['/usr/bin/python3', '-B', '-c', openssl_code], 'native-original-openssl.json')
+  openssl = json.loads((work/'native-original-openssl.json').read_text())
+  entry = snapshot['entries'].get(str(Path(openssl['path']).relative_to('/')))
+  assert entry is not None and entry['kind'] == 'file'
+  assert (entry['sha256'], entry['bytes'], entry['mode']) == (openssl['sha256'], openssl['bytes'], openssl['mode'])
+  assert openssl['mode'] & 0o111 and not openssl['mode'] & 0o7000
+  execute(['/usr/bin/openssl', 'version'], 'native-original-openssl-version.txt')
+  openssl['version'] = (work/'native-original-openssl-version.txt').read_text().strip()
+  assert openssl['version'].startswith('OpenSSL ') and len(openssl['version']) < 1024
+
   reports = []
   for phase in ('initial','reused'):
     name = f'runtime-driver-system-sdk-{phase}.json'
@@ -477,6 +495,7 @@ def native_system_sdk_probe(guest_command, work, source_mount, rootfs, evidence,
       pinned_files=sum(e['kind']=='file' for e in snapshot['entries'].values()),
       initial_and_repeat_actual_native_driver=True,repeated_artifacts_fresh=True,
       actual_native_compiler_helpers_bound=True,
+      original_openssl_bound=openssl,
       same_size_header_tamper_rejected=True,previous_executables_preserved=True,
       factory_namespace_restored=True,scope='declared compiler namespaces only',
       complete_compiler_search_closure_proven=False,full_runtime_build=False,device_execution=False)
