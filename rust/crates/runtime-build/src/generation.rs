@@ -690,12 +690,12 @@ fn combine_abi_scopes(scopes: &[AbiScope], reports: Vec<Value>) -> Result<Value>
                 .as_str()
                 .ok_or("ABI root path missing")?
                 .to_owned();
-            if !roots.contains_key(&path) {
+            if let std::collections::btree_map::Entry::Vacant(entry) = roots.entry(path) {
                 let mut first = row.clone();
                 if let Some(owner) = &scope.owner {
                     first["load_owner"] = serde_json::to_value(owner)?;
                 }
-                roots.insert(path, first);
+                entry.insert(first);
             }
         }
     }
