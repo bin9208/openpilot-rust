@@ -372,3 +372,14 @@ Git fetch만 20분 걸려 제한에 도달했다. 각 일반 소스 검사에서
 `cancel-in-progress:true`가 PR 갱신마다 진행 중인 비교를 취소한 사실도 확인했으며
 최신 보존 지시에 맞춰 `queue:max`/`cancel-in-progress:false`로 바꾼다. 고정 대조는 이
 checkout/concurrency만 정확히 허용하고 나머지 원본 workflow 전체 비교를 유지한다.
+
+최신 PR `605164a5e`의 APK diagnostic job `41697621267/job126151311331`도
+검사 실행 전에 전체 Git fetch만15분 걸려 제한에 도달했다. 같은 저장 파일을 소비하지 않는
+나머지 일반 PR 작업인 APK·기존 통합 빌드/업데이트 fixture·Jetlink·문서 검사8곳에도
+동일한 sparse checkout을 적용한다. 인라인/블록형 원래 checkout 옵션을 모두 보존하고
+YAML 중복 키가 없는지 및 그 외 설정 전체의 동일성을 확인한다. 실제 factory/기기 입력은
+유지한다. Rust·기기 코드/입력이 같은 진행 중인 `41695138037`의 최초·작은 수정 빌드는
+재시작하지 않는다.
+
+이전 phone-mapping의 Maven HTTP403은 최신 `605164a5e` 실행
+`41697621267/job126151310999`에서 원래 코드 그대로 성공했다. 별도 제품 수정은 하지 않았다.

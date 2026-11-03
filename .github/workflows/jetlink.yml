@@ -12,7 +12,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-        with: {persist-credentials: false, lfs: false}
+        with:
+          persist-credentials: "false"
+          lfs: "false"
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -31,7 +37,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-        with: {persist-credentials: false, lfs: false}
+        with:
+          persist-credentials: "false"
+          lfs: "false"
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6

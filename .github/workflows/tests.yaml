@@ -28,6 +28,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -52,7 +57,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          submodules: true
+          submodules: "true"
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
         with: {validation-context: 'true'}
       - uses: ./.github/actions/rust-path
@@ -103,6 +112,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-node@v6

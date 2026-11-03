@@ -21,11 +21,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          lfs: "false"
+          persist-credentials: "false"
           sparse-checkout: |
             /*
             !/third_party/native_inputs/
           sparse-checkout-cone-mode: false
-        with: {lfs: false, persist-credentials: false}
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -55,11 +56,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          lfs: "false"
+          persist-credentials: "false"
           sparse-checkout: |
             /*
             !/third_party/native_inputs/
           sparse-checkout-cone-mode: false
-        with: {lfs: false, persist-credentials: false}
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-java@v5
