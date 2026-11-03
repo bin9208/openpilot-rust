@@ -24,26 +24,27 @@ Do not deploy the generic CI build to a vehicle; target validation remains open.
 ### Device source build preparation (#598)
 
 Model preparation retains its existing Python path while performance improvements and
-source builds without a complete runtime redownload take priority. The initial developer
-tool `openpilot-runtime-build` builds selected targets with a prepared native Rust 1.94.0
-toolchain and offline Cargo dependencies. It is not connected to automatic installation
-or startup and does not yet provide a complete device source build.
+source builds without a complete runtime redownload take priority. `openpilot-runtime-build`
+builds the required targets with a pinned native Rust 1.94.0 toolchain and offline Cargo dependencies.
 Track progress and acceptance in [#598](https://github.com/bin9208/openpilot-rust/issues/598).
 
 The current work branch selects source builds at ARM startup instead of automatically
-downloading a complete runtime release for the checkout's commit. It targets the existing
-Git install/update and restart flow. Local inputs, default configuration and complete
-initial/changed-source build timings remain unverified, so this branch is not an install candidate.
+downloading a complete runtime release for the checkout's commit. It uses the existing
+Git install/update and restart flow. Default configuration is included; the actual local
+input bundle and initial/small-change build timings are still being prepared. This branch
+is not yet offered as an install candidate.
 After a branch change, normal startup builds and verifies the changed checkout under the
 existing boot lock before starting manager. Build failures preserve the previous generation and logs.
+Startup does not run the full functional test suite or Clippy. It checks the required
+inputs and executable/library compatibility; full regression tests run separately in Actions.
 
 The developer command `openpilot-runtime-assets --plan JSON --cache DIRECTORY` verifies
 HTTPS assets by SHA-256 and byte count and stores them by content. Preparing the same
 assets again transfers zero HTTP body bytes; changing one provider fetches only that
 asset. `transferred_bytes` reports HTTP body bytes. This tool does not extract or install
 a runtime. The build driver requires a clean Git checkout and reports the actual commit,
-tree, recipe, compiler, linker and executable hashes. Complete toolchain/ABI sealing and
-automatic startup integration remain in development.
+tree, recipe, compiler, linker and executable hashes. Initial and changed-source startup
+with the actual inputs, and user acceptance on the device, are tracked separately.
 
 Transient connection errors before any body arrives retry up to three times after
 2, 4 and 8 seconds, within a total 1800-second transfer budget. Partial-body failures
