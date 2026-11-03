@@ -15,7 +15,7 @@ use std::{
     io::{Read, Write},
     os::unix::fs::{OpenOptionsExt, PermissionsExt},
     path::{Component, Path, PathBuf},
-    process::{Command, Stdio},
+    process::{Command, ExitStatus, Stdio},
 };
 
 const LIMIT: u64 = 4 * 1024 * 1024;
@@ -159,7 +159,7 @@ pub struct Layout {
     pub provider_receipt: PathBuf,
     /// Runtime destination -> provider-relative file (not directory).
     pub files: BTreeMap<PathBuf, PathBuf>,
-    /// Ordered external AGNOS library directories. rust/bin/lib precedes these.
+    /// Ordered external AGNOS directories, after the bound runtime providers.
     pub libraries: Vec<PathBuf>,
     pub expected_source_growth_bytes: u64,
     pub remaining_object_growth_bytes: u64,
@@ -247,7 +247,7 @@ pub(crate) fn read<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T> {
     if file.metadata()?.len() > LIMIT {
         return Err("native generation JSON exceeds 4 MiB".into());
     }
-    Ok(serde_json::from_reader(file.take(LIMIT + 1))?)
+    Ok(crate::read_json(file.take(LIMIT + 1))?)
 }
 
 /// Parse and identify the same bounded bytes. A later file read must not rename
@@ -568,6 +568,193 @@ fn tool(root: &Path, name: &str, log: &Path) -> Result<Command> {
     Ok(command)
 }
 
+fn runtime_provider_libraries(
+    root: &Path,
+    files: &BTreeMap<PathBuf, PathBuf>,
+    external: &[PathBuf],
+) -> Result<Vec<PathBuf>> {
+    let central = root.join("rust/bin/lib");
+    let mut providers = BTreeSet::new();
+    // Only destinations in the verified layout may extend the audit search.
+    // In particular, numerics providers live beside each of their consumers.
+    for relative in files.keys() {
+        let path = root.join(relative);
+        let mut magic = [0; 4];
+        if regular_file(&path)?.read(&mut magic)? == 4 && magic == *b"\x7fELF" {
+            providers.insert(path.parent().ok_or("provider parent missing")?.to_owned());
+        }
+    }
+    let mut libraries = vec![central.clone()];
+    libraries.extend(providers.into_iter().filter(|path| path != &central));
+    libraries.extend(external.iter().cloned());
+    Ok(libraries)
+}
+
+struct AbiScope {
+    name: &'static str,
+    owner: Option<PathBuf>,
+    roots: Vec<PathBuf>,
+}
+
+fn abi_scopes(root: &Path, roots: &[PathBuf]) -> Result<Vec<AbiScope>> {
+    let prefix = root.join("rust/bin/plannerd-acados");
+    let leaves = [prefix.join("libblasfeo.so"), prefix.join("libhpipm.so")];
+    let present = leaves.iter().filter(|path| roots.contains(path)).count();
+    if present != 0 && present != leaves.len() {
+        return Err("incomplete acados ABI dependency roster".into());
+    }
+    let mut scopes = vec![AbiScope {
+        name: "independent",
+        owner: None,
+        roots: roots
+            .iter()
+            .filter(|path| !leaves.contains(path))
+            .cloned()
+            .collect(),
+    }];
+    if present != 0 {
+        // The original companion and both MPC audits check these same two
+        // leaves in their actual dlopen owners. Unrelated roots stay separate.
+        for (name, filename) in [
+            ("acados", "libacados.so"),
+            ("lat", "libacados_ocp_solver_lat.so"),
+            ("long", "libacados_ocp_solver_long.so"),
+        ] {
+            let owner = prefix.join(filename);
+            if !roots.contains(&owner) {
+                return Err("actual acados/MPC load owner missing from runtime ABI roots".into());
+            }
+            scopes.push(AbiScope {
+                name,
+                owner: Some(owner),
+                roots: leaves.to_vec(),
+            });
+        }
+    }
+    Ok(scopes)
+}
+
+fn check_abi_scope(scope: &AbiScope, report: &Value) -> Result<()> {
+    let expected_owner = serde_json::to_value(&scope.owner)?;
+    if report["compatible"] != true || report["load_owner"] != expected_owner {
+        return Err("ABI scope failed or has the wrong load owner".into());
+    }
+    let expected: BTreeSet<_> = scope.owner.iter().chain(&scope.roots).cloned().collect();
+    let rows = report["roots"]
+        .as_array()
+        .ok_or("ABI scope roots missing")?;
+    let mut actual = BTreeSet::new();
+    for row in rows {
+        if row["compatible"] != true
+            || !row["failures"].as_array().is_some_and(Vec::is_empty)
+            || !actual.insert(PathBuf::from(
+                row["root"].as_str().ok_or("ABI scope root path missing")?,
+            ))
+        {
+            return Err("ABI scope omitted, duplicated or failed a root".into());
+        }
+    }
+    if actual != expected {
+        return Err("ABI scope replaced an original root".into());
+    }
+    Ok(())
+}
+
+fn combine_abi_scopes(scopes: &[AbiScope], reports: Vec<Value>) -> Result<Value> {
+    if scopes.len() != reports.len() || scopes.is_empty() {
+        return Err("ABI scope report count mismatch".into());
+    }
+    let mut roots = BTreeMap::new();
+    let mut objects = BTreeMap::new();
+    let audits = reports.clone();
+    for (scope, report) in scopes.iter().zip(reports) {
+        check_abi_scope(scope, &report)?;
+        for row in report["objects"]
+            .as_array()
+            .ok_or("ABI scope objects missing")?
+        {
+            let path = row["path"]
+                .as_str()
+                .ok_or("ABI object path missing")?
+                .to_owned();
+            if objects.get(&path).is_some_and(|previous| previous != row) {
+                return Err("ABI object changed between load scopes".into());
+            }
+            objects.insert(path, row.clone());
+        }
+        for row in report["roots"]
+            .as_array()
+            .ok_or("ABI scope roots missing")?
+        {
+            let path = row["root"]
+                .as_str()
+                .ok_or("ABI root path missing")?
+                .to_owned();
+            if let std::collections::btree_map::Entry::Vacant(entry) = roots.entry(path) {
+                let mut first = row.clone();
+                if let Some(owner) = &scope.owner {
+                    first["load_owner"] = serde_json::to_value(owner)?;
+                }
+                entry.insert(first);
+            }
+        }
+    }
+    Ok(
+        json!({"compatible":true,"roots":roots.into_values().collect::<Vec<_>>(),
+        "objects":objects.into_values().collect::<Vec<_>>(),"audits":audits,
+        "scope":"independent runtime ELF roots; the two original acados leaves additionally checked under acados and both MPC owners"}),
+    )
+}
+
+fn tool_error(reason: &str, status: ExitStatus, stdout: &Path) -> String {
+    let mut message = format!("{reason} ({status}); evidence: {}", stdout.display());
+    for path in [stdout.to_owned(), stdout.with_extension("stderr")] {
+        match regular_file(&path).and_then(|file| {
+            let mut bytes = Vec::new();
+            file.take(8193).read_to_end(&mut bytes)?;
+            Ok(bytes)
+        }) {
+            Ok(bytes) => {
+                let length = bytes.len().min(8192);
+                message.push_str(&format!(
+                    "\n{}{}: {}",
+                    path.display(),
+                    if bytes.len() > length {
+                        " (first 8192 bytes)"
+                    } else {
+                        ""
+                    },
+                    String::from_utf8_lossy(&bytes[..length])
+                ));
+            }
+            Err(error) => message.push_str(&format!("\n{}: {error}", path.display())),
+        }
+    }
+    message
+}
+
+fn stage_sdk_executable(
+    source: &Path,
+    destination: &Path,
+    store: &Path,
+    pins: &Pins,
+    remaining_growth_bytes: u64,
+) -> Result<objects::Imported> {
+    let source = source.canonicalize()?;
+    let mode = regular_file(&source)?.metadata()?.permissions().mode();
+    let expected = digest_file(&source)?;
+    if mode & 0o111 == 0 || mode & 0o7000 != 0 || !pins.contains(&source, &expected) {
+        return Err("runtime OS executable is not bound to the verified native SDK".into());
+    }
+    openpilot_runtime_installer::verify_native_elf(&source, true)?;
+    let imported = objects::import(store, &source, remaining_growth_bytes)?;
+    if imported.object.sha256 != expected || imported.object.mode != 0o555 {
+        return Err("runtime OS executable changed while copying".into());
+    }
+    imported.object.materialize(store, destination)?;
+    Ok(imported)
+}
+
 /// All paths are owned and have already been checked. Flush source data and Git
 /// worktree metadata before a durable descriptor can refer to this execution root.
 fn sync_source(snapshot: &Snapshot) -> Result<()> {
@@ -716,8 +903,8 @@ impl Sealed {
             return Err("invalid ABI object count".into());
         }
         let mut paths = BTreeSet::new();
-        let mut libraries = vec![root.join("rust/bin/lib")];
-        libraries.extend(self.layout.libraries.iter().cloned());
+        let libraries =
+            runtime_provider_libraries(root, &self.layout.files, &self.layout.libraries)?;
         for row in rows {
             let path = PathBuf::from(row["path"].as_str().ok_or("ABI object path missing")?);
             let sha = row["sha256"].as_str().ok_or("ABI object digest missing")?;
@@ -785,7 +972,11 @@ fn validate_abi(
     root: &Path,
     files: &BTreeMap<PathBuf, objects::Object>,
 ) -> Result<()> {
-    if report["compatible"] != true {
+    if report["compatible"] != true
+        || report
+            .get("load_owner")
+            .is_some_and(|owner| !owner.is_null())
+    {
         return Err("source-build ABI closure is incompatible".into());
     }
     let rows = report["roots"].as_array().ok_or("ABI roots missing")?;
@@ -810,6 +1001,22 @@ fn validate_abi(
     }
     if actual != expected || actual.is_empty() {
         return Err("ABI report does not cover every runtime ELF".into());
+    }
+    if let Some(audits) = report.get("audits") {
+        let scopes = abi_scopes(root, &expected.into_iter().collect::<Vec<_>>())?;
+        let audits = audits
+            .as_array()
+            .ok_or("ABI scope evidence missing")?
+            .clone();
+        let checked = combine_abi_scopes(&scopes, audits)?;
+        if ["compatible", "roots", "objects", "audits"]
+            .iter()
+            .any(|key| checked[*key] != report[*key])
+        {
+            return Err("ABI combined evidence differs from its checked original scopes".into());
+        }
+    } else if rows.iter().any(|row| row.get("load_owner").is_some()) {
+        return Err("ABI load owner has no original scope evidence".into());
     }
     Ok(())
 }
@@ -848,6 +1055,22 @@ pub fn seal(
         object.materialize(&stores.objects, &runtime.root.join(&destination))?;
         openpilot_runtime_installer::verify_native_elf(&runtime.root.join(&destination), true)?;
         files.insert(destination, object.clone());
+    }
+    if prepared.binaries.contains_key("openpilot-webjoystick") {
+        // The existing webjoystick binding uses the factory OpenSSL CLI. It is
+        // an original OS tool, not a missing project binary or a new provider.
+        let destination = PathBuf::from("rust/bin/openssl");
+        let imported = stage_sdk_executable(
+            Path::new("/usr/bin/openssl"),
+            &runtime.root.join(&destination),
+            &stores.objects,
+            &pins,
+            layout.remaining_object_growth_bytes,
+        )?;
+        stored_output_bytes = stored_output_bytes
+            .checked_add(imported.stored_bytes)
+            .ok_or("generation accounting overflow")?;
+        files.insert(destination, imported.object);
     }
     for (destination, source) in &layout.files {
         if files.contains_key(destination) {
@@ -1009,7 +1232,12 @@ pub fn seal(
     .arg(&source_input)
     .status()?;
     if !status.success() {
-        return Err("manager inventory/runtime seal failed; previous generation retained".into());
+        return Err(tool_error(
+            "manager inventory/runtime seal failed; previous generation retained",
+            status,
+            &evidence.join("seal.stdout"),
+        )
+        .into());
     }
     let manifest = verify_source_build(&runtime.root, &runtime.source.commit)?;
     for artifact in &manifest.files {
@@ -1029,28 +1257,44 @@ pub fn seal(
         }
     }
     crate::source_lfs::verify_recorded(&prepared.source.root, &files)?;
-    let mut libraries = vec![runtime.root.join("rust/bin/lib")];
-    libraries.extend(layout.libraries.iter().cloned());
-    let abi = evidence.join("abi.json");
-    let mut audit = tool(
-        &runtime.root,
-        "runtime-elf-audit",
-        &evidence.join("abi.stdout"),
-    )?;
+    let libraries = runtime_provider_libraries(&runtime.root, &layout.files, &layout.libraries)?;
+    let mut roots = Vec::new();
     for path in files.keys() {
         let path = runtime.root.join(path);
         let mut magic = [0; 4];
         if regular_file(&path)?.read(&mut magic)? == 4 && magic == *b"\x7fELF" {
-            audit.arg("--root").arg(path);
+            roots.push(path);
         }
     }
-    for library in &libraries {
-        audit.arg("--library").arg(library);
+    let scopes = abi_scopes(&runtime.root, &roots)?;
+    let mut reports = Vec::new();
+    for scope in &scopes {
+        let stdout = evidence.join(format!("abi-{}.stdout", scope.name));
+        let output = evidence.join(format!("abi-{}.json", scope.name));
+        let mut audit = tool(&runtime.root, "runtime-elf-audit", &stdout)?;
+        if let Some(owner) = &scope.owner {
+            audit.arg("--load-owner").arg(owner);
+        }
+        for path in &scope.roots {
+            audit.arg("--root").arg(path);
+        }
+        for library in &libraries {
+            audit.arg("--library").arg(library);
+        }
+        let status = audit.arg("--output").arg(&output).status()?;
+        if !status.success() {
+            return Err(tool_error(
+                "runtime ABI audit failed; previous generation retained",
+                status,
+                &stdout,
+            )
+            .into());
+        }
+        reports.push(read::<Value>(&output)?);
     }
-    if !audit.arg("--output").arg(&abi).status()?.success() {
-        return Err("runtime ABI audit failed; previous generation retained".into());
-    }
-    let report: Value = read(&abi)?;
+    let report = combine_abi_scopes(&scopes, reports)?;
+    let abi = evidence.join("abi.json");
+    write(&abi, &report, false)?;
     validate_abi(&report, &runtime.root, &files)?;
     let mut system = BTreeMap::new();
     for object in report["objects"]
@@ -1185,6 +1429,253 @@ pub fn load(stores: &Stores, id: &str) -> Result<Sealed> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn scoped_paths(root: &Path) -> Vec<PathBuf> {
+        [
+            "rust/bin/program",
+            "rust/bin/unrelated/libhpipm.so",
+            "rust/bin/plannerd-acados/libacados.so",
+            "rust/bin/plannerd-acados/libblasfeo.so",
+            "rust/bin/plannerd-acados/libhpipm.so",
+            "rust/bin/plannerd-acados/libacados_ocp_solver_lat.so",
+            "rust/bin/plannerd-acados/libacados_ocp_solver_long.so",
+        ]
+        .iter()
+        .map(|path| root.join(path))
+        .collect()
+    }
+
+    #[test]
+    fn only_the_two_original_acados_dependencies_receive_the_three_real_owners() {
+        let root = Path::new("/runtime");
+        let paths = scoped_paths(root);
+        let scopes = abi_scopes(root, &paths).unwrap();
+        assert_eq!(scopes.len(), 4);
+        assert!(scopes[0].owner.is_none());
+        assert!(scopes[0].roots.contains(&root.join("rust/bin/program")));
+        assert!(scopes[0]
+            .roots
+            .contains(&root.join("rust/bin/unrelated/libhpipm.so")));
+        let all: BTreeSet<_> = scopes
+            .iter()
+            .flat_map(|scope| scope.owner.iter().chain(&scope.roots).cloned())
+            .collect();
+        assert_eq!(all, paths.into_iter().collect());
+        for scope in &scopes[1..] {
+            assert_eq!(scope.roots, scopes[1].roots);
+            assert_eq!(scope.roots.len(), 2);
+            assert!(scopes[0].roots.contains(scope.owner.as_ref().unwrap()));
+        }
+        let mut incomplete = scoped_paths(root);
+        incomplete.pop();
+        assert!(abi_scopes(root, &incomplete).is_err());
+    }
+
+    #[test]
+    fn scoped_abi_evidence_cannot_hide_bad_owners_roots_objects_or_failed_checks() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("runtime");
+        let paths = scoped_paths(&root);
+        let mut files = BTreeMap::new();
+        for path in &paths {
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            fs::copy("/bin/true", path).unwrap();
+            files.insert(
+                path.strip_prefix(&root).unwrap().to_owned(),
+                objects::import(&temp.path().join("objects"), path, 0)
+                    .unwrap()
+                    .object,
+            );
+        }
+        let scopes = abi_scopes(&root, &paths).unwrap();
+        let reports: Vec<Value> = scopes
+            .iter()
+            .map(|scope| {
+                let paths: Vec<_> = scope.owner.iter().chain(&scope.roots).cloned().collect();
+                let roots: Vec<_> = paths
+                    .iter()
+                    .map(|path| {
+                        let mut closure = vec![path.clone()];
+                        if let Some(owner) = scope.owner.as_ref().filter(|owner| *owner != path) {
+                            closure.push(owner.clone());
+                        }
+                        json!({"root":path,"closure":closure,"compatible":true,"failures":[]})
+                    })
+                    .collect();
+                let objects: Vec<_> = paths
+                    .iter()
+                    .map(
+                        |path| json!({"path":path,"needed":[],"sha256":digest_file(path).unwrap()}),
+                    )
+                    .collect();
+                json!({"compatible":true,"load_owner":scope.owner,"roots":roots,"objects":objects})
+            })
+            .collect();
+        let combined = combine_abi_scopes(&scopes, reports.clone()).unwrap();
+        validate_abi(&combined, &root, &files).unwrap();
+        for change in ["missing", "owner", "failed", "object"] {
+            let mut bad = reports.clone();
+            match change {
+                "missing" => {
+                    bad[1]["roots"].as_array_mut().unwrap().pop();
+                }
+                "owner" => bad[1]["load_owner"] = json!(root.join("rust/bin/program")),
+                "failed" => bad[2]["roots"][1]["failures"] = json!(["missing symbol"]),
+                "object" => bad[1]["objects"][0]["sha256"] = json!("f".repeat(64)),
+                _ => unreachable!(),
+            }
+            assert!(combine_abi_scopes(&scopes, bad).is_err(), "{change}");
+        }
+        for change in [
+            "missing",
+            "global-owner",
+            "hidden-failure",
+            "unrelated-owner",
+        ] {
+            let mut bad = combined.clone();
+            match change {
+                "missing" => {
+                    bad["audits"].as_array_mut().unwrap().pop();
+                }
+                "global-owner" => bad["load_owner"] = json!(root.join("rust/bin/program")),
+                "hidden-failure" => bad["audits"][2]["roots"][1]["compatible"] = json!(false),
+                "unrelated-owner" => {
+                    let row = bad["roots"]
+                        .as_array_mut()
+                        .unwrap()
+                        .iter_mut()
+                        .find(|row| row["root"] == json!(root.join("rust/bin/program")))
+                        .unwrap();
+                    row["load_owner"] = json!(root.join("rust/bin/plannerd-acados/libacados.so"));
+                }
+                _ => unreachable!(),
+            }
+            assert!(validate_abi(&bad, &root, &files).is_err(), "{change}");
+        }
+    }
+
+    #[test]
+    fn runtime_audit_includes_bound_component_elf_directories_only() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path();
+        let mut files = BTreeMap::new();
+        for relative in [
+            "rust/bin/lib/central.so",
+            "rust/bin/torqued-numerics/blas.so",
+            "rust/bin/torqued-numerics/fortran.so",
+            "rust/bin/card-numerics/blas.so",
+        ] {
+            let path = root.join(relative);
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            fs::copy("/bin/true", path).unwrap();
+            files.insert(
+                PathBuf::from(relative),
+                PathBuf::from("bound-provider-file"),
+            );
+        }
+        fs::create_dir(root.join("unlisted")).unwrap();
+        fs::copy("/bin/true", root.join("unlisted/foreign.so")).unwrap();
+        fs::create_dir(root.join("metadata")).unwrap();
+        fs::write(root.join("metadata/receipt.json"), b"{}\n").unwrap();
+        files.insert("metadata/receipt.json".into(), "bound-receipt".into());
+        let external = vec![
+            PathBuf::from("/factory/second"),
+            PathBuf::from("/factory/first"),
+        ];
+        let mut expected = vec![
+            root.join("rust/bin/lib"),
+            root.join("rust/bin/card-numerics"),
+            root.join("rust/bin/torqued-numerics"),
+        ];
+        expected.extend(external.iter().cloned());
+        assert_eq!(
+            runtime_provider_libraries(root, &files, &external).unwrap(),
+            expected
+        );
+    }
+
+    #[test]
+    fn runtime_audit_rejects_missing_or_redirected_bound_providers() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path();
+        let files = BTreeMap::from([(PathBuf::from("provider.so"), PathBuf::from("bound"))]);
+        assert!(runtime_provider_libraries(root, &files, &[]).is_err());
+        std::os::unix::fs::symlink("/bin/true", root.join("provider.so")).unwrap();
+        assert!(runtime_provider_libraries(root, &files, &[]).is_err());
+    }
+
+    #[test]
+    fn failed_sealer_preserves_child_status_and_bounded_original_diagnostics() {
+        let temp = tempfile::tempdir().unwrap();
+        let stdout = temp.path().join("seal.stdout");
+        let stderr = stdout.with_extension("stderr");
+        let status = Command::new("/bin/sh")
+            .args([
+                "-c",
+                "printf 'owned output'; printf 'owned missing input' >&2; exit 7",
+            ])
+            .stdout(Stdio::from(File::create(&stdout).unwrap()))
+            .stderr(Stdio::from(File::create(&stderr).unwrap()))
+            .status()
+            .unwrap();
+        assert_eq!(status.code(), Some(7));
+        let failure = tool_error("owned sealer failed", status, &stdout);
+        assert!(failure.contains("exit status: 7"));
+        assert!(failure.contains("owned output") && failure.contains("owned missing input"));
+        assert!(failure.contains(stdout.to_str().unwrap()));
+        fs::write(&stderr, vec![b'x'; 20000]).unwrap();
+        let failure = tool_error("owned sealer failed", status, &stdout);
+        assert!(failure.contains("first 8192 bytes") && failure.len() < 9000);
+        assert_eq!(fs::metadata(stderr).unwrap().len(), 20000);
+    }
+
+    #[test]
+    fn original_sdk_executable_requires_bound_unchanged_native_bytes() {
+        let temp = tempfile::tempdir().unwrap();
+        let source = temp.path().join("openssl");
+        let destination = temp.path().join("runtime/openssl");
+        fs::create_dir(destination.parent().unwrap()).unwrap();
+        let mut elf = [0_u8; 65];
+        elf[..7].copy_from_slice(b"\x7fELF\x02\x01\x01");
+        elf[18..20].copy_from_slice(&183_u16.to_le_bytes());
+        elf[20..24].copy_from_slice(&1_u32.to_le_bytes());
+        elf[52..54].copy_from_slice(&64_u16.to_le_bytes());
+        fs::write(&source, elf).unwrap();
+        fs::set_permissions(&source, fs::Permissions::from_mode(0o755)).unwrap();
+        let mut pins = Pins {
+            files: BTreeMap::new(),
+            plain_trees: BTreeSet::new(),
+        };
+        let store = temp.path().join("objects");
+        assert!(stage_sdk_executable(&source, &destination, &store, &pins, 0).is_err());
+        assert!(!destination.exists());
+        pins.files
+            .insert(source.clone(), digest_file(&source).unwrap());
+        let first = stage_sdk_executable(&source, &destination, &store, &pins, 0).unwrap();
+        assert_eq!(fs::read(&destination).unwrap(), elf);
+        assert_eq!(first.object.mode, 0o555);
+        assert_eq!(first.object.sha256, pins.files[&source]);
+        let next = temp.path().join("runtime/next");
+        let second = stage_sdk_executable(&source, &next, &store, &pins, 0).unwrap();
+        assert_eq!(second.stored_bytes, 0);
+        elf[64] = 1;
+        fs::write(&source, elf).unwrap();
+        let rejected = temp.path().join("runtime/rejected");
+        assert!(stage_sdk_executable(&source, &rejected, &store, &pins, 0).is_err());
+        assert!(!rejected.exists());
+        assert_eq!(fs::read(&destination).unwrap()[64], 0);
+        pins.files
+            .insert(source.clone(), digest_file(&source).unwrap());
+        fs::set_permissions(&source, fs::Permissions::from_mode(0o644)).unwrap();
+        assert!(stage_sdk_executable(&source, &rejected, &store, &pins, 0).is_err());
+        fs::set_permissions(&source, fs::Permissions::from_mode(0o755)).unwrap();
+        elf[18..20].copy_from_slice(&62_u16.to_le_bytes());
+        fs::write(&source, elf).unwrap();
+        pins.files
+            .insert(source.clone(), digest_file(&source).unwrap());
+        assert!(stage_sdk_executable(&source, &rejected, &store, &pins, 0).is_err());
+        assert!(!rejected.exists());
+    }
 
     #[test]
     fn compatible_abi_report_must_cover_every_actual_runtime_elf() {

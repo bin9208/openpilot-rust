@@ -142,6 +142,12 @@ fn regular_file(path: &Path) -> Result<File> {
     Ok(file)
 }
 
+// serde_json does not buffer its reader. Keep file reads in blocks, especially
+// when the native build runs under PRoot, while callers retain their byte limits.
+fn read_json<T: serde::de::DeserializeOwned>(reader: impl Read) -> serde_json::Result<T> {
+    serde_json::from_reader(BufReader::new(reader))
+}
+
 pub fn digest_file(path: &Path) -> Result<String> {
     let mut file = regular_file(path)?;
     let mut hash = Sha256::new();
@@ -162,7 +168,7 @@ impl Recipe {
         if file.metadata()?.len() > 1024 * 1024 {
             return Err("build recipe exceeds 1 MiB".into());
         }
-        let recipe: Self = serde_json::from_reader(file)?;
+        let recipe: Self = crate::read_json(file)?;
         recipe.validate()?;
         Ok(recipe)
     }
@@ -244,8 +250,7 @@ impl Recipe {
             if metadata.metadata()?.len() > 4 * 1024 * 1024 {
                 return Err("Cargo input provenance exceeds 4 MiB".into());
             }
-            let metadata: serde_json::Value =
-                serde_json::from_reader(metadata.take(4 * 1024 * 1024 + 1))?;
+            let metadata: serde_json::Value = crate::read_json(metadata.take(4 * 1024 * 1024 + 1))?;
             if metadata["schema"] != 1
                 || metadata["format"] != "openpilot-native-cargo-v1"
                 || metadata["cargo_lock_sha256"] != digest_file(&root.join("rust/Cargo.lock"))?
@@ -336,14 +341,14 @@ pub fn build_with_metadata(
         return Err("runtime build needs a native Rust 1.94.0 toolchain for its target".into());
     }
     timing.mark("tools_before");
-    // Selection is Cargo's job: package/bin choices do not change the native ABI
-    // or compiler inputs. Share dependency artifacts between serial build groups
-    // rather than storing a complete target tree for each selected binary set.
-    // Cargo retains its package/source/feature fingerprints inside this cache.
+    // Cargo tracks package/bin/feature selection inside a target directory.
+    // Keep compiler, input and environment changes in the ABI cache identity,
+    // while allowing serial feature selections to reuse unchanged dependencies.
     let mut cache_recipe = recipe.clone();
     cache_recipe.expected_growth_bytes = 0;
     cache_recipe.packages.clear();
     cache_recipe.binaries.clear();
+    cache_recipe.features.clear();
     let identity = serde_json::to_vec(&(
         "openpilot-native-cargo-cache-v2",
         cache_recipe,
@@ -541,4 +546,67 @@ pub fn build_with_metadata(
         build: report,
         cargo_artifacts,
     })
+}
+
+#[cfg(test)]
+mod json_read_tests {
+    use super::read_json;
+    use std::{cell::Cell, io::Read};
+
+    struct Counted<'a> {
+        bytes: &'a [u8],
+        reads: &'a Cell<usize>,
+    }
+
+    impl Read for Counted<'_> {
+        fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+            self.reads.set(self.reads.get() + 1);
+            self.bytes.read(buffer)
+        }
+    }
+
+    #[test]
+    fn buffered_json_keeps_values_and_avoids_byte_reads() {
+        // Match the observed SDK receipt size without a timing-sensitive gate.
+        let bytes =
+            serde_json::to_vec(&serde_json::json!({"receipt": "x".repeat(4_552_000)})).unwrap();
+        let parse = |buffered: bool| {
+            let reads = Cell::new(0);
+            let input = Counted {
+                bytes: &bytes,
+                reads: &reads,
+            };
+            let value: serde_json::Value = if buffered {
+                read_json(input).unwrap()
+            } else {
+                serde_json::from_reader(input).unwrap()
+            };
+            (value, reads.get())
+        };
+        let (legacy, legacy_reads) = parse(false);
+        let (buffered, buffered_reads) = parse(true);
+        assert_eq!(legacy, buffered);
+        assert!(legacy_reads >= bytes.len());
+        assert!(buffered_reads <= bytes.len().div_ceil(8192) + 2);
+        eprintln!(
+            "JSON bytes={} legacy_reads={legacy_reads} buffered_reads={buffered_reads}",
+            bytes.len()
+        );
+    }
+
+    #[test]
+    fn buffered_json_keeps_limits_trailing_data_and_read_errors() {
+        let valid = br#"{"schema":1}"#;
+        assert!(read_json::<serde_json::Value>(valid.take(4)).is_err());
+        for bytes in [br#"{"schema":1} {}"#.as_slice(), br#"{"schema":1"#, b"\xff"] {
+            assert!(read_json::<serde_json::Value>(bytes).is_err());
+        }
+        struct Broken;
+        impl Read for Broken {
+            fn read(&mut self, _: &mut [u8]) -> std::io::Result<usize> {
+                Err(std::io::Error::other("fixture read failure"))
+            }
+        }
+        assert!(read_json::<serde_json::Value>(Broken).unwrap_err().is_io());
+    }
 }

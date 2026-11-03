@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import argparse
 import base64
-from dataclasses import dataclass
+from collections import deque
+from dataclasses import dataclass, field
 import hashlib
 import json
 import os
@@ -41,6 +42,7 @@ class Ws:
   stream: anyio.abc.ByteStream
   reader: BufferedByteReceiveStream
   rows: list
+  pending_output: deque = field(default_factory=deque)
 
   async def frame(self, timeout: float = 8) -> tuple[int, bytes]:
     with anyio.fail_after(timeout):
@@ -60,6 +62,8 @@ class Ws:
     await self.stream.send(wire(json.dumps(value).encode()))
 
   async def event(self, typ: str, timeout: float = 8) -> dict:
+    if typ == 'pty_output' and self.pending_output:
+      return self.pending_output.popleft()
     while True:
       opcode, payload = await self.frame(timeout)
       assert opcode != 8, ('closed before event', typ, self.rows)
@@ -67,6 +71,8 @@ class Ws:
         data = json.loads(payload)
         if data.get('type') == typ:
           return data
+        if data.get('type') == 'pty_output':
+          self.pending_output.append(data)
 
   async def output_until(self, marker: bytes) -> bytes:
     output = bytearray()

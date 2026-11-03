@@ -180,7 +180,8 @@ fn run() -> Result<()> {
     };
     generation::offroad(&stores.params)?;
     let plan = prepare::Plan::read(path("--plan")?)?;
-    let layout: generation::Layout = serde_json::from_reader(fs::File::open(path("--layout")?)?)?;
+    let layout: generation::Layout =
+        serde_json::from_reader(std::io::BufReader::new(fs::File::open(path("--layout")?)?))?;
     catalog::verify_source_plan(root, &plan)?;
     runtime_layout::verify(root, &layout.provider_root, &layout.files)?;
     let prepared = prepare::run(
@@ -204,7 +205,8 @@ fn run() -> Result<()> {
             if !["repeat", "docs", "small-logger"].contains(&kind) {
                 return Err("invalid reuse kind".into());
             }
-            let previous: prepare::Prepared = serde_json::from_reader(fs::File::open(previous)?)?;
+            let previous: prepare::Prepared =
+                serde_json::from_reader(std::io::BufReader::new(fs::File::open(previous)?))?;
             let (rebuilt_groups, changed_binaries) = verify_reuse(&prepared, &previous, kind)?;
             if kind == "small-logger" {
                 let help = logger_help_command(&prepared)?

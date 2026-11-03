@@ -85,7 +85,7 @@ def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
     workflow = ROOT / '.github/workflows/rust.yml'
     text = workflow.read_text()
     assert 'card_ci_space.py' not in text
-    assert text.count('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"') == 185
+    assert text.count('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"') == 186
     jobs = yaml.safe_load(text)['jobs']
     guarded = [job for job in jobs.values() if any('check-disk-space' in step.get('run', '') for step in job.get('steps', []))]
     assert len(guarded) == 27
@@ -114,6 +114,15 @@ def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
     preparation = next(step for step in recovery['steps'] if step.get('name') == 'Prepare recovery comparison dependencies')
     assert new_guard in preparation['run']
     arguments.remove(new_guard)
+    # The FFmpeg fetch moved from the existing build tool into this CI step.
+    # Keep its original3GiB admission immediately before its600s command cap.
+    ffmpeg_guard = ' --path "$RUNNER_TEMP" --growth-mib 3072'
+    static_build = next(step for step in jobs['arm64']['steps']
+                        if step.get('name') == 'Build and inspect the static C3X probe candidate')
+    static_lines = [line.strip() for line in static_build['run'].splitlines()]
+    index = static_lines.index('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"' + ffmpeg_guard)
+    assert static_lines[index + 1].startswith('timeout --signal=KILL 600s curl ')
+    arguments.remove(ffmpeg_guard)
     assert len(arguments) == 179
     assert raylib_guards == [' --path "$GITHUB_WORKSPACE" --growth-mib 2048'] * 5
     native_calls = [index for index, line in enumerate(lines) if '--bin stage-startup-ui-raylib' in line]

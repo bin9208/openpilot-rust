@@ -412,6 +412,24 @@ def native_system_sdk_probe(guest_command, work, source_mount, rootfs, evidence,
     evidence['commands'].append(result)
     return result
 
+  openssl_code = """import hashlib,json
+from pathlib import Path
+p=Path('/usr/bin/openssl').resolve(strict=True)
+digest=hashlib.sha256()
+with p.open('rb') as stream:
+  while block:=stream.read(65536): digest.update(block)
+print(json.dumps(dict(path=str(p),sha256=digest.hexdigest(),bytes=p.stat().st_size,mode=p.stat().st_mode & 4095)))
+"""
+  execute(['/usr/bin/python3', '-B', '-c', openssl_code], 'native-original-openssl.json')
+  openssl = json.loads((work/'native-original-openssl.json').read_text())
+  entry = snapshot['entries'].get(str(Path(openssl['path']).relative_to('/')))
+  assert entry is not None and entry['kind'] == 'file'
+  assert (entry['sha256'], entry['bytes'], entry['mode']) == (openssl['sha256'], openssl['bytes'], openssl['mode'])
+  assert openssl['mode'] & 0o111 and not openssl['mode'] & 0o7000
+  execute(['/usr/bin/openssl', 'version'], 'native-original-openssl-version.txt')
+  openssl['version'] = (work/'native-original-openssl-version.txt').read_text().strip()
+  assert openssl['version'].startswith('OpenSSL ') and len(openssl['version']) < 1024
+
   reports = []
   for phase in ('initial','reused'):
     name = f'runtime-driver-system-sdk-{phase}.json'
@@ -477,6 +495,7 @@ def native_system_sdk_probe(guest_command, work, source_mount, rootfs, evidence,
       pinned_files=sum(e['kind']=='file' for e in snapshot['entries'].values()),
       initial_and_repeat_actual_native_driver=True,repeated_artifacts_fresh=True,
       actual_native_compiler_helpers_bound=True,
+      original_openssl_bound=openssl,
       same_size_header_tamper_rejected=True,previous_executables_preserved=True,
       factory_namespace_restored=True,scope='declared compiler namespaces only',
       complete_compiler_search_closure_proven=False,full_runtime_build=False,device_execution=False)
@@ -2216,6 +2235,40 @@ def plan_model(source):
   return json.loads((source/'rust/native-usbgpu-model.json').read_text())['assets']['usbgpu-model']
 
 
+def native_provider_layout_abi(work, guest_work, layout, execute):
+  """Inspect the actual bound providers before compiling all runtime groups."""
+  prefix = Path(layout['provider_root'])
+  actual = work / prefix.relative_to(guest_work)
+  roots = []
+  for relative in sorted(set(layout['files'].values())):
+    with (actual / relative).open('rb') as stream:
+      if stream.read(4) == b'\x7fELF':
+        roots.append(prefix / relative)
+  assert roots, 'complete layout has no ELF providers'
+  libraries = [prefix / 'lib']
+  libraries += sorted({path.parent for path in roots} - set(libraries))
+  libraries += list(map(Path, layout['libraries']))
+  auditor = work / 'project-target/debug/runtime-elf-audit'
+  probe = prefix / 'ffmpeg'
+  assert probe in roots, 'original FFmpeg tool missing from complete layout'
+  others = [path for path in roots if path != probe]
+  acados = prefix / 'plannerd-acados'
+  requests = audit_requests(auditor, probe, others, acados, libraries, work)
+  mpc = mpc_audit_requests(auditor, probe, others, acados, libraries, work)
+  assert requests[0]['roots'] == mpc[0]['roots']
+  requests += mpc[1:]
+  reports = []
+  for request in requests:
+    execute(request['argv'], 'native-complete-provider-'+request['name']+'-summary.json')
+    report = json.loads(request['output'].read_text())
+    verify_report(request, report)
+    reports.append(dict(path=str(request['output']), sha256=digest(request['output'])))
+  assert set().union(*(set(request['roots']) for request in requests)) == set(roots)
+  output = work / 'native-complete-provider-abi.json'
+  output.write_text(json.dumps(dict(compatible=True, roots=list(map(str, roots)), reports=reports), indent=2)+'\n')
+  return dict(success=True, roots=len(roots), report_sha256=digest(output), full_runtime_build=False)
+
+
 def native_complete_layout_probe(guest_command,work,source_mount,evidence,log,guest_work):
   """Compose every real input and hand a complete layout to the 99-target build."""
   room(work,64*1024**2)
@@ -2259,6 +2312,7 @@ def native_complete_layout_probe(guest_command,work,source_mount,evidence,log,gu
   assert rows[0]['identity']==rows[1]['identity'] and rows[0]['root']==rows[1]['root']
   assert rows[1]['copied_bytes']==rows[1]['linked_bytes']==0
   (work/'native-complete-layout.json').write_text(json.dumps(rows[0]['layout'],indent=2)+'\n')
+  evidence['native_complete_provider_abi'] = native_provider_layout_abi(work, guest_work, rows[0]['layout'], execute)
   pins['runtime_inputs']=rows[0]['runtime_inputs']
   (work/'native-complete-input-pins.json').write_text(json.dumps(pins,indent=2)+'\n')
   planner=work/'project-target/debug/openpilot-runtime-plan'
@@ -2289,7 +2343,8 @@ def native_complete_layout_probe(guest_command,work,source_mount,evidence,log,gu
   execute(['git','-C',fixture,'remote','set-url','origin','https://github.com/bin9208/openpilot-rust.git'],
       'native-complete-source-origin.txt')
   execute(['git','-C',fixture,'checkout','--detach',evidence['source_commit']],'native-complete-source-checkout.txt')
-  generation_command=[work/'project-target/debug/examples/native_full_generation','--root',fixture,
+  generation_command=['/usr/bin/env','OPENPILOT_NATIVE_BUILD_TIMINGS=1',
+      work/'project-target/debug/examples/native_full_generation','--root',fixture,
       '--plan',work/'native-complete-bound-plan/build-plan.json','--layout',work/'native-complete-layout.json',
       '--cache',work/'native-complete-cargo-cache','--toolchain',Path(rust)/'bin','--stores',base]
   execute(['/usr/bin/time','-v','-o',work/'native-complete-initial-resources.txt',

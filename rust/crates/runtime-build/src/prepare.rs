@@ -97,7 +97,7 @@ impl Plan {
         if file.metadata()?.len() > 4 * 1024 * 1024 {
             return Err("native build plan exceeds 4 MiB".into());
         }
-        let plan: Self = serde_json::from_reader(file.take(4 * 1024 * 1024 + 1))?;
+        let plan: Self = crate::read_json(file.take(4 * 1024 * 1024 + 1))?;
         plan.validate()?;
         Ok(plan)
     }

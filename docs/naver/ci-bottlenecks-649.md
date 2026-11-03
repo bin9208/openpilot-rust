@@ -265,3 +265,107 @@ source14069의 전체 Rust47개/최종 gate와 UI13/Card32·IPC19×80/소스 영
 hosted Linux ARM64 양성 및 로컬/hosted X64/Windows ARM/등록 X64 음성을 추가한다.
 별도 수동 publication job의 등록 X64 조건과 모든 원래 바이트·source·정상 종료 검사는
 변경하지 않는다. 새 source의 집중/전체 성공은 실제 Actions 결과 확인 뒤 기록한다.
+
+## manager 봉인 진단과 원래 OpenSSL 입력 — #669
+
+14069의 genuine41404935182/job125144715266은 SDK GCC helper 결속과
+bootstrap13개×4/실제 모델4개 및 재사용/docs/작은 변경을 통과한 뒤,
+전체99개 준비 다음 manager inventory/runtime seal 단계에서 실패했다.
+artifact13141801488의 metadata와 commands.log tail은 이 실패를 보존하지만,
+자식 sealer의 stdout/stderr 저장 폴더가 기존 artifact 경로에 빠져 구체적인
+자식 오류는 미수집이다. 부모 오류에는 실제 종료 status와 제한된 원문 진단·경로를
+포함하고, 기존 artifact에 이 작은 evidence 파일들만 추가한다.
+
+별도로 같은 prepared99와 실제 layout에는 `openssl`이 없는데 manager의 기존
+webjoystick binding은 비활성 항목에도 `rust/bin/openssl`을 요구한다.
+이 입력 결손은 정적으로 확인했으며 미수집 자식 오류의 실제 문구라고 단정하지 않는다.
+새 provider나 암호 구현을 만들지 않고 원래 factory의 `/usr/bin/openssl`을 SDK에
+결속해 기존 content object와 generation에 바이트 그대로 보존한다. 원래 SHA/실행 권한/
+AArch64 ELF/ABI 감사와 모든 catalog 검사를 유지한다. 실제 SDK 단계에서 tool pin과
+원래 `openssl version`을 먼저 확인한다. 집중·최신 전체 Actions 성공 전에는
+manager 봉인이나 #649 완료를 주장하지 않는다.
+
+## 필수 ARM의 원본 FFmpeg SSL timeout — #670
+
+0753 [Rust41450149373/job125293063246](https://github.com/bin9208/openpilot-rust/actions/runs/41450149373/job/125293063246)은
+실제47개 중46개 성공/ARM1개 실패다. static C3X 준비의 원래 FFmpeg 다운로드가
+exit28로 끝났으며 컴파일 오류가 아니다. 원본 job log와 읽기 전용 추가 확인을
+[#670](https://github.com/bin9208/openpilot-rust/issues/670)에 기록했다. 원래 두 host는
+SSL handshake timeout이 계속됐고 Buildroot의 동일6.1.1 archive는10458600bytes,
+기존 SHA256 `8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968`와 일치했다.
+
+기존 ARM step이 이 동일 archive를 받고 해시를 검사한 뒤 이미 있는 `--archive`를
+사용하도록 좁힌다. curl의 기존 retry3/connect15/max180/32MiB, FFmpeg pin/설정,
+원래 static workspace compile/ARM probe/산출물과 deadline은 유지한다. runtime/provider
+코드나 설치 흐름을 바꾸거나 새 cache/서비스/workflow를 추가하지 않는다. 검토한
+script hash만 정확히 갱신하고 원래 전체 명령 비교를 유지한다. 기존 FFmpeg archive
+변조 거부 테스트도 기존 집중 component 작업에 포함한다. 실제 Actions의 집중·전체
+ARM 성공은 아직 필요하며, 진행 중0753 genuine은 취소하지 않는다.
+
+## 복구 비교기의 알림/출력 수신 순서 경합 — #671
+
+[dee0 집중41486679391/recovery125418774938](https://github.com/bin9208/openpilot-rust/actions/runs/41486679391/job/125418774938)의
+지원 단말 승인 marker 대기는8초 timeout으로 실패했다. artifact13162063576의 작은
+wire member/CRC에서 command_approved28 → 실제 APPROVED 출력30 → command_running33
+순서와 approved.txt12bytes를 확인했다. 검사기의 event 대기가 다른 유형의 PTY 출력을
+버렸던 것이며 원래 source/native 모두 쓰기 뒤 알림을 보내는 runtime 정책은 바꾸지 않는다.
+
+기존 비교 도구의 연결별 출력만 보존해 다음 출력 소비에서 순서대로 읽는다. 원래 raw기록·
+8초 deadline·승인/거부/만료/marker/파일/close와 모든 시나리오는 유지한다. 기존 EOF
+회귀 실행에 선행/후행·분할 출력, marker 부재 timeout, peer 격리·close 거부3개 회귀를
+추가하며 새 재시도나 성공 허용은 없다. 실제 회귀·복구 전체 Actions 성공은 아직 필요하다.
+
+#670의 다운로드 이동은 원래 build tool의3GiB 사전 disk admission과600초 전체
+command deadline도 보존한다. 기존 check-disk-space를 fetch 직전에 같은 예산으로
+호출하고 curl을600초 timeout으로 감싼다. retry3/connect15/max180/32MiB와 SHA 및
+원래 build/probe는 그대로이며, archive를 받기 전에 원래 예산/전체 한도가 적용된다.
+
+### #672: 완전한 generation의 provider ABI 검색 경로 연결
+
+0753의 AGNOS [41450144600/job125293043310](https://github.com/bin9208/openpilot-rust/actions/runs/41450144600/job/125293043310)은 2026-11-02 18:24:24UTC에 실패했다. artifact13167783316의 실제 sealer stdout은 aarch64/1123 artifacts/source0753를 기록하고 stderr는 비어 있었다. 이어진 ABI stderr는 torqued-numerics의 원래 OpenBLAS가 요구하는 libgfortran-e1b7dfc8-d8198c01.so.5.0.0 provider를 찾지 못했다고 기록했다. 원래 수치 라이브러리 자체는 layout의 card/controlsd/radarcan/torqued 네 경로에 모두 매핑되어 있지만 generation caller가 중앙 rust/bin/lib와 두 외부 AGNOS 경로만 검색에 전달했다. 새로운 수치 연산/정밀도/버전/바이트 변경이 아니다.
+
+[이슈672](https://github.com/bin9208/openpilot-rust/issues/672) 수정은 인증된 layout에 나열된 ELF provider destination의 디렉터리만 기존 ABI 도구에 추가한다. 중앙 디렉터리 우선과 외부 system library 순서, 각 root의 독립 closure/strong symbol/version 검사와 전체 ELF roster 검증은 유지한다. 비인증 디렉터리는 검색하지 않으며 누락/redirect를 거부한다. ABI 오류에도 기존 bounded child status/stdout/stderr 진단을 재사용한다. 같은 원래 provider ELF 검사를 완전한 compile 전에 실행해 input 의존성 오류를5시간 뒤에 반복 발견하지 않도록 한다. 기존 전체 generation/seal/ABI/reuse/docs/small/final-production은 그대로 실행한다.
+
+로컬은 Rust 서식·Python AST·diff만 확인했다. 새 기능 검증은 기존 집중 Actions와 최신 source 전체 Actions 결과로 확인하며, 진행 중96c9 전체Rust41497469920/AGNOS41498014004는 취소하지 않는다.649/598/기기 수용은 아직 완료가 아니다.
+
+### #673: local model admission과 무관한 ancestor directory 변경 분리
+
+96c9 [Rust41497469920/workspace125456069425](https://github.com/bin9208/openpilot-rust/actions/runs/41497469920/job/125456069425)의 실제 원본 USB GPU status 비교는192개 legacy 정책과24개 native controls 중23개를 통과했지만 유효한 previous fallback에서 원본compiled=true/native=false를 기록했다. 소형artifact13169836171 전체ZIPdigest와 status-parity.json을 대조했고5초한도 process는exit0이었다. 출력불일치를 그대로 실패로 보존한다.
+
+[이슈673](https://github.com/bin9208/openpilot-rust/issues/673)의 조사 대상은 admission snapshot이다. 모델과 package 경로 이외에 /tmp와/까지 모든 ancestor의 크기/mtime/ctime을 비교해 다른job의 sibling 생성도 package 변경으로 처리할 수 있었다. 기존 실행은 내부admission오류를 상태false로 변환했으므로 원문만으로 특정 sibling PID를 추정하지 않는다. 실제filesystem 음성/양성 회귀와 최신전체192+24비교로 원인을 검증한다.
+
+모델파일/chunk/manifest/current pointer/firmware/kernel과 모델 directory·package 내부 directory의 전체stamp 및 기존hash검사는 유지한다. 그 바깥 ancestor는 device/inode/mode/owner와 symlink·교체 거부를 유지하며 무관한 entry 변경 시각/크기만 package 내용과 구분한다. 이전모델 선택·거부·무결성/연산/정밀도·재시도/시간한도는 바꾸지 않는다. 결정적인 ancestor 변경 음성대조, 수정 양성 및 rejection marker/unlisted member/kernel/pointer 변경·ancestor redirection 음성을 기존집중job에서 확인한다.
+
+672 후보bea8780390a6ed8c40c6246c1c33671353450ba4의 기존집중41502107535는 actualattempt1 세job 모두 성공했다. artifact13169546336 전체ZIP SHA256 `9bfbd3d75e06862df5d92b9e23b03770c4e51fff96e8b934daff80ad80b24af5`, generation6/원래SDK9·ELF·seal10·provider17·ONNX22/실제544initializer·metadata 및recovery를 대조했다.673수정도 실제집중/전체Actions검증 후 최종PRsource로 반영하며 아직649완료가 아니다.
+
+673의 기존192+24 status 비교도 같은 focused component job에서 원래script/기한/firmware pin 그대로 실행하고 작은 JSON을 기존 artifact에 남긴다. 긴 전체workspace를 기다리기 전에 실제previous fallback을 확인하며 원래전체workspace의 같은 비교도 유지한다.
+
+8d27e06ec41d4b72051ec10cf07a676daef690a9의 [집중41504487986](https://github.com/bin9208/openpilot-rust/actions/runs/41504487986)은 attempt1 세job 모두 성공했다. artifact13170797072 전체ZIP SHA256 `29c0294b4c7078dced65110273c932c3256e8d2ef7339bad48f6d3ef6655aa10`에서 원래192+24 status 전부 통과, filesystem 회귀3개, USBGPU all-targets Clippy, generation6/SDK9/seal10/provider17/ONNX22/실제544initializer·metadata/recovery를 확인했다. 이 결과는 최신 전체workspace 성공을 대체하지 않는다.
+
+### #672 후속: 원래 acados/MPC ABI load owner를 최종 검사에도 연결
+
+기존 실제 ARM [41255134425/job124696587349](https://github.com/bin9208/openpilot-rust/actions/runs/41255134425/job/124696587349), artifact13062448370의 전체ZIP SHA256 `a26d26e0583d8de8933670391c36ec6844fb64d17b1714ed85484568be08ce0e`에는 owner 없이 두 acados leaf를 검사할 때 sqrt/sqrtf가 실패하는 음성과 실제 acados/MPC owner에서 원래 strong-symbol 검사가 통과하는 양성이 남아 있다. 해당 acados/MPC provider plan은 현재와 바이트가 동일하다. 기존 component 검사는 이 범위를 보존했으나 최종 generation caller가 모든 ELF를 독립 root로 넘겨 같은 원래 범위를 누락했다.
+
+최종 caller와 사전검사에 기존 범위를 연결한다. 다른 ELF는 모두 독립 root로 검사하고 `plannerd-acados/libblasfeo.so`, `libhpipm.so` 두 개만 실제 libacados/lat MPC/long MPC owner 각각에서 검사한다. 다른 경로의 같은 이름 라이브러리에 적용하지 않는다. 원래 runtime-elf-audit와 Python companion scope helper, 수치 라이브러리·연산·정밀도·ABI/pin/strong-symbol 정책은 바꾸지 않는다. 모든 원래 root와 세 owner의 원문 report를 함께 보존하고 누락·실패·다른 owner·서로 다른 object 해시를 거부한다. 저장된 generation 재검증에도 같은 인증된 provider 디렉터리 검색을 사용한다. 기존 focused job에서 scope 양성/음성과 all-targets Clippy를 검증하고 새 source 전체검사를 이어간다.
+
+
+## 2026-11-03 마지막 반복 검증 병목 — #674
+
+최종 `f5d1972284340438fc6f7c6ab8e8e46831424ff1`의 전체 Rust47개와 Integration 등은
+성공했다. genuine [41508678434](https://github.com/bin9208/openpilot-rust/actions/runs/41508678434)는
+전체99개/13그룹 컴파일·1123파일 봉인·전체ABI·저장 generation 및 원래 staging cache
+부재 재검증을 통과한 뒤 complete-repeat에서6시간 한도에 도달했다. repeat/docs/
+small/final-production과 최종 입력 산출물은 미완료이며 timeout을 성공으로 보지 않는다.
+
+[#674](https://github.com/bin9208/openpilot-rust/issues/674)에서는 실제4,552,019바이트
+SDK JSON과 반복되는 `serde_json::from_reader(File)` 경로를 확인했다. serde_json은
+입력을 자체 buffering하지 않는다. 입력·plan·generation·source receipt 파일 파싱에
+BufReader를 적용하고 기존 byte limit, NOFOLLOW/정규파일, schema, hash·전체 SDK
+재검증과 source/ABI/반복·작은변경 검증을 유지한다. 파일을 메모리 캐시하거나 검사를
+건너뛰지 않는다. full-generation entry의 큰 layout/previous JSON도 buffering한다.
+
+같은 크기 JSON의 기존/개선 파싱 결과와 하위 Read 호출 수, 잘린 입력·후행JSON·잘못된
+UTF8·I/O오류를 기존 focused Actions에서 확인한다. 기존SDK·입력 무결성 및 설정 검사를
+함께 실행한다. 원래 build phase timing을 활성화해initial/repeat/docs/small 각13그룹의
+비용을 commands.log에 남긴다. 로컬은 rustfmt·Python AST·YAML·diff만 확인한다.
+최신동일source 전체 Actions와 genuine 최종 결과를 확인하기 전 #649를 완료 처리하지 않는다.

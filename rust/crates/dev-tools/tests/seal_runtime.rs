@@ -69,6 +69,24 @@ fn native_manager_argument_encoding_is_strict() {
             .contains("argument encoding"));
     }
 }
+
+#[test]
+fn disabled_catalog_entries_do_not_hide_missing_original_tools() {
+    let (dir, binary, mut inv) = fixture();
+    inv[0]["enabled"] = json!(false);
+    let openssl = binary.parent().unwrap().join("openssl");
+    requirement(&mut inv, json!({"path":openssl,"executable":true}));
+    assert!(seal_fixture(dir.path(), &inv).is_err());
+    fs::copy(&binary, &openssl).unwrap();
+    seal_fixture(dir.path(), &inv).unwrap();
+    let original = fs::read(dir.path().join("rust/runtime-manifest.json")).unwrap();
+    fs::remove_file(openssl).unwrap();
+    assert!(seal_fixture(dir.path(), &inv).is_err());
+    assert_eq!(
+        fs::read(dir.path().join("rust/runtime-manifest.json")).unwrap(),
+        original
+    );
+}
 #[test]
 fn missing_empty_and_lfs_required_files_are_rejected() {
     for contents in [
