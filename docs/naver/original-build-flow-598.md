@@ -484,3 +484,23 @@ manager는 재링크 후 동일한 바이트일 수 있다. bootstrap13개 도�
 나머지 모델·SDK·Rust/Cargo 원본 입력은 재사용한다. 향후 producer도 release 컴파일 증거의
 opt_level3/debug_assertions=false/test=false와 실제 executable을 확인해 같은 혼입을 막는다.
 현재 기본 후보3092는 통과했지만 개선된 seed의 시간과 최종 PR/병합 후 결과는 아직 남았다.
+
+[release seed41739898126](https://github.com/bin9208/openpilot-rust/actions/runs/41739898126)는
+source `532a028e75baadd11bdca549595d6c756d8e9a35`의 실제 ARM/AGNOS userspace에서 성공했다.
+기존 production bootstrap 경계와3GiB/swap0 안에서 현재13개 도구만 release로 만들었으며
+전체99개 runtime·manager·하드웨어는 실행하지 않았다. 최종 cleanup_verified=true다.
+앞선41739682269는 이미지 준비 전 소유 symlink 거부 회귀에서 O_NOFOLLOW의
+`OSError(ELOOP)`를 예상 예외에 넣지 않아 실패했다. 링크는 실제로 거부됐고532에서
+테스트의 OS 예외만 반영했다. ABI나 링크 거부 조건을 완화한 수정은 아니다.
+
+artifact13281757975의 ZIP1,806,458바이트와 SHA256
+`1d95b73856a55cae64b3679fef375d450722180cb872149500880c721201627c`를 확인했다.
+새 seed descriptor는 `ac2d5ff89e51390724f4af0fa05a7e841e85fc0ea2839ace4a5f7c5b4b91edb6`,
+helper는3,686,368바이트/SHA256
+`2c69b756ea7b4b8980a69194f6aa359414d432a65b1654c197d4d1cebca71a06`다.
+이는 앞선3092 실제 빌드의 current-tools release helper와 같은 바이트다. 원래 AGNOS ABI,
+프로토콜1/2/1과 라이선스를 유지하고 이전 독립 boot_seed 설정용 파일도 남긴다.
+바뀐 기본 index는 `bc2c62693b57842d99a3f42469239296002f3b7b61f95f1000204f3409929d61`다.
+모델·SDK·원본 archive 및 나머지16개 descriptor pin은 그대로이며 release는 발행하지 않는다.
+다음 최초/무변경/작은 수정 측정은 이 실제 Git index와 metadata를 직접 사용한다.
+이전 producer를 다시 반입해 새 seed index를 옛 것으로 덮어쓰지 않는다.

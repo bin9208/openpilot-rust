@@ -1,0 +1,86 @@
+{
+  "abi": {
+    "interpreter": "/lib/ld-linux-aarch64.so.1",
+    "libraries": {
+      "/lib/aarch64-linux-gnu/libc.so.6": {
+        "bytes": 1722920,
+        "mode": 493,
+        "resolved": "/usr/lib/aarch64-linux-gnu/libc.so.6",
+        "sha256": "0f1905dc27dbc6715875c70527bc8da846a10084c9c483e9d8ff76dce8d69d0e"
+      },
+      "/lib/aarch64-linux-gnu/libgcc_s.so.1": {
+        "bytes": 133696,
+        "mode": 420,
+        "resolved": "/usr/lib/aarch64-linux-gnu/libgcc_s.so.1",
+        "sha256": "f2d3ad2bf0b61f6bc944cc37d7b6ab7f88d2582b41ff989ca164803f56cc5f20"
+      },
+      "/lib/aarch64-linux-gnu/liblzma.so.5": {
+        "bytes": 198584,
+        "mode": 420,
+        "resolved": "/usr/lib/aarch64-linux-gnu/liblzma.so.5.4.5",
+        "sha256": "47ea0f43683ef829cda43bfe1862c1b06f085fbd813bb58d2d142477f5380139"
+      },
+      "/lib/ld-linux-aarch64.so.1": {
+        "bytes": 203968,
+        "mode": 493,
+        "resolved": "/usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1",
+        "sha256": "390027e5f45f236bd1838bc54bf464c5ff01d260ab9f8b415ea8276641bce505"
+      }
+    },
+    "tools": {
+      "/usr/bin/ldd": {
+        "bytes": 5334,
+        "mode": 493,
+        "resolved": "/usr/bin/ldd",
+        "sha256": "8b1b9cb2220e2b8942431c102e249984cb61b5c62e8ac8e099968e610d3a27f8"
+      },
+      "/usr/bin/readelf": {
+        "bytes": 797368,
+        "mode": 493,
+        "resolved": "/usr/bin/aarch64-linux-gnu-readelf",
+        "sha256": "6bca2bbd23b072db9e9a19ae0e65cf7b7c15c08a3c2cf01dd56453e1ac9340b1"
+      }
+    }
+  },
+  "agnos": "19.8-carrot-bt1",
+  "assets": {
+    "helper": {
+      "bytes": 3686368,
+      "sha256": "2c69b756ea7b4b8980a69194f6aa359414d432a65b1654c197d4d1cebca71a06",
+      "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-bootstrap-532a028e75baadd11bdca549595d6c756d8e9a35/openpilot-runtime-inputs-aarch64"
+    },
+    "notices": {
+      "bytes": 812588,
+      "sha256": "ac349b74498b3bc741d24073169f8d160c112815250a87ce31c55a5359ad4243",
+      "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-bootstrap-532a028e75baadd11bdca549595d6c756d8e9a35/THIRD_PARTY_NOTICES.native-bootstrap.txt"
+    }
+  },
+  "build": {
+    "cargo_inputs_plan_sha256": "e8c6c6cfa890d2c37e3dff46c276b5f289043860cc0e6100ec156948f54a32c4",
+    "cargo_inputs_tree_sha256": "a07d9d183eaaff7c244bc7d8baa9daade5af80dccee93ae2aa2a1aa4128565b4",
+    "cargo_lock_sha256": "c78df868dbff23470a79445719dd6a078d9f5cb2a6a9704cd6bfdf0a899598f8",
+    "cargo_sha256": "6026281758f8ef9cd8155a6e338d0a5e277831774478a166514df3b445bed04d",
+    "features": [
+      "default",
+      "prepare-capnp",
+      "prepare-cargo",
+      "prepare-python",
+      "prepare-rust",
+      "prepare-source-assets"
+    ],
+    "rust_inputs_plan_sha256": "6cb591aeace063e332bac6478435f10683d771eafbcd773d871c94ec50402b62",
+    "rustc_sha256": "e467c9248540c2ce5f63c624d1deefa0428201c988a30b437df2e2bdb4175050"
+  },
+  "protocols": {
+    "current_tools": 1,
+    "generation_boot": 1,
+    "request_owner": 2
+  },
+  "role": "openpilot-runtime-inputs",
+  "schema": 1,
+  "source": {
+    "commit": "532a028e75baadd11bdca549595d6c756d8e9a35",
+    "tree": "1fd27540061746b523f7f173a20fe21f9492ca66"
+  },
+  "target": "aarch64-unknown-linux-gnu"
+}
