@@ -317,3 +317,10 @@ producer source는 `004f42d6e65c86aa18b8faea4c755495534a33db`, payload artifact�
 설치와 같은 `fetch-depth: 1`을 사용한다. 성공한 입력 producer도 기본 shallow checkout으로
 실제 bootstrap/source 보관을 수행했다. 진행 중인 factory 실행은 보존하고, 이 CI 전송 설정 변경이나
 결과 기록 때문에 같은 코드의 최초/작은 수정 빌드를 추가로 반복하지 않는다.
+
+위 factory 요청은 29개 짧은 SourceEntry 검사를 통과한 뒤 Actions ZIP 다운로드에서
+HTTP415로 멈췄다. release asset용 `Accept: application/octet-stream`을 Actions artifact
+endpoint에도 보내던 전송 코드가 원인이며 image 준비·runtime 빌드는 시작하지 않았다.
+Actions ZIP은 기본 JSON API 요청의 인증된 redirect를 사용하고 release asset의 binary
+요청은 보존한다. 바이트 수·원본 ZIP SHA·source/profile 검사는 그대로 유지한다.
+입력 producer를 반복하지 않고 같은 성공 입력으로 factory를 다시 실행한다.

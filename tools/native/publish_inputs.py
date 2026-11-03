@@ -209,8 +209,12 @@ class GitHub:
     return decode(raw)
 
   def download(self, route, expected, destination=None):
-    return transfer(['gh', 'api', '--hostname', 'github.com', f'repos/{REPO}/'+route,
-        '-H', 'Accept: application/octet-stream'], expected, destination)
+    command = ['gh', 'api', '--hostname', 'github.com', f'repos/{REPO}/'+route]
+    # Release assets negotiate a binary body. Actions ZIPs use the default
+    # JSON API request and redirect to their authenticated archive download.
+    if route.startswith('releases/assets/'):
+      command += ['-H', 'Accept: application/octet-stream']
+    return transfer(command, expected, destination)
 
   def release(self, tag):
     value = self.json('GET', 'releases/tags/'+quote(tag, safe=''), missing=True)

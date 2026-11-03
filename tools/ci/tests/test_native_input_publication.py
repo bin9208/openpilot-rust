@@ -359,6 +359,20 @@ class PublicationTests(unittest.TestCase):
         publication.main()
     client.assert_not_called()
 
+  def test_actions_zip_and_release_asset_use_their_distinct_api_content_types(self):
+    client = publication.GitHub()
+    pin = dict(bytes=1, sha256='a'*64)
+    target = Path('/owned/not-executed.zip')
+    with mock.patch.object(publication, 'transfer', return_value=1) as transfer:
+      client.download('actions/artifacts/42/zip', pin, target)
+      action_command, expected, destination = transfer.call_args.args
+      self.assertNotIn('Accept: application/octet-stream', action_command)
+      self.assertIn('repos/'+publication.REPO+'/actions/artifacts/42/zip', action_command)
+      self.assertEqual((expected, destination), (pin, target))
+      client.download('releases/assets/43', pin, target)
+      self.assertIn('Accept: application/octet-stream', transfer.call_args.args[0])
+      self.assertEqual(transfer.call_args.args[1:], (pin, target))
+
   def test_stream_is_bounded_and_cancels_only_its_new_process_group(self):
     with tempfile.TemporaryDirectory() as temp:
       root = Path(temp)
