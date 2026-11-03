@@ -729,6 +729,14 @@ def namespace_child(transport, uid, gid, work, factory, source, ready, go, group
     write(memory/'cgroup.subtree_control', '+memory')
     for name in ('dev', 'proc', 'sys'):
         mount('-t', 'tmpfs', 'tmpfs', factory/name)
+    # The static image's /tmp is not the writable temporary mount supplied by
+    # normal AGNOS boot. Use this job's disk, rather than charging temporary
+    # model/compiler files to a memory-backed tmpfs.
+    temporary = work/'tmp'
+    temporary.mkdir()
+    temporary.chmod(0o1777)
+    assert (factory/'tmp').is_dir() and not (factory/'tmp').is_symlink()
+    mount('--bind', temporary, factory/'tmp')
     transport.readonly_proc_tree(factory/'proc')
     for name in ('null', 'zero', 'random', 'urandom'):
         target = factory/'dev'/name

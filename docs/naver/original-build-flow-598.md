@@ -356,3 +356,10 @@ CI가 원본 checkout 전체를 읽기 전용으로 bind한 상태에서 `git st
 소스 회귀 job에서만 `third_party/native_inputs/`를 제외하는 partial/sparse checkout을
 사용한다. 기존 검사 명령·runner·실패 조건·제한 시간은 유지한다. 실제 기기 및 factory
 빌드에는 입력 전체를 포함한다. 이 CI 준비 수정 때문에 같은 runtime 시간 계측을 반복하지 않는다.
+
+`41693132733`은 Git LFS 경계를 통과했지만 첫 CLI import에서 static image `/tmp`에
+uid1000 쓰기 권한이 없어 멈췄다. 정상 AGNOS 부팅의 임시 mount가 없는 CI chroot 문제다.
+이 작업 전용 디스크 임시 디렉터리를 mode1777로 `/tmp`에 bind하며 메모리 tmpfs나 host의
+공용 `/tmp`는 사용하지 않는다. runtime 빌드는 아직 시작하지 않았고 코드/정책/고정 입력은
+그대로다. 실패 evidence artifact `13260521492`의 SHA256은
+`21c32485241fad5caacd3d04e0ba89b0ffb1291f3903958634bc557fe288947a`다.
