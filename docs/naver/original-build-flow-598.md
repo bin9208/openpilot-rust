@@ -337,3 +337,9 @@ API 전송 수정 `e5bf9cb877c0182fb1301efeda914dc7556e368e`의
 기기 경로로 보내면 안 된다. ARM 자동 선택과 기존 machine 설정/명시적 선택을 유지하고,
 중복된 index 존재 조건을 제거한다. 기존 시작 fixture에서 index가 있는 ARM과 X64를
 함께 확인한다. ARM의 실제 source build 동작과 고정 입력은 바꾸지 않는다.
+
+`factory41690428995`는 인증 입력과 image 준비를 마쳤지만 runtime 빌드 전에 멈췄다.
+CI가 원본 checkout 전체를 읽기 전용으로 bind한 상태에서 `git status`의 LFS clean filter가
+`.git/lfs/tmp`를 쓰려 한 것이 원인이다. 추적한 소스는 읽기 전용으로 유지하고 `.git`만
+기존 checkout처럼 쓰기 가능하게 bind한다. source commit/tree와 전후 clean 검사는 유지한다.
+실패한 실행에는 최초/작은 수정 빌드 측정값이 없으며 같은 입력 producer를 재사용한다.

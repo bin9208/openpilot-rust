@@ -746,6 +746,11 @@ def namespace_child(transport, uid, gid, work, factory, source, ready, go, group
         mount('--bind', path, target)
         if name == 'source':
             mount('-o', 'remount,bind,ro', target)
+            # git status can run the LFS clean filter even for pointer files.
+            # Keep tracked source read-only, but allow Git's own index/LFS
+            # cache bookkeeping just as in a normal installed checkout.
+            assert (path/'.git').is_dir() and not (path/'.git').is_symlink()
+            mount('--bind', path/'.git', target/'.git')
     os.chroot(factory)
     os.chdir('/')
     os.setgroups([])
