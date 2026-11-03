@@ -375,6 +375,8 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                 if filename == 'runtime-native-environment.yml':
                     # 2026-11-03: full candidate validation is manual, not a
                     # repeated feature-push prerequisite. Job commands stay intact.
+                    self.assertEqual(after.pop('run-name'),
+                        "AGNOS ${{ inputs.validation == 'full' && '최종 전체 검증' || '빌드 입력 준비' }} · ${{ github.ref_name }}")
                     self.assertEqual(set(after['on']), {'workflow_dispatch'})
                     self.assertEqual(after['on']['workflow_dispatch']['inputs']['validation'], dict(
                         description='Prepare verified build inputs, or validate the complete frozen runtime candidate',

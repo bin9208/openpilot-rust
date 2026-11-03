@@ -1,4 +1,5 @@
 name: Genuine AGNOS native compiler feasibility
+run-name: "AGNOS ${{ inputs.validation == 'full' && '최종 전체 검증' || '빌드 입력 준비' }} · ${{ github.ref_name }}"
 # Full runtime validation is dispatched for the frozen install candidate.
 # Feature edits use existing focused workflows; never restart this suite per push.
 on:

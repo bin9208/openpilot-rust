@@ -65,6 +65,11 @@ source-entry CLI와 pending 전환을 재사용한다. 현재 source·dirty chec
 `inputs` 결과는 전체 runtime 검증 성공을 주장할 수 없고 실행 runtime은 발행하지 않는다.
 원래 `full` 결과를 검증하는 경계도 보존한다. 최종 완전 후보의 전체 검증은 #601에 남긴다.
 
+Actions의 다음 실행 제목에는 `AGNOS 빌드 입력 준비` 또는 `AGNOS 최종 전체 검증`을
+표시한다. 이미 시작된 #137의 기존 제목은 바꿀 수 없으며, 그 실행은 입력 전용
+`validation=inputs`다. 입력 준비도 걸린 시간을 따로 남기고, 기기의 Git 다운로드·입력
+복사/준비·컴파일 시간을 생략해 최초 설치 시간을 줄인 것처럼 표현하지 않는다.
+
 최초·변경 후 시간 측정은 기존 factory source-entry workflow를 재사용한다. 아직 공개
 입력 pin이 없는 개발 단계에서는 성공한 실제 ARM producer의 입력 전용 artifact를
 전체 ZIP digest와 모든 source/profile/seed/SDK/provider·로컬 입력 파일 SHA로 검증한 뒤
