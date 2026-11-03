@@ -324,3 +324,11 @@ endpoint에도 보내던 전송 코드가 원인이며 image 준비·runtime 빌
 Actions ZIP은 기본 JSON API 요청의 인증된 redirect를 사용하고 release asset의 binary
 요청은 보존한다. 바이트 수·원본 ZIP SHA·source/profile 검사는 그대로 유지한다.
 입력 producer를 반복하지 않고 같은 성공 입력으로 factory를 다시 실행한다.
+
+입력 포함 커밋 `4b4996fe5945d462656fa4b2048f583386db6ca3`의 PR 집중 검사는 factory
+checkout의 `fetch-depth: 0` 고정값과 변경한 `1`의 차이를 거부했다. 변경한 다운로드 깊이를
+고정 검사 허용 항목에도 함께 반영하지 않은 누락이다. `1`만 정확히 확인한 뒤 원래 설정과
+나머지 명령·pin·gate·deadline 전체 비교를 유지한다. runtime 코드와 빌드 입력은 바꾸지 않는다.
+API 전송 수정 `e5bf9cb877c0182fb1301efeda914dc7556e368e`의
+[factory41690428995](https://github.com/bin9208/openpilot-rust/actions/runs/41690428995)를 보존하며,
+이 검사 기록 갱신 때문에 동일 코드의 최초/작은 수정 빌드를 다시 요청하지 않는다.

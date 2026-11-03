@@ -357,6 +357,10 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     after['on']['push']['branches'] = branches
                 old, new = before['jobs'][name], after['jobs'][name]
                 if filename == 'native-source-entry.yml':
+                    checkout = next(s for s in new['steps'] if s.get('uses') == 'actions/checkout@v7')
+                    self.assertEqual(checkout['with']['fetch-depth'], '1')
+                    original_checkout = next(s for s in old['steps'] if s.get('uses') == 'actions/checkout@v7')
+                    checkout['with']['fetch-depth'] = original_checkout['with']['fetch-depth']
                     self.assertEqual(after['on'].pop('workflow_call'),
                                      dict(inputs=after['on']['workflow_dispatch']['inputs']))
                     index = after['on']['workflow_dispatch']['inputs']['index_sha256']
