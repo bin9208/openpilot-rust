@@ -20,6 +20,11 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
         with: {lfs: false, persist-credentials: false}
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -49,6 +54,11 @@ jobs:
         arguments: ['-PpayloadMode=diagnostic', '-PpayloadMode=diagnostic -PfieldAcceptance=true', '-PpayloadMode=production']
     steps:
       - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
         with: {lfs: false, persist-credentials: false}
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
