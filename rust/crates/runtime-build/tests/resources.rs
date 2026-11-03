@@ -182,7 +182,11 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
                 let success = result.as_ref().is_ok_and(|s| s.success());
                 let record = monitor.finish(success, result.as_ref().err().map(|e| e.to_string()));
                 output.sync_all().unwrap();
-                assert_eq!(success && record.is_ok(), case == "normal", "{case}");
+                assert_eq!(
+                    success && record.is_ok(),
+                    matches!(case.as_str(), "normal" | "cache-reclaim"),
+                    "{case}"
+                );
                 drop(monitor);
                 if !success || record.is_err() {
                     std::process::exit(1);
@@ -253,6 +257,28 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
                         std::hint::black_box(&data);
                         thread::sleep(Duration::from_millis(120));
                     }
+                    "cache-reclaim" => {
+                        use std::io::{Read, Seek, SeekFrom, Write};
+                        let mut file = fs::OpenOptions::new()
+                            .create_new(true)
+                            .read(true)
+                            .write(true)
+                            .open(root.join("reclaimable-input"))
+                            .unwrap();
+                        let mut block = vec![0x5a_u8; 1024 * 1024];
+                        // More clean file data than the hard memory limit, with
+                        // bounded live allocation: the kernel must reclaim it.
+                        for _ in 0..64 {
+                            for _ in 0..8 {
+                                file.write_all(&block).unwrap();
+                            }
+                            file.sync_all().unwrap();
+                        }
+                        file.seek(SeekFrom::Start(0)).unwrap();
+                        while file.read(&mut block).unwrap() != 0 {
+                            std::hint::black_box(&block);
+                        }
+                    }
                     _ => loop {
                         thread::sleep(Duration::from_secs(1));
                     },
@@ -277,6 +303,7 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
     fs::write(temp.path().join("normal.log"), b"original runtime log").unwrap();
     for case in [
         "normal",
+        "cache-reclaim",
         "memory",
         "disk",
         "worker-kill",
@@ -300,7 +327,11 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
             filesystems: BTreeMap::from([(
                 root.clone(),
                 DiskBudget {
-                    maximum_growth_bytes: 64 * 1024 * 1024,
+                    maximum_growth_bytes: if case == "cache-reclaim" {
+                        1024 * 1024 * 1024
+                    } else {
+                        64 * 1024 * 1024
+                    },
                     minimum_free_bytes: 32 * 1024 * 1024,
                 },
             )]),
@@ -390,7 +421,7 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
         };
         assert_eq!(
             status.success(),
-            case == "normal",
+            matches!(case, "normal" | "cache-reclaim"),
             "{case}: {}",
             fs::read_to_string(root.join("fixture.log")).unwrap()
         );
@@ -444,7 +475,7 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
             let last = rows.last().unwrap();
             assert_eq!(
                 last["state"],
-                if case == "normal" {
+                if matches!(case, "normal" | "cache-reclaim") {
                     "success"
                 } else {
                     "failed"
@@ -452,7 +483,15 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
             );
             assert!(last["memory"]["kernel_peak_bytes"].as_u64().unwrap() > 0);
             if case == "memory" {
+                assert!(last["memory"]["oom_events"].as_u64().unwrap() > 0);
+            }
+            if case == "cache-reclaim" {
                 assert!(last["memory"]["limit_events"].as_u64().unwrap() > 0);
+                assert_eq!(last["memory"]["oom_events"], 0);
+                assert!(
+                    last["memory"]["kernel_peak_bytes"].as_u64().unwrap()
+                        <= policy.maximum_memory_bytes
+                );
             }
         } else {
             assert!(rows.iter().all(|row| row["state"] != "success"));

@@ -589,16 +589,18 @@ class PublicSourceReuseTests(unittest.TestCase):
       policy = dict(maximum_memory_bytes=100, filesystems={str(parent): budget})
       row = dict(state='success', elapsed_ms=3, policy=policy,
           context=dict(requested_source=source, configuration_sha256='c'*64),
-          memory=dict(kernel_peak_bytes=50, limit_events=0),
+          memory=dict(kernel_peak_bytes=50, limit_events=0, oom_events=0),
           filesystems=[dict(budget=budget, observed_peak_growth_bytes=5, minimum_available_bytes=25)])
       def write(value):
         path.write_text(json.dumps(dict(state='admitted'))+'\n'+json.dumps(value)+'\n')
       write(row)
       result = full_entry.resource_receipt(entry, attempt, parent, source, 'c'*64, policy)
       self.assertEqual(result['sha256'], full_entry.checksum(path))
+      write(dict(row, memory=dict(row['memory'], limit_events=10)))
+      full_entry.resource_receipt(entry, attempt, parent, source, 'c'*64, policy)
       for changes in (dict(state='failure'), dict(context=dict(row['context'], requested_source=dict(source, tree='d'*40))),
-                      dict(memory=dict(kernel_peak_bytes=50, limit_events=1)),
-                      dict(memory=dict(kernel_peak_bytes=101, limit_events=0)),
+                      dict(memory=dict(kernel_peak_bytes=50, limit_events=1, oom_events=1)),
+                      dict(memory=dict(kernel_peak_bytes=101, limit_events=0, oom_events=0)),
                       dict(filesystems=[dict(row['filesystems'][0], minimum_available_bytes=19)]),
                       dict(filesystems=[dict(row['filesystems'][0], observed_peak_growth_bytes=11)])):
         write(dict(row, **changes))

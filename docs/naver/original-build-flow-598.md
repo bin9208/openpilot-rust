@@ -264,3 +264,20 @@ runtime 회귀 단계는 891.784초였다. 이는 이미 실행한 GitHub native
 구간은 17.450초이고 13개 산출물 모두 `fresh=true`다. 긴 대기의 대부분을 Rust 재컴파일로
 설명할 수 없다. 새 측정은 PRoot를 거치지 않는 factory native ARM에서 준비/빌드/봉인을
 분리하며, 이 기록만으로 실제 기기에서 어느 확인을 없애도 된다고 결론 내리지 않는다.
+
+## 2026-11-04 입력 준비의 메모리 중단 수정
+
+`a49b7de7c`의 입력 실행 `41657041599`는 원본 입력 준비 후 bootstrap 최초 도구 빌드에서
+3 GiB 제한 이벤트 10회를 기록하고 중단했다. 묶음 생성에는 도달하지 않았다. 직전 관측은
+anonymous 1,014,185,984바이트, file cache 2,009,337,856바이트였고 실제 rustc 자식은 두 개였다.
+기존 보고서는 `max`/`oom`/`oom_kill`을 합산하므로 이 결과만으로 실제 OOM 여부를 확정할 수 없다.
+
+[커널 v2 문서](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html#memory-interface-files)에
+따라 회수 압력인 `max`와 할당 실패/OOM을 분리한다. 3 GiB hard limit·swap 금지·시스템 여유·
+취소와 이전 실행/로그 보존은 유지한다. Linux 4.9 v1에는 누적 OOM 카운터가 없으므로
+[원래 커널의 OOM eventfd](https://github.com/torvalds/linux/blob/v4.9/mm/memcontrol.c)를 worker 시작 전에
+구독하고 알림을 누적한다. 이 변경으로 v1의 실제 기기 실행을 검증했다고 주장하지 않는다.
+
+기존 bounded kernel 검사에 256 MiB 제한에서 512 MiB의 깨끗한 파일 캐시를 회수하며 완료하는
+경우를 추가한다. 기존 실제 anonymous OOM·중단·프로세스 정리·정상 실행 보존도 유지한다.
+이 집중 결과를 먼저 확인하며, 실패한 입력 실행 전체를 원인 수정 없이 다시 요청하지 않는다.

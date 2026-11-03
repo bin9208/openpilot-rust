@@ -67,6 +67,7 @@ jobs:
           (job/'resource-test-executable').write_text(outputs[0])
           PY
           cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --all-targets -- -D warnings
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --lib memory_cgroup::tests::v1_oom_notifications_remain_visible_after_the_event_is_drained
       - name: Verify the actual root scope helper drops to its original caller
         shell: bash
         run: |

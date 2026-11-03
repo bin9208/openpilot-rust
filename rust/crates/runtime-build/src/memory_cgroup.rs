@@ -8,9 +8,10 @@ use rustix::process::{
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
+    os::fd::{AsRawFd, OwnedFd},
     os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
-    sync::atomic::{AtomicBool, Ordering},
+    sync::atomic::{AtomicBool, AtomicU64, Ordering},
     thread,
     time::{Duration, Instant},
 };
@@ -31,14 +32,61 @@ pub struct Memory {
     pub current_bytes: u64,
     /// Kernel cgroup charge high-water mark, including descendants and cache.
     pub kernel_peak_bytes: u64,
-    /// v1 failcnt includes rejected/reclaimed allocations, not only OOM kills.
+    /// Limit pressure/reclaim notifications, not necessarily allocation failure.
     pub limit_events: u64,
+    /// Actual OOM notifications; cache reclamation alone does not fail a build.
+    pub oom_events: u64,
 }
 
 pub struct Group {
     pub path: PathBuf,
     version: Version,
     owned: bool,
+    oom_watch: Option<OomWatch>,
+}
+
+// Linux 4.9's v1 memory.oom_control has no cumulative OOM counter. Subscribe
+// before any worker joins so even an OOM resolved between samples is retained.
+struct OomWatch {
+    event: OwnedFd,
+    _control: File,
+    observed: AtomicU64,
+}
+
+impl OomWatch {
+    fn register(path: &Path) -> Result<Self> {
+        let event = rustix::event::eventfd(
+            0,
+            rustix::event::EventfdFlags::CLOEXEC | rustix::event::EventfdFlags::NONBLOCK,
+        )?;
+        let oom_control = File::open(path.join("memory.oom_control"))?;
+        control(
+            path,
+            "cgroup.event_control",
+            format!("{} {}", event.as_raw_fd(), oom_control.as_raw_fd()),
+        )?;
+        Ok(Self {
+            event,
+            _control: oom_control,
+            observed: AtomicU64::new(0),
+        })
+    }
+
+    fn count(&self) -> Result<u64> {
+        let mut bytes = [0_u8; 8];
+        let next = match rustix::io::read(&self.event, &mut bytes) {
+            Ok(8) => u64::from_ne_bytes(bytes),
+            Ok(_) => return Err("incomplete native build OOM notification".into()),
+            Err(rustix::io::Errno::AGAIN) => 0,
+            Err(error) => return Err(error.into()),
+        };
+        self.observed
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |old| {
+                old.checked_add(next)
+            })
+            .map_err(|_| "native build OOM notification overflow")?;
+        Ok(self.observed.load(Ordering::Relaxed))
+    }
 }
 
 fn controller(path: &Path) -> Result<Version> {
@@ -85,10 +133,11 @@ impl Group {
             .prefix(&format!("build-{}-", std::process::id()))
             .tempdir_in(parent)?
             .keep();
-        let group = Self {
+        let mut group = Self {
             path,
             version,
             owned: true,
+            oom_watch: None,
         };
         match version {
             Version::V2 => {
@@ -109,6 +158,7 @@ impl Group {
                     return Err("memory cgroup has no active swap accounting".into());
                 }
                 control(&group.path, "memory.oom_control", 0)?;
+                group.oom_watch = Some(OomWatch::register(&group.path)?);
                 if group.path.join("memory.swappiness").exists() {
                     control(&group.path, "memory.swappiness", 0)?;
                 }
@@ -157,24 +207,43 @@ impl Group {
     }
 
     pub fn memory(&self) -> Result<Memory> {
-        let (current, peak, events) = match self.version {
+        let (current, peak, events, oom_events) = match self.version {
             Version::V1 => (
                 "memory.usage_in_bytes",
                 "memory.max_usage_in_bytes",
                 number(&self.path.join("memory.failcnt"))?,
+                self.oom_watch
+                    .as_ref()
+                    .ok_or("native build v1 OOM notification missing")?
+                    .count()?,
             ),
             Version::V2 => {
                 let events = fs::read_to_string(self.path.join("memory.events"))?;
-                let count = events
-                    .lines()
-                    .filter_map(|line| line.split_once(' '))
-                    .filter(|(key, _)| matches!(*key, "max" | "oom" | "oom_kill"))
-                    .try_fold(0_u64, |sum, (_, value)| -> Result<u64> {
-                        Ok(sum
-                            .checked_add(value.parse()?)
-                            .ok_or("memory event overflow")?)
-                    })?;
-                ("memory.current", "memory.peak", count)
+                for required in ["max", "oom"] {
+                    if !events
+                        .lines()
+                        .any(|line| line.split_once(' ').is_some_and(|(key, _)| key == required))
+                    {
+                        return Err("native build memory event counter missing".into());
+                    }
+                }
+                let count = |keys: &[&str]| -> Result<u64> {
+                    events
+                        .lines()
+                        .filter_map(|line| line.split_once(' '))
+                        .filter(|(key, _)| keys.contains(key))
+                        .try_fold(0_u64, |sum, (_, value)| -> Result<u64> {
+                            Ok(sum
+                                .checked_add(value.parse()?)
+                                .ok_or("memory event overflow")?)
+                        })
+                };
+                (
+                    "memory.current",
+                    "memory.peak",
+                    count(&["max"])?,
+                    count(&["oom", "oom_kill", "oom_group_kill"])?,
+                )
             }
         };
         Ok(Memory {
@@ -182,6 +251,7 @@ impl Group {
             current_bytes: number(&self.path.join(current))?,
             kernel_peak_bytes: number(&self.path.join(peak))?,
             limit_events: events,
+            oom_events,
         })
     }
 
@@ -229,6 +299,7 @@ pub fn enter(parent: &Path, maximum: u64) -> Result<()> {
         path,
         version,
         owned: false,
+        oom_watch: None,
     };
     group.verify_limit(maximum)?;
     control(&group.path, "cgroup.procs", getpid().as_raw_nonzero())?;
@@ -437,4 +508,24 @@ pub fn verify_control(parent: &Path) -> Result<()> {
         return Err("native build frontend is outside its delegated control scope".into());
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn v1_oom_notifications_remain_visible_after_the_event_is_drained() {
+        let watch = OomWatch {
+            event: rustix::event::eventfd(0, rustix::event::EventfdFlags::NONBLOCK).unwrap(),
+            _control: File::open("/dev/null").unwrap(),
+            observed: AtomicU64::new(0),
+        };
+        assert_eq!(watch.count().unwrap(), 0);
+        rustix::io::write(&watch.event, &2_u64.to_ne_bytes()).unwrap();
+        assert_eq!(watch.count().unwrap(), 2);
+        assert_eq!(watch.count().unwrap(), 2);
+        rustix::io::write(&watch.event, &1_u64.to_ne_bytes()).unwrap();
+        assert_eq!(watch.count().unwrap(), 3);
+    }
 }

@@ -96,7 +96,7 @@ def resource_receipt(entry, attempt, parent, source, configuration_pin, policy):
     assert last['context']['configuration_sha256'] == configuration_pin
     assert last['policy'] == policy and last['elapsed_ms'] >= 0
     assert 0 < last['memory']['kernel_peak_bytes'] <= policy['maximum_memory_bytes']
-    assert last['memory']['limit_events'] == 0 and last['filesystems']
+    assert last['memory']['oom_events'] == 0 and last['filesystems']
     for disk in last['filesystems']:
         assert disk['budget'] in policy['filesystems'].values()
         assert disk['observed_peak_growth_bytes'] <= disk['budget']['maximum_growth_bytes']
@@ -690,7 +690,9 @@ def arm():
         factory_admission_in_overall_budget=True, startup_20_second_policy_changed=False,
         payload_finished_monotonic_ns=time.monotonic_ns(),
         cargo_cache_identity_path=str(state/'cache/cargo-build'),
-        public_metadata_verified=True, warm_same_path_entry_completed=True,
+        public_metadata_verified=request['input_producer'] is None,
+        authenticated_git_inputs_verified=request['input_producer'] is not None,
+        warm_same_path_entry_completed=True,
         public_metadata_preflight_transferred_bytes=request['public_metadata_transferred_bytes'],
         cross_job_cargo_cache_reused=False, warm_zero_download_claimed=True,
         offline_network_namespace_inode=network_namespace,

@@ -287,9 +287,9 @@ impl Monitor {
         if self.minimum_available_memory < self.policy.minimum_available_memory_bytes {
             return Err("normal runtime memory margin exhausted during native build".into());
         }
-        if self.memory.limit_events != 0 {
+        if self.memory.oom_events != 0 {
             return Err(
-                "private native build memory limit reached; normal runtime retained".into(),
+                "private native build allocation failed (OOM); normal runtime retained".into(),
             );
         }
         for disk in &mut self.disks {
