@@ -1,0 +1,90 @@
+{
+  "providers": {
+    "acados": {
+      "bytes": 643,
+      "sha256": "144692df680edf6a21e4ec2b712c403b88d10016e0411ec9efa17eca8041b2b2",
+      "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-acados022-ce54852e3d43e225237e182d6ea127524d57f0a5b44fc37be4e6847b31463f66/provider.json"
+    },
+    "brotli": {
+      "bytes": 636,
+      "sha256": "89b2583fcdbfb263f1ab0c4daa0774ddf910cba993c2009163d0564b068d56d7",
+      "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-brotli110-b14c3bd7bb108868f2e5e4e8b007e1e18f27be91df622b676b6214661a3ab0b9/provider.json"
+    },
+    "dbc": {
+      "bytes": 652,
+      "sha256": "4392d6d35e0f1b299d8048a23681956ce1f1c3fa618da061de79b8e98fea9b54",
+      "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-radarcan-dbc-52bddba60e3629fa052b594e1bfa857d5f29f56539029f7e33f6adb2f9dbbf86/provider.json"
+    },
+    "ffmpeg": {
+      "bytes": 638,
+      "sha256": "9983fe052127fd35a57472124d5dbf6c868d1eb1f4c20b5bb4f7e2f89eb9616a",
+      "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-ffmpeg611-65b261b0b4df86101f026cb8e7eb64cc59b75c45af141da2722377b3a3974781/provider.json"
+    },
+    "ffmpeg-tools": {
+      "bytes": 640,
+      "sha256": "01b1876b38a56cfd5d0e4e06e4e8fbd4ea9ababce99cc2c93f80347c4851a116",
+      "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-ffmpeg611-tools-26398ee130ccfa90f4ba6fc7029284fbff3ba6cda525d7aa7452a30d4f8f7b1c/provider.json"
+    },
+    "freesans": {
+      "bytes": 649,
+      "sha256": "a3ecd42b67a87459747ea0f3f9eb76e47e2284608d79b9259cd2ad8b22a612be",
+      "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-freesans-pygame252-b4d8260a277321561f886e14932bebf3d1be2b8c7f33a8104ea7af923320ac4f/provider.json"
+    },
+    "geos": {
+      "bytes": 631,
+      "sha256": "f3aaa85245da8b030d9f9d97d05e2ff482ad059879c5dffaf639e23844086e3c",
+      "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-geos313-1ff983507df822045d18b754b8b3162667acd8d72fc9ae7636314a0c800f9204/provider.json"
+    },
+    "mpc": {
+      "bytes": 652,
+      "sha256": "30ef7a1d188c638d89ee83fd0fc34e993b98bb2510074b9e80678cf1774798bb",
+      "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-acados022-runtime-3b81a88a49a2a56f381755522bbf9d96bf6b187b65ab496aa9802f012c06e0ca/provider.json"
+    },
+    "numerics": {
+      "bytes": 638,
+      "sha256": "f7db6b8ba54455832a9c5ff8e92e88fd561501ef7f0ee0c745247c8e05b6fdc4",
+      "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-numpy253-0590119e68a7a119581e4817dc1334fb7f921f5106dc7dadc14d2465822b8de8/provider.json"
+    },
+    "opencv": {
+      "bytes": 637,
+      "sha256": "7b084e61e9a4af1e849571373fcccf2a67419fa13f996a4097d6f90826ed2d31",
+      "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-opencv413-245e0fb532ec69da418e7501adc0b3fc7476964be13bcbbf5b918306720999d0/provider.json"
+    },
+    "panda": {
+      "bytes": 658,
+      "sha256": "14c71cd66a7e71af50373eedaa3e0e3ddcb8c99e6e0ef67f59535efb247634bf",
+      "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-panda-firmware-143e159661483d7d30abc55f792633aa79debda9bd819c5c35a176f5a99e894a/provider.json"
+    },
+    "raylib": {
+      "bytes": 636,
+      "sha256": "3efb2d09ac8810bb004e8238f3de44b4afed7b0595aa389ac823716e2ecd6c6a",
+      "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-raylib600-32618bf97a1e247fb3652f1b1acbbe5d95c95d3df6d689bb4093133bb6562c86/provider.json"
+    },
+    "sdl": {
+      "bytes": 630,
+      "sha256": "513a8d19a4414c5358ec8f4ba4f67b7c6609b65a0c93b606d309e53ff3cb9c34",
+      "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-sdl228-8813a1fb5f2ea7f499417758a1f4959a7b86f3d999facfab93742398275f2296/provider.json"
+    },
+    "turbojpeg": {
+      "bytes": 650,
+      "sha256": "e9682346096c49ebc5b99c4b5be5cdb453bd3bd1b437b06f69e202de73a5ae77",
+      "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-turbojpeg3141-765ff949bbf1740de948117044cf16ff73fc35719dd804f61237daaee5c4f5c9/provider.json"
+    },
+    "usbgpu": {
+      "bytes": 653,
+      "sha256": "d2c6d63342c30f13788d708516cf36f22af1424326dbdfef0510f166972d5716",
+      "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-usbgpu-hcq-data-4cd301106d2b446d3f854ee15a1a91f117a9d86dde6dd1fcc69a34a30472190f/provider.json"
+    }
+  },
+  "schema": 1,
+  "seed": {
+    "bytes": 3259,
+    "sha256": "e354863b927348ef36a77ec101872ecf31bda3972d111e91e80b4b094d4580ca",
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-bootstrap-004f42d6e65c86aa18b8faea4c755495534a33db/manifest.json"
+  },
+  "system_sdk": {
+    "bytes": 4552019,
+    "sha256": "af0f25910360ef9248cde0d65f0abe9fc71b89bc862dc78ab9cd04f9a031a6cd",
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-system-sdk-af0f25910360ef9248cde0d65f0abe9fc71b89bc862dc78ab9cd04f9a031a6cd/system-sdk.json"
+  }
+}

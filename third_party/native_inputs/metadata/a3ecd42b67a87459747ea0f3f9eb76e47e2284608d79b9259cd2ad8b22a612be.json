@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "role": "openpilot-foreign-provider",
+  "profile": "freesans-pygame252",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "provider_source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "tree_sha256": "ba74186d294f225c12ab195dedd0a034a66741abb56b7357b1d4e9c2761dbe90",
+  "asset": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-freesans-pygame252-b4d8260a277321561f886e14932bebf3d1be2b8c7f33a8104ea7af923320ac4f/freesans-pygame252.tar.gz",
+    "sha256": "b4d8260a277321561f886e14932bebf3d1be2b8c7f33a8104ea7af923320ac4f",
+    "bytes": 115368
+  }
+}

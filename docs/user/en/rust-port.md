@@ -1,8 +1,7 @@
 # Experimental Rust port
 
-This independent repository has begun porting the openpilot device runtime to
-Rust. The initial workspace contains scalar filters and a Linux CPU diagnostic.
-It does not yet replace vehicle processes or enable an additional AI model.
+This document covers the initial diagnostic tool and device source build work (#598).
+The CPU diagnostic below does not replace vehicle processes or enable an additional AI model.
 
 On a Linux development host, with Rust 1.94.0 installed, run from `rust/`:
 
@@ -30,13 +29,21 @@ Track progress and acceptance in [#598](https://github.com/bin9208/openpilot-rus
 
 The current work branch selects source builds at ARM startup instead of automatically
 downloading a complete runtime release for the checkout's commit. It uses the existing
-Git install/update and restart flow. Default configuration is included; the actual local
-input bundle and initial/small-change build timings are still being prepared. This branch
-is not yet offered as an install candidate.
+Git install/update and restart flow. Pinned build inputs and default configuration are
+included with the Git branch. First startup prepares the required tools and dependencies
+automatically; later builds reuse the common cache. Check #598 above for the exact test
+candidate commit and its results.
 After a branch change, normal startup builds and verifies the changed checkout under the
 existing boot lock before starting manager. Build failures preserve the previous generation and logs.
 Startup does not run the full functional test suite or Clippy. It checks the required
 inputs and executable/library compatibility; full regression tests run separately in Actions.
+
+For device testing, install or update the candidate identified in #598 through the existing
+Git flow, then restart. No manual Rust installation or separate input preparation command
+is required. Check the commit in the software screen, normal display, recording and the
+existing log upload path. For initial installation and a small change, record separate times
+from the start of Git transfer until the display appears. Record device results in
+[#528](https://github.com/bin9208/openpilot-rust/issues/528); CI timings do not replace device measurements.
 
 The developer command `openpilot-runtime-assets --plan JSON --cache DIRECTORY` verifies
 HTTPS assets by SHA-256 and byte count and stores them by content. Preparing the same

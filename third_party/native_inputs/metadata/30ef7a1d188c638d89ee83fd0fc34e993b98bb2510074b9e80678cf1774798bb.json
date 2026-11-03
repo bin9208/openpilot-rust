@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "role": "openpilot-source-bound-provider",
+  "profile": "acados022-runtime",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "provider_source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "tree_sha256": "f3c2478316b0f92e267ac2852174cb15737a4692424fb2bf3f3877dce436dcb2",
+  "asset": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-acados022-runtime-3b81a88a49a2a56f381755522bbf9d96bf6b187b65ab496aa9802f012c06e0ca/acados022-runtime.tar.gz",
+    "sha256": "3b81a88a49a2a56f381755522bbf9d96bf6b187b65ab496aa9802f012c06e0ca",
+    "bytes": 1671693
+  }
+}

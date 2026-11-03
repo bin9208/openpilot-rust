@@ -281,3 +281,39 @@ anonymous 1,014,185,984바이트, file cache 2,009,337,856바이트였고 실제
 기존 bounded kernel 검사에 256 MiB 제한에서 512 MiB의 깨끗한 파일 캐시를 회수하며 완료하는
 경우를 추가한다. 기존 실제 anonymous OOM·중단·프로세스 정리·정상 실행 보존도 유지한다.
 이 집중 결과를 먼저 확인하며, 실패한 입력 실행 전체를 원인 수정 없이 다시 요청하지 않는다.
+
+수정 source `004f42d6e65c86aa18b8faea4c755495534a33db`의
+[커널 집중41670338618](https://github.com/bin9208/openpilot-rust/actions/runs/41670338618)은 성공했다.
+cache-reclaim은 1.018초, 제한 회수 이벤트 1,331회, OOM 0, peak 256 MiB로 완료했다.
+실제 anonymous OOM은 0.348초에 OOM 이벤트 5를 기록하고 실패 처리했으며 기존 정상 실행과
+로그를 보존했다. 이는 X64 실제 host kernel 검사다. 같은 source로
+[입력41670609725](https://github.com/bin9208/openpilot-rust/actions/runs/41670609725)를 `inputs`로
+한 번 요청했고, ARM 입력 묶음 및 최초/작은 수정 runtime 시간은 아직 미완료다.
+
+## 2026-11-04 실제 Git 입력과 빌드 시간 실행
+
+[입력41670609725](https://github.com/bin9208/openpilot-rust/actions/runs/41670609725)는 성공했다.
+bootstrap은 최초 한 경우, production 입력은 `initial`/`git-index-initial` 두 경우를 실행했다.
+bootstrap 최초는 1,201.605초, private cgroup peak는 3 GiB였다. production 입력의 두 worker는
+각각 596.401/490.356초, OOM 0으로 완료했다. 이 값은 PRoot AGNOS 입력 준비이며 기기 빌드 시간이 아니다.
+
+실제로 소비한 13개 자산 범주의 Git 입력 537개, 1,266,096,767바이트를 후보에 넣는다.
+`rust/native-bootstrap-inputs.json`과 `third_party/native_inputs/`를 포함하며 index SHA256은
+`592ae732f05f28056cab6847aef0d4a72e5f07035e2504265557c99b56563a19`다.
+producer source는 `004f42d6e65c86aa18b8faea4c755495534a33db`, payload artifact는
+`13254948801`, 원본 ZIP SHA256은 `ddaa94d07df3f8e67552240862440c0b963c2e1475ce3f77c4ba7df0fd9cb1d1`이다.
+로컬에서는 전송된 ZIP과 작성한 파일의 바이트/해시 및 diff만 확인하며 실행 파일을 실행하지 않았다.
+
+같은 runtime 코드와 실제 입력의 최초·작은 수정 빌드는 기존
+[factory ARM41687475482](https://github.com/bin9208/openpilot-rust/actions/runs/41687475482)에서 측정한다.
+이 실행은 공개 후보 파일 전송과 병행하여, 인증한 producer 입력만 독립 CI Git checkout에 넣는다.
+실제 입력 포함 CI commit object는 `source-entry-authenticated-inputs/proof.json`에 남긴다.
+이 CI checkout이나 생성 runtime을 사용자에게 설치한 후보로 표현하지 않는다. 사용자는 실제 입력이
+커밋된 Git 후보를 받고 자신의 기기에서 빌드한다. 실행 결과·정확 source와 준비/컴파일/봉인 시간은
+해당 실행의 `state/*-proof.json`/`build.log` 및 [#598](https://github.com/bin9208/openpilot-rust/issues/598)에 기록한다.
+실제 기기 정상 시작·녹화·업로드와 Git 수신부터의 시간은 #528의 사용자 결과로 구분한다.
+
+위 최초 측정의 기존 checkout은 전체 Git 이력을 받도록 되어 있었다. 이후 factory 요청은 기존
+설치와 같은 `fetch-depth: 1`을 사용한다. 성공한 입력 producer도 기본 shallow checkout으로
+실제 bootstrap/source 보관을 수행했다. 진행 중인 factory 실행은 보존하고, 이 CI 전송 설정 변경이나
+결과 기록 때문에 같은 코드의 최초/작은 수정 빌드를 추가로 반복하지 않는다.

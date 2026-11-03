@@ -54,7 +54,7 @@ jobs:
       SCOPE_CONTEXT: GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE
     steps:
       - uses: actions/checkout@v7
-        with: {persist-credentials: false, fetch-depth: 0}
+        with: {persist-credentials: false, fetch-depth: 1}
       - name: Require the GitHub-hosted Linux ARM64 source entry runner
         run: |
           /usr/bin/python3 -I -B -S -c 'import runpy; runpy.run_path("tools/ci/runner_policy.py")["require_github_native_arm"]()'

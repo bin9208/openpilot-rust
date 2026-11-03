@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "role": "openpilot-source-bound-provider",
+  "profile": "panda-firmware-runtime",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "provider_source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "tree_sha256": "e113154eb6b7491a335c797e85bdfae2d7dc74b10de1a519404d2bbe2cc55d5a",
+  "asset": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-panda-firmware-143e159661483d7d30abc55f792633aa79debda9bd819c5c35a176f5a99e894a/panda-firmware-runtime.tar.gz",
+    "sha256": "143e159661483d7d30abc55f792633aa79debda9bd819c5c35a176f5a99e894a",
+    "bytes": 152265
+  }
+}

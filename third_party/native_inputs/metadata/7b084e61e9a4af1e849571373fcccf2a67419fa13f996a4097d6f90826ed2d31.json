@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "role": "openpilot-foreign-provider",
+  "profile": "opencv413-shared",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "provider_source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "tree_sha256": "c9f856788ba80082c2344dced7e2df053736f3da0a1ebd311308908d74de817a",
+  "asset": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-opencv413-245e0fb532ec69da418e7501adc0b3fc7476964be13bcbbf5b918306720999d0/opencv413-shared.tar.gz",
+    "sha256": "245e0fb532ec69da418e7501adc0b3fc7476964be13bcbbf5b918306720999d0",
+    "bytes": 7664869
+  }
+}

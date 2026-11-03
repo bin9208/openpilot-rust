@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "role": "openpilot-foreign-provider",
+  "profile": "acados022-libraries",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "provider_source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "tree_sha256": "22bb14ea875baa3082b5675e635362b7fef36f2b7fce413838ab2fcc123c7ae4",
+  "asset": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-acados022-ce54852e3d43e225237e182d6ea127524d57f0a5b44fc37be4e6847b31463f66/acados022-libraries.tar.gz",
+    "sha256": "ce54852e3d43e225237e182d6ea127524d57f0a5b44fc37be4e6847b31463f66",
+    "bytes": 1563223
+  }
+}
