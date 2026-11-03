@@ -9,7 +9,7 @@ use std::{
     fs::File,
     path::{Component, Path, PathBuf},
     process::Command,
-    sync::atomic::AtomicBool,
+    sync::atomic::{AtomicBool, Ordering},
 };
 
 fn error(value: impl std::fmt::Display) -> Error {
@@ -140,7 +140,25 @@ impl Context {
             eprintln!("native pending update retained without activation: {error}");
         }
         Config::verify_pin(&self.config_path, &self.configuration_sha256).map_err(error)?;
-        let selected = selection::resolve(&self.config.stores).map_err(error)?;
+        let mut selected = selection::resolve(&self.config.stores).map_err(error)?;
+        match self.prepare_checkout(&selected, stopped) {
+            Ok(true) => {
+                if let Err(error) =
+                    pending::activate_at_boot_pinned(&self.config_path, &self.configuration_sha256)
+                {
+                    eprintln!("native checkout build retained without activation: {error}");
+                }
+                selected = selection::resolve(&self.config.stores).map_err(error)?;
+            }
+            Ok(false) => (),
+            Err(error) => {
+                eprintln!(
+                    "native checkout build failed; keeping verified source {}: {error}",
+                    selected.source_commit
+                );
+                std::env::set_var("OPENPILOT_NATIVE_UPDATE_ERROR", error.to_string());
+            }
+        }
         if selected.id == self.generation {
             return Ok(false);
         }
@@ -176,6 +194,84 @@ impl Context {
             .env_remove("AGNOS_VERSION")
             .current_dir(&next.repository);
         handoff::run_locked_with_signals(command, lock, stopped, signals)?;
+        Ok(true)
+    }
+
+    // Git installation/branch changes must build the requested clean checkout
+    // before manager startup, just like the original launch/build.py flow.
+    // Reuse the updater's existing source-entry CLI and boot transaction.
+    fn prepare_checkout(
+        &self,
+        selected: &selection::Selected,
+        stopped: &AtomicBool,
+    ) -> Result<bool, Error> {
+        let Some(path) = &self.machine_path else {
+            return Ok(false);
+        };
+        let requested = match openpilot_runtime_build::source::inspect(&self.requested_checkout) {
+            Ok(source) => source,
+            Err(error) => {
+                eprintln!("native boot keeps verified source; requested checkout is unavailable or dirty: {error}");
+                return Ok(false);
+            }
+        };
+        if requested.commit == selected.source_commit {
+            return Ok(false);
+        }
+        let (policy, pin) = machine::Config::read_pinned(path).map_err(error)?;
+        policy.verify_stores(&self.config.stores).map_err(error)?;
+        policy
+            .verify_source_paths(&self.requested_checkout)
+            .map_err(error)?;
+        if self
+            .machine_launch_pin
+            .as_ref()
+            .is_some_and(|expected| expected.to_str() != Some(pin.as_str()))
+        {
+            return Err(error("native machine policy changed before checkout build"));
+        }
+        Config::verify_pin(&self.config_path, &self.configuration_sha256).map_err(error)?;
+        generation::offroad(&self.config.stores.params).map_err(error)?;
+        let owner = openpilot_runtime_build::supervision::process_identity(std::process::id())
+            .map_err(error)?;
+        let mut command = Command::new("/usr/bin/python3");
+        command
+            .env_remove("LD_LIBRARY_PATH")
+            .env_remove("LD_PRELOAD")
+            .env_remove("CARROT_BOOT_LOCK_SOCKET")
+            .env_remove("CARROT_BOOT_LOCK_FD")
+            .args(["-I", "-B", "-S"])
+            .arg(self.requested_checkout.join("tools/native/source_entry.py"))
+            .arg("--source")
+            .arg(&self.requested_checkout)
+            .arg("--machine-config")
+            .arg(path)
+            .args(["--machine-configuration-sha256", &pin])
+            .arg("--running-config")
+            .arg(&self.config_path)
+            .args(["--running-configuration-sha256", &self.configuration_sha256])
+            .args(["--previous", &selected.id, "--request-owner", &owner])
+            .current_dir(&self.requested_checkout);
+        let status = crate::watchdog::Server(command.spawn()?).finish(stopped)?;
+        if !status.success() || stopped.load(Ordering::Relaxed) {
+            return Err(error(format!(
+                "requested checkout build did not complete: {status}"
+            )));
+        }
+        machine::Config::verify_pin(path, &pin).map_err(error)?;
+        if openpilot_runtime_build::source::inspect(&self.requested_checkout).map_err(error)?
+            != requested
+        {
+            return Err(error("requested checkout changed during startup build"));
+        }
+        let pending = pending::ready_pinned(&self.config_path, &self.configuration_sha256)
+            .map_err(error)?
+            .ok_or_else(|| error("checkout build did not stage a verified result"))?;
+        if pending.source_commit != requested.commit || pending.expected_previous != selected.id {
+            return Err(error(
+                "checkout build staged a different source or previous generation",
+            ));
+        }
         Ok(true)
     }
 
@@ -302,4 +398,172 @@ pub fn verify_preparation_protocol(root: &Path) -> Result<(), Error> {
         ));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod checkout_build_tests {
+    use super::*;
+    use std::{collections::BTreeMap, fs};
+
+    fn git(root: &Path, args: &[&str]) -> String {
+        let output = Command::new("/usr/bin/git")
+            .args([
+                "-c",
+                "user.name=Owned boot build",
+                "-c",
+                "user.email=boot@example.invalid",
+                "-c",
+                "core.hooksPath=/dev/null",
+                "-c",
+                "commit.gpgsign=false",
+                "-C",
+            ])
+            .arg(root)
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        String::from_utf8(output.stdout).unwrap().trim().into()
+    }
+
+    #[test]
+    fn real_checkout_cli_runs_only_for_clean_changes_and_cannot_publish_failure_or_unstaged_success(
+    ) {
+        use openpilot_runtime_build::{
+            catalog_bindings::Budgets,
+            generation::Stores,
+            resources::{DiskBudget, Policy},
+        };
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path();
+        let source = root.join("source");
+        fs::create_dir_all(source.join("tools/native")).unwrap();
+        let marker = root.join("arguments.json");
+        let script = source.join("tools/native/source_entry.py");
+        fs::write(&script, format!("import json,sys\nfrom pathlib import Path\nPath({marker:?}).write_text(json.dumps(sys.argv[1:]))\nsys.exit(7)\n")).unwrap();
+        fs::write(source.join("README"), "initial source").unwrap();
+        git(&source, &["init", "-q"]);
+        git(&source, &["add", "."]);
+        git(&source, &["commit", "-qm", "initial"]);
+        let before = git(&source, &["rev-parse", "HEAD"]);
+        let config = Config {
+            schema: 1,
+            stores: Stores {
+                sources: root.join("sources"),
+                objects: root.join("objects"),
+                generations: root.join("generations"),
+                params: root.join("params"),
+            },
+            cache: root.join("cache"),
+            toolchain: root.join("toolchain"),
+            build_plan: root.join("plan.json"),
+            layout: root.join("layout.json"),
+            resources: Policy {
+                schema: 1,
+                memory_cgroup_parent: root.join("not-a-controller"),
+                maximum_memory_bytes: 1,
+                minimum_available_memory_bytes: 1,
+                filesystems: BTreeMap::from([(
+                    root.to_owned(),
+                    DiskBudget {
+                        maximum_growth_bytes: 1,
+                        minimum_free_bytes: 1,
+                    },
+                )]),
+            },
+        };
+        fs::create_dir_all(config.stores.params.join("d")).unwrap();
+        fs::write(config.stores.params.join("d/IsOnroad"), b"0").unwrap();
+        fs::create_dir_all(&config.stores.generations).unwrap();
+        let active = config.stores.generations.join("active.json");
+        fs::write(&active, b"previous selection sentinel").unwrap();
+        let config_path = root.join("config.json");
+        fs::write(&config_path, serde_json::to_vec(&config).unwrap()).unwrap();
+        let (_, configuration_sha256) = Config::read_pinned(&config_path).unwrap();
+        let policy = machine::Config {
+            schema: 1,
+            stores: config.stores.clone(),
+            cache: config.cache.clone(),
+            seed_cache: root.join("seed"),
+            updater_staging: root.join("updates"),
+            expected_source_growth_bytes: 1,
+            expected_compile_growth_bytes: 1,
+            remaining_object_growth_bytes: 1,
+            compiler_growth_bytes: 1,
+            resources: config.resources.clone(),
+            budgets: Budgets {
+                schema: 1,
+                group_growth_bytes: BTreeMap::from([("00".into(), 1)]),
+                expected_source_growth_bytes: 1,
+                remaining_object_growth_bytes: 1,
+                estimate_basis: "Owned failure-only CLI test; no native build/resource acceptance"
+                    .into(),
+            },
+            boot_seed: None,
+        };
+        let machine_path = root.join("machine.json");
+        fs::write(&machine_path, serde_json::to_vec(&policy).unwrap()).unwrap();
+        let (_, pin) = machine::Config::read_pinned(&machine_path).unwrap();
+        let context = Context {
+            config_path,
+            requested_checkout: source.clone(),
+            generation: "a".repeat(64),
+            config,
+            configuration_sha256,
+            machine_path: Some(machine_path),
+            machine_launch_pin: Some(pin.clone().into()),
+            initialize: false,
+        };
+        let selected = selection::Selected {
+            id: context.generation.clone(),
+            source_commit: before,
+            source_root: root.join("previous"),
+            recovered_previous: false,
+            rejected: vec![],
+        };
+        let stopped = AtomicBool::new(false);
+        assert!(!context.prepare_checkout(&selected, &stopped).unwrap());
+        assert!(!marker.exists());
+        fs::write(source.join("README"), "uncommitted change").unwrap();
+        assert!(!context.prepare_checkout(&selected, &stopped).unwrap());
+        assert!(!marker.exists());
+        git(&source, &["add", "."]);
+        git(&source, &["commit", "-qm", "changed checkout"]);
+        let failure = context
+            .prepare_checkout(&selected, &stopped)
+            .unwrap_err()
+            .to_string();
+        assert!(failure.contains("build did not complete"), "{failure}");
+        let args: Vec<String> = serde_json::from_slice(&fs::read(&marker).unwrap()).unwrap();
+        assert!(args
+            .windows(2)
+            .any(|pair| pair == ["--previous", selected.id.as_str()]));
+        assert!(args
+            .windows(2)
+            .any(|pair| pair == ["--machine-configuration-sha256", pin.as_str()]));
+        assert!(!args.iter().any(|arg| arg == "--launch"));
+        // Exit 0 alone must not become activation authority.
+        fs::write(&script, "import sys\nsys.exit(0)\n").unwrap();
+        git(&source, &["add", "."]);
+        git(&source, &["commit", "-qm", "exit without staged result"]);
+        let failure = context
+            .prepare_checkout(&selected, &stopped)
+            .unwrap_err()
+            .to_string();
+        assert!(
+            failure.contains("did not stage a verified result"),
+            "{failure}"
+        );
+        assert_eq!(fs::read(active).unwrap(), b"previous selection sentinel");
+        assert!(!context
+            .config
+            .stores
+            .generations
+            .join("pending.json")
+            .exists());
+    }
 }

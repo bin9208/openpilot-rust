@@ -142,6 +142,19 @@ def offroad(params):
       raise ValueError('native source preparation requires verified offroad state')
 
 
+@contextmanager
+def build_cpus():
+  # The original AGNOS build.py opens all eight device CPUs for compilation.
+  # A launcher inherited from a restricted CPU must not restrict Cargo's workers.
+  # The kernel still applies the operation's cpuset; restore the caller on exit.
+  previous = os.sched_getaffinity(0)
+  try:
+    os.sched_setaffinity(0, range(os.cpu_count() or 1))
+    yield sorted(os.sched_getaffinity(0))
+  finally:
+    os.sched_setaffinity(0, previous)
+
+
 def absolute(value):
   path = Path(value)
   if not path.is_absolute() or str(path) != value or '..' in path.parts:
@@ -296,7 +309,7 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
     if source_identity(source) != before or any(seed.digest(p) != sha for p, sha in (pins or {}).items()):
       raise ValueError('native source, configuration or current tool changed during the request')
 
-  with operation(Path(configuration['stores']['generations'])) as attempt:
+  with build_cpus() as cpus, operation(Path(configuration['stores']['generations'])) as attempt:
     def save(name, value):
       path = attempt/name
       seed.write(path, seed.json_bytes(value))
@@ -385,6 +398,7 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
         launch_configuration=str(running_config if staging else retained_config),
         launch_configuration_sha256=running_pin if staging else native_pin,
         bootstrap_configuration_sha256=config_pin, seed_source=plan['source'], seed_preparation=prepared, request_owner=owner,
+        build_cpu_affinity=cpus,
         evidence=str(attempt), full_runtime_build=True, staged_for_boot=staging,
         elapsed_ms=int((time.monotonic()-started)*1000), phase_timings_ms=phases,
         timing_scope='prepared seed through current tools, input preparation, full build and seal',

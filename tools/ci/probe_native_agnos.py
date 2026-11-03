@@ -2646,6 +2646,9 @@ def main():
   parser = argparse.ArgumentParser(description=__doc__)
   parser.add_argument('--bootstrap-seed-abi-preflight', action='store_true')
   preflight = parser.parse_args().bootstrap_seed_abi_preflight
+  validation_scope = os.environ.get('NATIVE_AGNOS_VALIDATION', 'full')
+  if validation_scope not in ('inputs', 'full'):
+    raise ValueError('AGNOS validation must select verified inputs or the full frozen candidate')
   runpy.run_path(str(Path(__file__).with_name('runner_policy.py')))['require_github_native_arm']()
   assert platform.machine() == 'aarch64' and os.geteuid() != 0
   source = Path(os.environ['GITHUB_WORKSPACE']).resolve()
@@ -2860,10 +2863,13 @@ def main():
         native_usbgpu_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
       with record_phase(evidence, 'native_catalog_bindings_probe'):
         native_catalog_bindings_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    with record_phase(evidence, 'native_model_generation_probe'):
-      native_model_generation_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    with record_phase(evidence, 'native_complete_layout_probe'):
-      native_complete_layout_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    evidence.update(validation_scope=validation_scope, full_runtime_validation=False)
+    if validation_scope == 'full':
+      with record_phase(evidence, 'native_model_generation_probe'):
+        native_model_generation_probe(guest_command, work, source_mount, evidence, log, guest_work)
+      with record_phase(evidence, 'native_complete_layout_probe'):
+        native_complete_layout_probe(guest_command, work, source_mount, evidence, log, guest_work)
+      evidence['full_runtime_validation'] = True
     # Add the production orchestration as a separate guarded command after all
     # original ARM commands. Keep their user space, pins and evidence intact.
     preserve = 'GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE,PATH'

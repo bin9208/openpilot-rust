@@ -17,6 +17,32 @@ seed = driver.seed
 
 
 class SourceRuntimeTests(unittest.TestCase):
+  def test_actual_build_cpu_scope_opens_available_cores_and_restores_on_error(self):
+    # Only this child changes its own affinity; other tests and runner jobs keep
+    # their existing masks. Verify a compiler child inherits the opened mask.
+    program = '''
+import os, subprocess, sys
+import source_runtime as driver
+original = os.sched_getaffinity(0)
+restricted = {min(original)}
+os.sched_setaffinity(0, restricted)
+try:
+  with driver.build_cpus() as cpus:
+    assert original <= set(cpus)
+    child = subprocess.check_output([sys.executable, '-c', 'import os; print(sorted(os.sched_getaffinity(0)))'], text=True)
+    import ast
+    assert ast.literal_eval(child) == cpus
+    raise ValueError('owned compile failure')
+except ValueError as error:
+  assert str(error) == 'owned compile failure'
+assert os.sched_getaffinity(0) == restricted
+print('actual_build_affinity_inherited_and_restored=true')
+'''
+    result = subprocess.run([sys.executable, '-c', program],
+        cwd=Path(driver.__file__).parent, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
+    self.assertEqual(result.returncode, 0, result.stderr.decode())
+    self.assertIn(b'actual_build_affinity_inherited_and_restored=true', result.stdout)
+
   def test_unverified_offroad_state_never_starts_a_download_or_source_command(self):
     with tempfile.TemporaryDirectory() as temp:
       params = Path(temp)/'params'

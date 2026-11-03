@@ -346,15 +346,14 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     after['on']['push']['branches'] = branches
                 old, new = before['jobs'][name], after['jobs'][name]
                 if filename == 'runtime-native-environment.yml':
-                    paths = after['on']['push']['paths']
-                    for path in ('rust/crates/dev-tools/src/native_provider/**',
-                                 'tools/ci/prepare_native_provider_batch.py',
-                                 'tools/ci/native_provider_batch.py',
-                                 'tools/ci/agnos_phases.py',
-                                 'tools/ci/companion_elf_scope.py',
-                                 'tools/ci/runner_policy.py'):
-                        self.assertEqual(paths.count(path), 1)
-                        paths.remove(path)
+                    # 2026-11-03: full candidate validation is manual, not a
+                    # repeated feature-push prerequisite. Job commands stay intact.
+                    self.assertEqual(set(after['on']), {'workflow_dispatch'})
+                    self.assertEqual(after['on']['workflow_dispatch']['inputs']['validation'], dict(
+                        description='Prepare verified build inputs, or validate the complete frozen runtime candidate',
+                        type='choice', default='inputs', options=['inputs', 'full']))
+                    self.assertEqual(after.pop('env'), dict(NATIVE_AGNOS_VALIDATION="${{ inputs.validation || 'full' }}"))
+                    after['on'] = before['on']
                     restore_provider_batch_steps(new)
                 self.assertEqual(new['runs-on'], route)
                 new['runs-on'] = old['runs-on']
@@ -638,6 +637,9 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                         if relative == '.github/workflows/fast-checks.yml' and event == 'push':
                             self.assertNotIn('push', current['on'])
                             continue  # 2026-10-30: remove only the separately scheduled push run.
+                        if relative == '.github/workflows/runtime-native-environment.yml' and event == 'push':
+                            self.assertNotIn('push', current['on'])
+                            continue  # 2026-11-03: full runtime checks only for a frozen candidate.
                         self.assertIn(event, current['on'])
                         if isinstance(config, dict) and 'branches' in config:
                             self.assertTrue(set(config['branches']).issubset(current['on'][event]['branches']))

@@ -34,6 +34,8 @@ The current work branch selects source builds at ARM startup instead of automati
 downloading a complete runtime release for the checkout's commit. It targets the existing
 Git install/update and restart flow. Local inputs, default configuration and complete
 initial/changed-source build timings remain unverified, so this branch is not an install candidate.
+After a branch change, normal startup builds and verifies the changed checkout under the
+existing boot lock before starting manager. Build failures preserve the previous generation and logs.
 
 The developer command `openpilot-runtime-assets --plan JSON --cache DIRECTORY` verifies
 HTTPS assets by SHA-256 and byte count and stores them by content. Preparing the same

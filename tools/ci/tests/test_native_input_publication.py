@@ -398,6 +398,23 @@ class PublicationTests(unittest.TestCase):
           f.validated()
         self.assertFalse((f.root/'staged').exists())
 
+  def test_authenticated_inputs_do_not_require_a_whole_runtime_and_cannot_claim_one(self):
+    for fault in (None, 'failed', 'full-claim', 'fabricated-runtime', 'different-summary', 'unknown-scope'):
+      with self.subTest(fault=fault), tempfile.TemporaryDirectory() as temp:
+        f = Fixture(Path(temp))
+        f.environment = dict(source_commit=SOURCE, validation_scope='inputs', success=True,
+            full_runtime_validation=False, native_production_runtime_inputs=copy.deepcopy(f.summary))
+        if fault == 'failed': f.environment['success'] = False
+        if fault == 'full-claim': f.environment['full_runtime_validation'] = True
+        if fault == 'fabricated-runtime': f.environment['native_complete_generation'] = dict(binaries=99)
+        if fault == 'different-summary': f.environment['native_production_runtime_inputs']['provider_roles'] = 1
+        if fault == 'unknown-scope': f.environment['validation_scope'] = 'skip'
+        if fault is None:
+          f.validated()
+        else:
+          with self.assertRaises(ValueError):
+            f.validated()
+
   def test_member_corruption_and_zip_redirect_do_not_certify_themselves(self):
     with tempfile.TemporaryDirectory() as temp:
       f = Fixture(Path(temp))

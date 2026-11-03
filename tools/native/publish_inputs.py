@@ -477,13 +477,25 @@ def validate_bundle(bundle, source, run, index_pin, profiles, sdk_plan, source_t
     if sample['state'] != 'success' or sample['memory']['kernel_peak_bytes'] <= 0:
       raise ValueError('native preparation lacks successful real-controller evidence')
   environment = bundle.json('native-agnos-environment-599.json', 16*1024**2)
-  generation = environment['native_complete_generation']
-  if (environment['source_commit'] != source or generation['source']['commit'] != source
-      or generation['binaries'] != 99 or generation['compiler_groups'] != 13
-      or generation['source_built_sealer_and_abi_audit_passed'] is not True
-      or generation['source_generation_verified'] is not True or generation['runtime_activated'] is not False
-      or generation['runtime_started'] is not False or generation['physical_device_execution'] is not False):
-    raise ValueError('native publication lacks the full sealed-source engineering result')
+  if environment['source_commit'] != source:
+    raise ValueError('native input engineering result belongs to a different source')
+  scope = environment.get('validation_scope', 'full')
+  if scope == 'inputs':
+    # Publication contains compiler/provider inputs, never a runnable runtime.
+    # Final 99-binary build/seal/boot validation belongs to the frozen candidate.
+    if (environment.get('success') is not True or environment.get('full_runtime_validation') is not False
+        or 'native_complete_generation' in environment
+        or environment.get('native_production_runtime_inputs') != summary):
+      raise ValueError('native publication lacks its completed input preparation proof')
+  elif scope == 'full':
+    generation = environment['native_complete_generation']
+    if (generation['source']['commit'] != source or generation['binaries'] != 99 or generation['compiler_groups'] != 13
+        or generation['source_built_sealer_and_abi_audit_passed'] is not True
+        or generation['source_generation_verified'] is not True or generation['runtime_activated'] is not False
+        or generation['runtime_started'] is not False or generation['physical_device_execution'] is not False):
+      raise ValueError('native publication lacks the full sealed-source engineering result')
+  else:
+    raise ValueError('unknown native input validation scope')
   files, job_root = {}, None
   for item in manifest['files']:
     if set(item) != {'url', 'sha256', 'bytes', 'path'}:

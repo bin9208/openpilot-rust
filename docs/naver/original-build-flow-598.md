@@ -40,12 +40,51 @@ identity와 출력 roster·hash는 유지한다. 시간 절감을 아직 실측 
 기존 source runtime 결과에 admission/current tools/runtime inputs/Cargo·seal/final
 checks의 경과를 나눈다. 기존 선택 계측은 전체 plan 전후 검증도 기록한다.
 
+원본 `build.py`처럼 컴파일하는 동안 사용 가능한 CPU affinity를 연다. 호출자의 제한된
+마스크를 Cargo 자식이 그대로 물려받지 않으며, 성공·실패 모두 원래 마스크로 복구한다.
+실제 빌드 마스크를 결과에 기록하고 manager·주행 프로세스의 배치는 변경하지 않는다.
+모델 컴파일러의 별도 `model-compiler-build` target 저장소도 기존 `cargo-build`로 합친다.
+내용·ABI 캐시 key와 Cargo의 기존 dependency/feature fingerprint는 유지한다.
+
+기존 native 세대가 있다는 이유로 수동 Git 설치·브랜치 변경의 새 checkout을 무시하지
+않도록 한다. 기존 부팅 잠금 안에서 깨끗한 새 source를 확인하고 updater가 이미 쓰는
+source-entry CLI와 pending 전환을 재사용한다. 현재 source·dirty checkout은 다시
+빌드하지 않고, 실패나 성공 exit만으로 검증된 pending 결과를 대신할 수 없다. 기존
+정상 세대와 로그는 유지하며 실제 선택 source를 새 checkout으로 위장하지 않는다.
+
+## 전체 검증과 입력 준비의 분리
+
+기존 `runtime-native-environment.yml`의 작업 브랜치 push 트리거를 제거한다. 실행 중인
+검사는 취소하지 않는다. 기존 workflow의 수동 `inputs`는 실제 source-bound 입력 준비와
+동일 production 입력/인덱스 재사용 검증을 실행하고, `full`은 원래 모델·99개 전체
+빌드/봉인/반복 검증까지 실행한다. 전체 명령·pin·deadline·실패 거부는 남긴다.
+
+입력 파일 발행을 위해 전체99개 runtime을 먼저 네 번 빌드·봉인하도록 결합한 조건을
+분리한다. 입력 발행은 같은 source의 성공한 실제 job·PR/base/attempt·원본 ZIP digest와
+34개 파일/SDK/seed/provider·production 입력 준비/인덱스 각 경우를 계속 검증한다.
+`inputs` 결과는 전체 runtime 검증 성공을 주장할 수 없고 실행 runtime은 발행하지 않는다.
+원래 `full` 결과를 검증하는 경계도 보존한다. 최종 완전 후보의 전체 검증은 #601에 남긴다.
+
+## 이슈 정리
+
+#598의 직접 실행 단위는 #599(설치·시작), #600(변경분·시간), #601(최종 통합·전달)로
+정리한다. #675는 #600의 우선 작업이며, CI 환경 사건은 #605, 병목/회귀 사건은 #649
+아래로 옮긴다. 각 문제의 원문·SHA·Actions·미해결 조건을 보존하고 미검증 결함은
+완료 처리하지 않는다. 개별 사건마다 전체 후보 성공을 복제 요구하지 않는다.
+
 ## 검증과 남은 작업
 
 로컬은 서식·AST/Bash 구문·diff만 확인한다. 실제 기능 검증은 기존
 `Runtime source build foundation`의 ARM·X64 집중 검사로 실행한다. 실제 Cargo fixture에서
 공유 provider의 pin 충돌과 Cargo build-script에 의한 입력 변조 거부, 이전 실행 보존을
 확인한다. 이 fixture의 시간을 전체 runtime이나 콤마 최초 빌드 시간으로 표현하지 않는다.
+
+공통 입력 중복 검증 제거·ARM source-entry 선택 source
+`2a08b7fce77e8fe09dc0750529da6d8d7dbe0eab`의 [집중 검사41585308958](https://github.com/bin9208/openpilot-rust/actions/runs/41585308958)는
+[X64 job125749295761](https://github.com/bin9208/openpilot-rust/actions/runs/41585308958/job/125749295761)와
+[ARM native job125749296160](https://github.com/bin9208/openpilot-rust/actions/runs/41585308958/job/125749296160)가 모두 성공했다.
+실제 Cargo 입력 변경/충돌 거부·기존 실행 보존과 ARM shell 경로를 확인했다. 이후의
+CPU/새 checkout/캐시 경로/검증 단계 분리 변경은 다음 집중 검사로 별도 확인한다.
 
 전체 입력 공개를 위해 모든 과거 CI 사건을 재실행하거나, 수정마다 전체 Genuine을 새로
 시작하지 않는다. 최종 고정 후보의 실제 정상 entry 전체 빌드·변경 후 빌드 시간과 사용자의

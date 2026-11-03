@@ -202,8 +202,10 @@ def prepare(args):
       environment=dict(OPENPILOT_CARGO_VENDOR=cargo['vendor'], OPENPILOT_NATIVE_INCREMENTAL='1', TMPDIR=str(cache/'tmp')),
       expected_growth_bytes=configuration['compiler_growth_bytes'])
   recipe_path = save('model-compiler-recipe.json', recipe)
+  # Use the existing Cargo cache shared by current tools and the runtime.
+  # Its content/ABI keys and Cargo fingerprints already distinguish consumers.
   built = execute('model-compiler-build', [tools/'openpilot-runtime-build', '--cargo-metadata',
-      '--root', root, '--cache', cache/'model-compiler-build', '--toolchain', Path(rust['root'])/'bin', '--recipe', recipe_path])
+      '--root', root, '--cache', cache/'cargo-build', '--toolchain', Path(rust['root'])/'bin', '--recipe', recipe_path])
   record, binaries = compiler_record(root, built, rust, cargo, bootstrap['system_sdk_sha256'])
   record_path = save('model-compiler-record.json', record)
   python = execute('python', [preparer, '--prepare-python', '--plan', root/'rust/native-python-toolchain.json', *asset_store('python')])

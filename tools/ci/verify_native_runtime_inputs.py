@@ -150,7 +150,7 @@ def main():
   git = ['/usr/bin/git', '-c', 'user.name=Owned production input fixture', '-c', 'user.email=ci@example.invalid',
          '-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null']
   # Include two retained source views, provider prefix/composition metadata,
-  # native model/compiler work and a separate release compiler cache. This is
+  # native model/compiler work and the shared release compiler cache. This is
   # an admission estimate for this CI operation, never a device budget.
   generated = sum(p.stat().st_size for p in (work/'native-model-catalogs').rglob('*') if p.is_file())
   growth = 8*1024**3+2*payload+2*generated+configuration['expected_source_growth_bytes']
