@@ -684,7 +684,7 @@ class NativeArmAdmissionTests(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
           full_entry.stage_metadata(entry, source, asset, target)
         origin.symlink_to(source/'outside')
-        with self.assertRaises((ValueError, FileNotFoundError)):
+        with self.assertRaises((ValueError, OSError)):
           full_entry.stage_metadata(entry, source, asset, target)
 
   def test_live_progress_uses_complete_private_rows_and_ignores_partial_or_redirected_data(self):
