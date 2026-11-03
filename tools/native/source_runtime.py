@@ -250,6 +250,15 @@ def preserve_configuration(generations, configuration, pin):
 def build_runtime(prepared, plan, config_path, config_pin, source, request_owner=None,
                   running_config=None, running_pin=None, previous=None, expected_source=None, observe=None):
   started = time.monotonic()
+  phases = {}
+  marked = started
+
+  def timing(name):
+    nonlocal marked
+    now = time.monotonic()
+    phases[name] = int((now-marked)*1000)
+    marked = now
+
   seed.verify_native(Path(prepared['root']), plan)
   if os.geteuid() == 0:
     raise ValueError('native source driver must run as the original non-root user')
@@ -310,12 +319,14 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
       return read(path)
 
     check()
+    timing('admission')
     small = {k: configuration[k] for k in TOOLS_FIELDS}
     first_config = save('tools-config.json', small)
     first = seed.current_tools(prepared, plan, first_config, source, request_owner=owner, run=commands.run)
     save('seed-current-tools.json', first)
     check()
     tools, tool_pins = tools_from_report(first['current_tools'], before, configuration)
+    timing('current_tools')
     input_report = execute('prepared-inputs', ['/usr/bin/sudo', '-n', tools/'openpilot-runtime-inputs',
         '--bootstrap-tools-scope', '--config', config_path, '--configuration-sha256', config_pin,
         '--root', source, '--request-owner', owner], tool_pins)
@@ -345,6 +356,7 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
         or native['cache'] != str(Path(configuration['cache'])/'cargo-build')
         or native['toolchain'] != str(Path(input_report['preparations']['rust']['root'])/'bin')):
       raise ValueError('full build configuration changed its stores or resource policy')
+    timing('runtime_inputs')
     built = execute('built-generation', ['/usr/bin/sudo', '-n', tools/'openpilot-native-build-scope',
         '--config', native_config, '--configuration-sha256', native_pin, '--build', '--root', source,
         '--request-owner', owner], tool_pins)
@@ -352,6 +364,7 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
         or built['configuration_sha256'] != native_pin or built['activated'] or built['staged_for_boot']):
       raise ValueError('full build result differs from the requested source or verified configuration')
     retained_config = preserve_configuration(Path(configuration['stores']['generations']), native_config, native_pin)
+    timing('cargo_and_seal')
     staged = None
     if staging:
       staged = execute('staged-generation', [tools/'openpilot-runtime-native',
@@ -366,13 +379,15 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
         raise ValueError('staged generation differs from the preserved running launch context')
     check(tool_pins)
     read(retained_config, native_pin)
+    timing('final_checks_and_staging')
     result = dict(schema=1, source=before, generation_id=built['generation_id'],
         build_configuration=str(retained_config), prepared_configuration=str(native_config), build_configuration_sha256=native_pin,
         launch_configuration=str(running_config if staging else retained_config),
         launch_configuration_sha256=running_pin if staging else native_pin,
         bootstrap_configuration_sha256=config_pin, seed_source=plan['source'], seed_preparation=prepared, request_owner=owner,
         evidence=str(attempt), full_runtime_build=True, staged_for_boot=staging,
-        elapsed_ms=int((time.monotonic()-started)*1000), timing_scope='prepared seed through current tools, input preparation, full build and seal',
+        elapsed_ms=int((time.monotonic()-started)*1000), phase_timings_ms=phases,
+        timing_scope='prepared seed through current tools, input preparation, full build and seal',
         driver_process_kernel_peak_rss_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024,
         runtime_activated=False, runtime_started=False, runtime_release_downloaded=False)
     save('result.json', result)

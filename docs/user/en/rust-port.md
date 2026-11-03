@@ -30,6 +30,11 @@ toolchain and offline Cargo dependencies. It is not connected to automatic insta
 or startup and does not yet provide a complete device source build.
 Track progress and acceptance in [#598](https://github.com/bin9208/openpilot-rust/issues/598).
 
+The current work branch selects source builds at ARM startup instead of automatically
+downloading a complete runtime release for the checkout's commit. It targets the existing
+Git install/update and restart flow. Local inputs, default configuration and complete
+initial/changed-source build timings remain unverified, so this branch is not an install candidate.
+
 The developer command `openpilot-runtime-assets --plan JSON --cache DIRECTORY` verifies
 HTTPS assets by SHA-256 and byte count and stores them by content. Preparing the same
 assets again transfers zero HTTP body bytes; changing one provider fetches only that

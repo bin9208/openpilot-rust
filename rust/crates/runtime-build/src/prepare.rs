@@ -1,6 +1,6 @@
 //! Serial native build groups bound to retained source and immutable outputs.
 //! A prepared build is engineering evidence; it is not a sealed/active runtime.
-use crate::{build, objects, regular_file, source_store, Recipe, Report, Result};
+use crate::{build_with_plan_inputs, objects, regular_file, source_store, Recipe, Report, Result};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
@@ -82,6 +82,46 @@ pub struct Prepared {
 }
 
 impl Plan {
+    /// Shared SDK/toolchain/provider inputs are checked once at each end of the
+    /// serial build, rather than hashing the same trees for every Cargo group.
+    /// No successful Prepared result is returned until the final check passes.
+    fn verify_compiler_inputs(&self, root: &Path) -> Result<()> {
+        let root = root.canonicalize()?;
+        let mut combined = self
+            .groups
+            .values()
+            .next()
+            .ok_or("empty build plan")?
+            .clone();
+        combined.inputs.clear();
+        combined.input_trees.clear();
+        combined.environment.clear();
+        for recipe in self.groups.values() {
+            for (path, sha256) in &recipe.inputs {
+                if combined
+                    .inputs
+                    .insert(root.join(path), sha256.clone())
+                    .is_some_and(|previous| previous != *sha256)
+                {
+                    return Err("conflicting compiler input file identities".into());
+                }
+            }
+            for (tree, receipt) in &recipe.input_trees {
+                let receipt = root.join(receipt);
+                if let Some(previous) = combined
+                    .input_trees
+                    .insert(root.join(tree), receipt.clone())
+                {
+                    if combined.inputs.get(&previous) != combined.inputs.get(&receipt) {
+                        return Err("conflicting compiler input tree identities".into());
+                    }
+                }
+            }
+            recipe.verify_vendor(&root)?;
+        }
+        combined.verify_inputs(&root)
+    }
+
     fn requires_models(&self) -> bool {
         self.groups.values().any(|g| {
             g.binaries.iter().any(|name| {
@@ -272,11 +312,19 @@ pub(crate) fn from_retained(
         return Err("build workspace differs from retained source".into());
     }
     let mut reports = BTreeMap::new();
+    let mut timing = crate::PhaseTimer {
+        enabled: std::env::var_os("OPENPILOT_NATIVE_BUILD_TIMINGS").as_deref()
+            == Some(std::ffi::OsStr::new("1")),
+        marked: Instant::now(),
+        binaries: &[],
+    };
     let verified_runtime_trees = plan.runtime_inputs.verify(root, plan.requires_models())?;
+    plan.verify_compiler_inputs(root)?;
+    timing.mark("plan_inputs_before");
     let mut binaries = BTreeMap::new();
     let mut stored_output_bytes = 0_u64;
     for (group, recipe) in &plan.groups {
-        let report = build(root, cache, toolchain, recipe)?;
+        let report = build_with_plan_inputs(root, cache, toolchain, recipe)?;
         if report.source != source.source {
             return Err("native build source changed between groups".into());
         }
@@ -311,6 +359,9 @@ pub(crate) fn from_retained(
         }
         reports.insert(group.clone(), report);
     }
+    timing.mark("plan_cargo_and_output_imports");
+    plan.verify_compiler_inputs(root)?;
+    timing.mark("plan_inputs_after");
     let prepared = Prepared {
         schema: 1,
         plan: plan.clone(),

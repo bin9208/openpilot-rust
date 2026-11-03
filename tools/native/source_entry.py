@@ -341,6 +341,7 @@ def resolve(machine, source, output, commands, observe, offline=None):
 
 
 def build_requested(args, machine, source, pin):
+  started = time.monotonic()
   before = runtime.source_identity(source)
   owner = seed.owner_chain(args.request_owner)
   commands = runtime.OwnedCommands(owner, Path(machine['stores']['params']))
@@ -360,11 +361,13 @@ def build_requested(args, machine, source, pin):
   prepared, plan = seed.prepare(Path(resolved['receipts']['seed']['path']), resolved['receipts']['seed']['sha256'],
       Path(machine['seed_cache']), offline=source/INSTALLED_INPUTS/'seeds'/resolved['receipts']['seed']['sha256'])
   observe()
+  prepared_ms = int((time.monotonic()-started)*1000)
   result = runtime.build_runtime(prepared, plan, Path(resolved['configuration']), resolved['configuration_sha256'],
       source, owner, args.running_config, args.running_configuration_sha256, args.previous,
       expected_source=before, observe=observe)
   result.update(input_index_sha256=resolved['index_sha256'], metadata=resolved['receipts'],
-      machine_configuration_sha256=pin, resolver_evidence=str(attempt), local_input_copied_bytes=local_input_bytes)
+      machine_configuration_sha256=pin, resolver_evidence=str(attempt), local_input_copied_bytes=local_input_bytes,
+      input_resolution_and_seed_ms=prepared_ms, source_entry_elapsed_ms=int((time.monotonic()-started)*1000))
   seed.write(attempt/'result.json', seed.json_bytes(result))
   return result
 

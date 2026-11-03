@@ -231,6 +231,10 @@ impl Recipe {
         for (tree, receipt) in &self.input_trees {
             inputs::Receipt::read(&root.join(receipt))?.verify(&root.join(tree))?;
         }
+        self.verify_vendor(root)
+    }
+
+    fn verify_vendor(&self, root: &Path) -> Result<()> {
         if let Some(value) = self.environment.get("OPENPILOT_CARGO_VENDOR") {
             let vendor = Path::new(value);
             if !vendor.is_absolute()
@@ -296,6 +300,27 @@ pub fn build_with_metadata(
     toolchain: &Path,
     recipe: &Recipe,
 ) -> Result<BuildWithMetadata> {
+    build_inner(root, cache, toolchain, recipe, true)
+}
+
+// Only prepare::from_retained uses this, between its complete plan input checks.
+// Standalone build callers still verify their complete inputs before and after Cargo.
+pub(crate) fn build_with_plan_inputs(
+    root: &Path,
+    cache: &Path,
+    toolchain: &Path,
+    recipe: &Recipe,
+) -> Result<Report> {
+    Ok(build_inner(root, cache, toolchain, recipe, false)?.build)
+}
+
+fn build_inner(
+    root: &Path,
+    cache: &Path,
+    toolchain: &Path,
+    recipe: &Recipe,
+    verify_inputs: bool,
+) -> Result<BuildWithMetadata> {
     let started = Instant::now();
     let mut timing = PhaseTimer {
         enabled: std::env::var_os("OPENPILOT_NATIVE_BUILD_TIMINGS").as_deref()
@@ -308,7 +333,9 @@ pub fn build_with_metadata(
     let source = source::inspect(&root)?;
     timing.mark("source_before");
     let toolchain = toolchain.canonicalize()?;
-    recipe.verify_inputs(&root)?;
+    if verify_inputs {
+        recipe.verify_inputs(&root)?;
+    }
     timing.mark("inputs_before");
     let rustc = toolchain.join("rustc");
     let cargo = toolchain.join("cargo");
@@ -495,7 +522,9 @@ pub fn build_with_metadata(
         .into());
     }
     timing.mark("cargo");
-    recipe.verify_inputs(&root)?;
+    if verify_inputs {
+        recipe.verify_inputs(&root)?;
+    }
     timing.mark("inputs_after");
     if source::inspect(&root)? != source {
         return Err("runtime build source changed during compilation".into());

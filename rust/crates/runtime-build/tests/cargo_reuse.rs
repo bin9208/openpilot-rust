@@ -374,6 +374,106 @@ fn main() {
 }
 
 #[test]
+fn grouped_build_checks_shared_provider_and_rejects_conflicts_and_changes_before_publication() {
+    use openpilot_runtime_build::{
+        inputs::Tree,
+        prepare::{self, Plan},
+    };
+    let fixture = Fixture::new();
+    fs::create_dir_all(fixture.root.join("rust/src/bin")).unwrap();
+    fs::write(
+        fixture.root.join("rust/src/bin/other-fixture.rs"),
+        "fn main() { println!(\"other\"); }\n",
+    )
+    .unwrap();
+    commit(&fixture.root);
+    let provider = fixture._temp.path().join("provider");
+    fs::create_dir(&provider).unwrap();
+    fs::write(provider.join("header.h"), b"original input").unwrap();
+    let receipt = fixture._temp.path().join("provider.json");
+    fs::write(
+        &receipt,
+        serde_json::to_vec(&Tree::capture(&provider).unwrap()).unwrap(),
+    )
+    .unwrap();
+    let mut main = fixture.recipe.clone();
+    main.inputs
+        .insert(receipt.clone(), digest_file(&receipt).unwrap());
+    main.input_trees.insert(provider.clone(), receipt.clone());
+    let mut other = main.clone();
+    other.binaries = vec!["other-fixture".into()];
+    let mut plan = Plan {
+        schema: 1,
+        groups: BTreeMap::from([("main".into(), main), ("other".into(), other)]),
+        expected_source_growth_bytes: 8 * 1024 * 1024,
+        remaining_object_growth_bytes: 0,
+        runtime_inputs: Default::default(),
+    };
+    let sources = fixture._temp.path().join("sources");
+    let objects = fixture._temp.path().join("objects");
+    let run = |plan: &Plan| {
+        prepare::run(
+            &fixture.root,
+            &fixture.cache,
+            &fixture.toolchain,
+            &sources,
+            &objects,
+            plan,
+        )
+    };
+    let first = run(&plan).unwrap();
+    assert_eq!(
+        first.reports["main"].verified_input_trees,
+        first.reports["other"].verified_input_trees
+    );
+    let report_path = first.reports["main"]
+        .target_directory
+        .parent()
+        .unwrap()
+        .join("last-successful-build.json");
+    let saved = fs::read(&report_path).unwrap();
+    // Reject inconsistent requests before either group can overwrite its last report.
+    let original = plan.groups["other"].inputs[&receipt].clone();
+    plan.groups
+        .get_mut("other")
+        .unwrap()
+        .inputs
+        .insert(receipt.clone(), "0".repeat(64));
+    assert!(run(&plan)
+        .unwrap_err()
+        .to_string()
+        .contains("conflicting compiler input file identities"));
+    assert_eq!(fs::read(&report_path).unwrap(), saved);
+    plan.groups
+        .get_mut("other")
+        .unwrap()
+        .inputs
+        .insert(receipt, original);
+    // A real Cargo build script changes an external compiler input. The batch
+    // must reject its result, while previously retained executable bytes survive.
+    fs::write(
+        fixture.root.join("rust/build.rs"),
+        format!(
+            "fn main() {{ std::fs::write({:?}, b\"changed during Cargo\").unwrap(); }}\n",
+            provider.join("header.h")
+        ),
+    )
+    .unwrap();
+    commit(&fixture.root);
+    assert!(run(&plan)
+        .unwrap_err()
+        .to_string()
+        .contains("unpacked build input tree differs"));
+    first.verify(&sources, &objects).unwrap();
+    let previous = fixture._temp.path().join("previous");
+    first.binaries["runtime-fixture"]
+        .materialize(&objects, &previous)
+        .unwrap();
+    assert_eq!(Command::new(previous).output().unwrap().stdout, b"42\n");
+    println!("grouped_compiler_inputs=2 shared_provider_verified=true conflicting_pins_rejected_before_cargo=true cargo_input_mutation_rejected=true previous_execution_retained=true");
+}
+
+#[test]
 fn prepared_groups_reuse_docs_and_rebuild_only_the_changed_binary_while_retaining_previous_execution(
 ) {
     use openpilot_runtime_build::prepare::{self, Plan};
