@@ -433,3 +433,15 @@ source `769ee8246c6d25b64149c831db765bf61d629d85`는 이미지 전의 원래 see
 동일 source의 [집중41716594416](https://github.com/bin9208/openpilot-rust/actions/runs/41716594416)는
 X64 성공, ARM은 이미지·기기 없는 기존 회귀를 진행 중이다. 이 결과를 실제 seed ABI 성공으로
 대신하지 않는다.
+
+[factory41720296078](https://github.com/bin9208/openpilot-rust/actions/runs/41720296078),
+source `b91fdbe5466d5b241f4dfed4cc362f66d877d67f`에서 같은 거부가 재현됐다. 실제 loader
+출력 첫 행은 이름 없이 ` (0x0000ff59a4a40000)`이고 뒤에는 기존 vDSO와 liblzma·libgcc·libc·
+interpreter 경로가 있었다. GNU 문서는 메인 실행 파일의 `link_map.l_name`이 빈 문자열임을
+설명한다([GNU 동적 linker 문서](https://www.sourceware.org/glibc/manual/2.41/html_node/Dynamic-Linker-Introspection.html)).
+이 빈 메인 map 형식에 해당하는 것으로 판단해, 정확히 한 개의 맨 앞 64-bit 주소 행만
+허용한다. 알 수 없는 이름·누락 라이브러리·중간/중복 주소 행·깨진 형식은 계속 거부한다.
+모든 이름 있는 라이브러리 경로와 파일 hash/size/mode, loader 및 도구 pin 비교는 그대로다.
+실제 출력 형태와 기존 형태가 동일한 ABI pin을 만드는 회귀를 추가했다. 실제 native 시작
+성공은 후속 factory 결과로 판단한다. 실패 artifact `13271792094`의 ZIP SHA256은
+`acbd1584e3497e8f114bd0db8c69245d83a2bfb07537ef4da60456322032563b`다.

@@ -121,9 +121,18 @@ def inspect_abi(binary):
     raise ValueError('unexpected native seed interpreter')
   libraries = {}
   mapping = output([match[1], '--list', str(binary)])
+  first = True
   for line in mapping.splitlines():
     fields = line.split()
-    if not fields or fields[0] == 'linux-vdso.so.1':
+    if not fields:
+      continue
+    # glibc can report the main executable with an empty link-map name.
+    # Accept one leading 64-bit address row, never an unnamed dependency later.
+    if first and re.fullmatch(r'\s+\(0x[0-9a-f]{16}\)\s*', line):
+      first = False
+      continue
+    first = False
+    if fields[0] == 'linux-vdso.so.1':
       continue
     if len(fields) >= 3 and fields[1] == '=>' and fields[2].startswith('/'):
       path = fields[2]

@@ -98,6 +98,11 @@ class BootstrapSeedTests(unittest.TestCase):
         self.assertEqual(runner.call_count, 1)
     for mapping, error in [
         ('libc.so.6 => not found\n','unresolved or unsupported'),
+        (' (0xnot-an-address)\n','unresolved or unsupported'),
+        (' (0x0000ff59a4a40000) unexpected\n','unresolved or unsupported'),
+        (' (0x0000ff59a4a40000)\n (0x0000ff59a4a50000)\n','unresolved or unsupported'),
+        ('linux-vdso.so.1 (0x1)\n (0x0000ff59a4a40000)\n','unresolved or unsupported'),
+        (' (0x0000ff59a4a40000)\nlibc.so.6 => not found\n','unresolved or unsupported'),
         (f'/outside/libc.so.6 (0x1)\n{interpreter} (0x2)\n','unexpected native seed provider path'),
         (f'{interpreter} (0x1)\n{interpreter} (0x2)\n','unexpected native seed provider path'),
         ('/lib/aarch64-linux-gnu/libc.so.6 (0x1)\n','interpreter was not resolved')]:
@@ -107,6 +112,33 @@ class BootstrapSeedTests(unittest.TestCase):
           mock.patch.object(seed, 'file_pin', return_value=pin):
         with self.assertRaisesRegex(ValueError, error):
           seed.inspect_abi(Path('/owned-seed'))
+
+  def test_abi_leading_empty_main_map_keeps_the_actual_named_library_pins(self):
+    interpreter = '/lib/ld-linux-aarch64.so.1'
+    program = f'[Requesting program interpreter: {interpreter}]\n'.encode()
+    # Exact shape retained from native factory41720296078 before any worker ran.
+    mapping = ('\t (0x0000ff59a4a40000)\n'
+               '\tlinux-vdso.so.1 (0x0000ff59a518c000)\n'
+               '\tliblzma.so.5 => /lib/aarch64-linux-gnu/liblzma.so.5 (0x0000ff59a49f0000)\n'
+               '\tlibgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ff59a49b0000)\n'
+               '\tlibc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ff59a47f0000)\n'
+               '\t/lib/ld-linux-aarch64.so.1 (0x0000ff59a5140000)\n')
+    expected_paths = ['/lib/aarch64-linux-gnu/'+name for name in ('liblzma.so.5','libgcc_s.so.1','libc.so.6')]
+    expected_paths.append(interpreter)
+    def pin(path):
+      return dict(resolved=path, bytes=1, mode=0o755, sha256=hashlib.sha256(path.encode()).hexdigest())
+    for output in (mapping, mapping.split('\n', 1)[1]):
+      with self.subTest(leading_empty_main=output == mapping), \
+           mock.patch.object(seed.subprocess, 'run', side_effect=[
+               subprocess.CompletedProcess([], 0, program, b''),
+               subprocess.CompletedProcess([], 0, output.encode(), b'')]), \
+           mock.patch.object(seed, 'file_pin', side_effect=pin) as file_pin:
+        actual = seed.inspect_abi(Path('/owned-seed'))
+      self.assertEqual(actual, dict(interpreter=interpreter,
+          libraries={path:pin(path) for path in expected_paths},
+          tools={path:pin(path) for path in ('/usr/bin/readelf','/usr/bin/ldd')}))
+      self.assertEqual(file_pin.call_args_list, [mock.call(path) for path in
+          [*expected_paths,'/usr/bin/readelf','/usr/bin/ldd']])
 
   def test_abi_command_failure_retains_argv_status_and_bounded_streams(self):
     binary = Path('/owned-seed')
