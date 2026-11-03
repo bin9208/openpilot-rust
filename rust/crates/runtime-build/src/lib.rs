@@ -440,7 +440,7 @@ fn build_inner(
         .env("CARGO_INCREMENTAL", "0")
         // Bound concurrent compiler/linker processes independently of rustc's
         // CPU affinity. Device builds share limited memory with normal services.
-        .env("CARGO_BUILD_JOBS", "2")
+        .env("CARGO_BUILD_JOBS", "4")
         .env("RUSTC", &rustc)
         .env("RUSTDOC", toolchain.join("rustdoc"))
         .envs(&recipe.environment)

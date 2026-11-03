@@ -593,7 +593,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                 for job in original['jobs'].values():
                     for step in job['steps']:
                         if step.get('uses', '').startswith('actions/checkout@'):
-                            step['with'].update({'sparse-checkout': '/*\n!/third_party/native_inputs/\n',
+                            step['with'].update({'sparse-checkout': '/*\n!/native-inputs/\n',
                                                  'sparse-checkout-cone-mode': 'false'})
                 self.assertEqual(document, original)
                 self.assertEqual(set(document['jobs']), {'comparison'})

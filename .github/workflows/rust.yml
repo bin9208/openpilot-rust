@@ -137,7 +137,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -261,7 +261,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -384,7 +384,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -432,7 +432,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -506,7 +506,7 @@ jobs:
         with:
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -610,7 +610,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -713,7 +713,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
         with: {validation-context: 'true'}
@@ -785,7 +785,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
         with: {validation-context: 'true'}
@@ -1083,7 +1083,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -1183,7 +1183,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -1251,7 +1251,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -1322,7 +1322,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -1390,7 +1390,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -1456,7 +1456,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -1550,7 +1550,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -1648,7 +1648,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -1725,7 +1725,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -1833,7 +1833,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -1896,7 +1896,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -1982,7 +1982,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -2146,7 +2146,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -2290,7 +2290,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -2359,7 +2359,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -2466,7 +2466,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -2560,7 +2560,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -2658,7 +2658,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -2723,7 +2723,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -2785,7 +2785,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -2840,7 +2840,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -2901,7 +2901,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -2982,7 +2982,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -3089,7 +3089,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -3157,7 +3157,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -3218,7 +3218,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -3290,7 +3290,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -3401,7 +3401,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -3505,7 +3505,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -3570,7 +3570,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -3882,7 +3882,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -3924,7 +3924,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path

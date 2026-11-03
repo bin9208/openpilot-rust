@@ -90,6 +90,33 @@ class Fixture:
 
 
 class SourceEntryTests(unittest.TestCase):
+  def test_installed_storage_preserves_the_fixed_seed_generator_namespace(self):
+    root = Path(entry.__file__).resolve().parents[2]
+    publication = full_entry.module(root/'tools/native/publish_inputs.py', 'owned_input_directory')
+    self.assertEqual(entry.INSTALLED_INPUTS, Path(publication.GIT_INPUT_DIRECTORY))
+    for role in ('mpc', 'panda', 'dbc', 'usbgpu'):
+      contract = json.loads((root/f'rust/native-{role}-source-contract.json').read_text())
+      for name in contract['roots']:
+        self.assertFalse(entry.INSTALLED_INPUTS.is_relative_to(name)
+                         or Path(name).is_relative_to(entry.INSTALLED_INPUTS), (role, name))
+    # The fixed seed verifies this original Git namespace before handing off.
+    # Check it before an image or a complete runtime build is allocated.
+    contract = json.loads((root/'rust/native-mpc-source-contract.json').read_text())
+    data = subprocess.check_output(['/usr/bin/git', '-C', str(root), 'ls-tree', '-r', '-z',
+                                    'HEAD', '--', *contract['roots']])
+    selected = {}
+    for row in data.split(b'\0'):
+      if not row:
+        continue
+      name = row.split(b'\t', 1)[1].decode()
+      path = Path(name)
+      if (not any(path.is_relative_to(exclude) for exclude in contract['excludes'])
+          or path.suffix in ('.py', '.pyi', '.capnp')):
+        selected[name] = row
+    self.assertEqual(len(selected), contract['entries'])
+    self.assertEqual(hashlib.sha256(b''.join(selected[name]+b'\0' for name in sorted(selected))).hexdigest(),
+                     contract['entries_sha256'])
+
   def test_installed_git_inputs_reuse_assets_and_only_copy_new_content(self):
     with tempfile.TemporaryDirectory() as temp:
       f = Fixture(Path(temp))
@@ -623,6 +650,29 @@ class PublicSourceReuseTests(unittest.TestCase):
 
 
 class NativeArmAdmissionTests(unittest.TestCase):
+  def test_live_progress_uses_complete_private_rows_and_ignores_partial_or_redirected_data(self):
+    with tempfile.TemporaryDirectory() as temporary:
+      state = Path(temporary)
+      attempt = state/'generations/build-attempts/attempt-owned'
+      attempt.mkdir(parents=True)
+      journal = attempt/'resources.jsonl'
+      row = dict(context=dict(requested_source=dict(commit='a'*40)), state='running',
+                 elapsed_ms=123, memory=dict(kernel_peak_bytes=42, oom_events=0))
+      journal.write_text(json.dumps(row)+'\n{"incomplete":')
+      (attempt/'build.log').write_text('native-build-phase '+json.dumps(
+          dict(phase='tools_before', binaries=['owned-helper']))+'\nCompiling owned v1.0.0\n')
+      progress = full_entry.progress_snapshots(state)
+      self.assertEqual(len(progress), 1)
+      self.assertEqual(progress[0]['elapsed_ms'], 123)
+      self.assertEqual(progress[0]['binaries'], ['owned-helper'])
+      journal.write_text(json.dumps(dict(row, elapsed_ms='not-a-counter'))+'\n')
+      self.assertEqual(full_entry.progress_snapshots(state), [])
+      journal.unlink()
+      outside = state/'outside.jsonl'
+      outside.write_text(json.dumps(row)+'\n')
+      journal.symlink_to(outside)
+      self.assertEqual(full_entry.progress_snapshots(state), [])
+
   def test_timing_checkout_rejects_failed_wrong_runner_and_changed_profiles_before_download(self):
     publication = full_entry.module(Path(__file__).resolve().parents[2]/'native/publish_inputs.py', 'owned_timing_input_publication')
     for fault in ('failed-run', 'wrong-run', 'wrong-runner', 'changed-profile'):

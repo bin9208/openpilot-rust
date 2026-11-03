@@ -31,6 +31,9 @@ ROLES = ('ffmpeg', 'raylib', 'opencv', 'numerics', 'geos', 'brotli', 'acados', '
          'turbojpeg', 'ffmpeg-tools', 'freesans', 'panda', 'mpc', 'dbc', 'usbgpu')
 CASES = ['git-index-initial', 'git-index-reused', 'git-index-docs']
 PREFIX = 'native-agnos/runtime-inputs-evidence/'
+# Keep the authenticated v1 transport layout readable; installed Git data must
+# remain outside the legacy seed's MPC/model source namespaces.
+GIT_INPUT_DIRECTORY = 'native-inputs'
 MARKER = 'openpilot-native-inputs-publication-v1'
 FOUNDATION_ARM_JOB = 'Actual offline Cargo reuse (ARM native)'
 PRODUCER_ARM_JOB = 'Native compiler in pinned AGNOS ARM userspace'
@@ -641,7 +644,10 @@ def installed_source(bundle, root, source, index, rows, raw_index):
     member = bundle.member('installed-source/'+name)
     if member.file_size != pin['bytes']:
       raise ValueError('installed Git input member changed size')
-    destination = target/name
+    relative = Path(name)
+    if relative.is_relative_to('third_party/native_inputs'):
+      relative = Path(GIT_INPUT_DIRECTORY)/relative.relative_to('third_party/native_inputs')
+    destination = target/relative
     destination.parent.mkdir(parents=True, exist_ok=True)
     count, digest = 0, hashlib.sha256()
     with bundle.zip.open(member) as incoming, destination.open('xb') as output:

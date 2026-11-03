@@ -36,7 +36,7 @@ seed = runtime.seed
 
 INDEX = 'rust/native-bootstrap-inputs.json'
 DEFAULT_MACHINE = Path('/data/openpilot-native/machine.json')
-INSTALLED_INPUTS = Path('third_party/native_inputs')
+INSTALLED_INPUTS = Path('native-inputs')
 ROLES = ('ffmpeg', 'raylib', 'opencv', 'numerics', 'geos', 'brotli', 'acados', 'sdl',
          'turbojpeg', 'ffmpeg-tools', 'freesans', 'panda', 'mpc', 'dbc', 'usbgpu')
 MACHINE_FIELDS = {'schema', 'stores', 'cache', 'seed_cache', 'updater_staging', 'expected_source_growth_bytes',

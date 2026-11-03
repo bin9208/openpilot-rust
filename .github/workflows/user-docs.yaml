@@ -21,7 +21,7 @@ jobs:
           fetch-depth: "0"
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
         with: {validation-context: 'true'}

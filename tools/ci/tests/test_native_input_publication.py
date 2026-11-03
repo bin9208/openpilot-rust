@@ -240,7 +240,8 @@ class PublicationTests(unittest.TestCase):
         installed = candidate/'installed-source'
         self.assertEqual((installed/'rust/native-bootstrap-inputs.json').read_bytes(), fixture.index_bytes)
         large = next(row for row in receipts if row['bytes'] > 45*1024**2)
-        raw = installed/'third_party/native_inputs/assets/model-assets'/large['sha256']
+        self.assertFalse((installed/'third_party/native_inputs').exists())
+        raw = installed/publication.GIT_INPUT_DIRECTORY/'assets/model-assets'/large['sha256']
         self.assertFalse(raw.exists())
         self.assertEqual(Path(str(raw)+'.chunkmanifest').read_text(), '2')
         digest = hashlib.sha256()

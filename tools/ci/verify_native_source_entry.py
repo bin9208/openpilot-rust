@@ -58,6 +58,59 @@ def remaining(deadline_ns, cap=None):
     return seconds if cap is None else min(seconds, cap)
 
 
+def progress_snapshots(state):
+    """Read bounded, complete journal lines; diagnostics never decide success."""
+    def name(value):
+        return (isinstance(value, str) and 0 < len(value) <= 128
+                and all(c.isascii() and (c.isalnum() or c in '_.-') for c in value))
+
+    def lines(path):
+        if path.is_symlink() or path.resolve(strict=True) != path:
+            return []
+        with path.open('rb') as stream:
+            stream.seek(max(0, path.stat().st_size-65536))
+            data = stream.read(65536)
+        return data.rsplit(b'\n', 1)[0].splitlines() if b'\n' in data else []
+    snapshots = []
+    try:
+        journals = list(state.glob('generations/*-attempts/attempt-*/resources.jsonl'))
+    except OSError:
+        return snapshots
+    for journal in journals:
+        try:
+            complete = lines(journal)
+            if not complete:
+                continue
+            row = json.loads(complete[-1])
+            phase, binaries = None, []
+            try:
+                log = lines(journal.with_name('build.log'))
+            except OSError:
+                log = []
+            for line in reversed(log):
+                if b'native-build-phase ' in line:
+                    event = json.loads(line.split(b'native-build-phase ', 1)[1])
+                    phase, binaries = event['phase'], event['binaries']
+                    break
+            memory = row['memory']
+            phase = phase or row['context'].get('phase', 'native-build-seal')
+            source = row['context']['requested_source']['commit']
+            if (not all(name(v) for v in (journal.parent.name, row['state'], phase))
+                    or not isinstance(binaries, list) or len(binaries) > 128
+                    or not all(name(v) for v in binaries)
+                    or not isinstance(source, str) or len(source) != 40
+                    or any(c not in '0123456789abcdef' for c in source)
+                    or not all(type(v) is int and v >= 0 for v in (
+                        row['elapsed_ms'], memory['kernel_peak_bytes'], memory['oom_events']))):
+                continue
+            snapshots.append(dict(worker=journal.parent.name, state=row['state'],
+                source=source, elapsed_ms=row['elapsed_ms'], phase=phase, binaries=binaries,
+                kernel_peak_bytes=memory['kernel_peak_bytes'], oom_events=memory['oom_events']))
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            continue
+    return snapshots
+
+
 def transfer_counts(value):
     """Read existing counters, stopping at aggregates to avoid double counting."""
     counts = {}
@@ -440,11 +493,11 @@ def measurement_checkout(context, run_id, index_pin):
             destination = source/path.relative_to(root/'installed-source')
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(path, destination)
-    git('add', '--', 'rust/native-bootstrap-inputs.json', 'third_party/native_inputs')
+    git('add', '--', 'rust/native-bootstrap-inputs.json', publication.GIT_INPUT_DIRECTORY)
     if git('diff', '--cached', '--name-only'):
         git('commit', '-m', '실제 인증 입력을 포함한 독립 CI 빌드 시간 측정')
     changed = git('diff', '--name-only', os.environ['GITHUB_SHA'], 'HEAD').splitlines()
-    if any(name != 'rust/native-bootstrap-inputs.json' and not name.startswith('third_party/native_inputs/') for name in changed):
+    if any(name != 'rust/native-bootstrap-inputs.json' and not name.startswith(publication.GIT_INPUT_DIRECTORY+'/') for name in changed):
         raise ValueError('timing checkout altered project code instead of only authenticated inputs')
     commit_raw = subprocess.check_output([*git_base, '-C', str(source), 'cat-file', 'commit', 'HEAD'], env=env)
     if hashlib.sha1(b'commit '+str(len(commit_raw)).encode()+b'\0'+commit_raw).hexdigest() != git('rev-parse', 'HEAD'):
@@ -497,7 +550,7 @@ def preflight():
         if input_proof is None:
             count = entry.seed.fetch(asset, target)
         else:
-            shutil.copyfile(source/'third_party/native_inputs/metadata'/(asset['sha256']+'.json'), target)
+            shutil.copyfile(source/entry.INSTALLED_INPUTS/'metadata'/(asset['sha256']+'.json'), target)
             count = 0
         if target.stat().st_size != asset['bytes'] or checksum(target) != asset['sha256']:
             raise ValueError('public metadata body differs from committed pin: '+role)
@@ -835,6 +888,8 @@ def run():
     deadline_ns = request['payload_deadline_monotonic_ns']
     # This watchdog remains outside the payload cgroup. Its cleanup reserve is
     # separate from the one shared ARM admission/build/package-check budget.
+    next_progress = time.monotonic()
+    reported = set()
     try:
         assert select.select([ready], [], [], remaining(deadline_ns, 30))[0]
         assert os.read(ready, 1) == b'U', 'new user namespace did not become ready'
@@ -842,6 +897,15 @@ def run():
         os.write(send_go, b'M')
         while True:
             remaining(deadline_ns)
+            if time.monotonic() >= next_progress:
+                progress = progress_snapshots(state)
+                print('native-entry-progress '+json.dumps(progress), flush=True)
+                for row in progress:
+                    key = (row['worker'], row['state'], row['phase'], tuple(row['binaries']))
+                    if key not in reported:
+                        print('::notice title=Native source entry progress::'+json.dumps(row), flush=True)
+                        reported.add(key)
+                next_progress = time.monotonic()+30
             waited, status = os.waitpid(pid, os.WNOHANG)
             if waited:
                 reaped = True

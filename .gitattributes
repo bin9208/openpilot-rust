@@ -29,4 +29,4 @@ openpilot/selfdrive/carrot/web/assets/alert_police.svg filter=lfs diff=lfs merge
 openpilot/selfdrive/modeld/models/dmonitoring_model.onnx -filter -diff -merge -text
 
 # Native build inputs are pinned by their exact bytes, including on Windows.
-third_party/native_inputs/** -filter -diff -merge -text
+native-inputs/** -filter -diff -merge -text -delta

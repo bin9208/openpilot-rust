@@ -56,7 +56,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/third_party/native_inputs/
+            !/native-inputs/
           sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v6
         with:
