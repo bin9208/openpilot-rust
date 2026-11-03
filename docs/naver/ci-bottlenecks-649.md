@@ -347,3 +347,25 @@ command deadline도 보존한다. 기존 check-disk-space를 fetch 직전에 같
 기존 실제 ARM [41255134425/job124696587349](https://github.com/bin9208/openpilot-rust/actions/runs/41255134425/job/124696587349), artifact13062448370의 전체ZIP SHA256 `a26d26e0583d8de8933670391c36ec6844fb64d17b1714ed85484568be08ce0e`에는 owner 없이 두 acados leaf를 검사할 때 sqrt/sqrtf가 실패하는 음성과 실제 acados/MPC owner에서 원래 strong-symbol 검사가 통과하는 양성이 남아 있다. 해당 acados/MPC provider plan은 현재와 바이트가 동일하다. 기존 component 검사는 이 범위를 보존했으나 최종 generation caller가 모든 ELF를 독립 root로 넘겨 같은 원래 범위를 누락했다.
 
 최종 caller와 사전검사에 기존 범위를 연결한다. 다른 ELF는 모두 독립 root로 검사하고 `plannerd-acados/libblasfeo.so`, `libhpipm.so` 두 개만 실제 libacados/lat MPC/long MPC owner 각각에서 검사한다. 다른 경로의 같은 이름 라이브러리에 적용하지 않는다. 원래 runtime-elf-audit와 Python companion scope helper, 수치 라이브러리·연산·정밀도·ABI/pin/strong-symbol 정책은 바꾸지 않는다. 모든 원래 root와 세 owner의 원문 report를 함께 보존하고 누락·실패·다른 owner·서로 다른 object 해시를 거부한다. 저장된 generation 재검증에도 같은 인증된 provider 디렉터리 검색을 사용한다. 기존 focused job에서 scope 양성/음성과 all-targets Clippy를 검증하고 새 source 전체검사를 이어간다.
+
+
+## 2026-11-03 마지막 반복 검증 병목 — #674
+
+최종 `f5d1972284340438fc6f7c6ab8e8e46831424ff1`의 전체 Rust47개와 Integration 등은
+성공했다. genuine [41508678434](https://github.com/bin9208/openpilot-rust/actions/runs/41508678434)는
+전체99개/13그룹 컴파일·1123파일 봉인·전체ABI·저장 generation 및 원래 staging cache
+부재 재검증을 통과한 뒤 complete-repeat에서6시간 한도에 도달했다. repeat/docs/
+small/final-production과 최종 입력 산출물은 미완료이며 timeout을 성공으로 보지 않는다.
+
+[#674](https://github.com/bin9208/openpilot-rust/issues/674)에서는 실제4,552,019바이트
+SDK JSON과 반복되는 `serde_json::from_reader(File)` 경로를 확인했다. serde_json은
+입력을 자체 buffering하지 않는다. 입력·plan·generation·source receipt 파일 파싱에
+BufReader를 적용하고 기존 byte limit, NOFOLLOW/정규파일, schema, hash·전체 SDK
+재검증과 source/ABI/반복·작은변경 검증을 유지한다. 파일을 메모리 캐시하거나 검사를
+건너뛰지 않는다. full-generation entry의 큰 layout/previous JSON도 buffering한다.
+
+같은 크기 JSON의 기존/개선 파싱 결과와 하위 Read 호출 수, 잘린 입력·후행JSON·잘못된
+UTF8·I/O오류를 기존 focused Actions에서 확인한다. 기존SDK·입력 무결성 및 설정 검사를
+함께 실행한다. 원래 build phase timing을 활성화해initial/repeat/docs/small 각13그룹의
+비용을 commands.log에 남긴다. 로컬은 rustfmt·Python AST·YAML·diff만 확인한다.
+최신동일source 전체 Actions와 genuine 최종 결과를 확인하기 전 #649를 완료 처리하지 않는다.

@@ -86,7 +86,7 @@ pub fn read<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T> {
     if file.metadata()?.len() > 4 * 1024 * 1024 {
         return Err("native plan input exceeds 4 MiB".into());
     }
-    Ok(serde_json::from_reader(file.take(4 * 1024 * 1024 + 1))?)
+    Ok(crate::read_json(file.take(4 * 1024 * 1024 + 1))?)
 }
 
 fn merge<K: Ord + Clone, V: PartialEq + Clone>(

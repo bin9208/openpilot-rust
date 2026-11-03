@@ -200,7 +200,7 @@ impl Snapshot {
             if input.metadata()?.len() > 1024 * 1024 {
                 return Err("update checkout receipt is excessive".into());
             }
-            serde_json::from_reader::<_, UpdateCheckout>(input)?
+            crate::read_json::<UpdateCheckout>(input)?
         } else {
             admit(&store, expected_growth_bytes)?;
             let root = tempfile::Builder::new()
@@ -485,7 +485,7 @@ pub fn retain(input: &Path, store: &Path, expected_growth_bytes: u64) -> Result<
         if file.metadata()?.len() > 1024 * 1024 {
             return Err("retained source receipt exceeds 1 MiB".into());
         }
-        let retained: Snapshot = serde_json::from_reader(file.take(1024 * 1024 + 1))?;
+        let retained: Snapshot = crate::read_json(file.take(1024 * 1024 + 1))?;
         if retained.source != source || retained.modules != expected_modules {
             return Err("retained source identity conflict".into());
         }

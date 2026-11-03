@@ -247,7 +247,7 @@ pub(crate) fn read<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T> {
     if file.metadata()?.len() > LIMIT {
         return Err("native generation JSON exceeds 4 MiB".into());
     }
-    Ok(serde_json::from_reader(file.take(LIMIT + 1))?)
+    Ok(crate::read_json(file.take(LIMIT + 1))?)
 }
 
 /// Parse and identify the same bounded bytes. A later file read must not rename

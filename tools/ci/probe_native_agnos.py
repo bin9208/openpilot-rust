@@ -2343,7 +2343,8 @@ def native_complete_layout_probe(guest_command,work,source_mount,evidence,log,gu
   execute(['git','-C',fixture,'remote','set-url','origin','https://github.com/bin9208/openpilot-rust.git'],
       'native-complete-source-origin.txt')
   execute(['git','-C',fixture,'checkout','--detach',evidence['source_commit']],'native-complete-source-checkout.txt')
-  generation_command=[work/'project-target/debug/examples/native_full_generation','--root',fixture,
+  generation_command=['/usr/bin/env','OPENPILOT_NATIVE_BUILD_TIMINGS=1',
+      work/'project-target/debug/examples/native_full_generation','--root',fixture,
       '--plan',work/'native-complete-bound-plan/build-plan.json','--layout',work/'native-complete-layout.json',
       '--cache',work/'native-complete-cargo-cache','--toolchain',Path(rust)/'bin','--stores',base]
   execute(['/usr/bin/time','-v','-o',work/'native-complete-initial-resources.txt',

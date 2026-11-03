@@ -37,7 +37,7 @@ impl Tree {
         if file.metadata()?.len() > LIMIT {
             return Err("build input tree receipt exceeds 16 MiB".into());
         }
-        let tree: Self = serde_json::from_reader(file.take(LIMIT + 1))?;
+        let tree: Self = crate::read_json(file.take(LIMIT + 1))?;
         if tree.schema != 1 || tree.entries.len() > 100_000 {
             return Err("invalid build input tree receipt".into());
         }
@@ -119,7 +119,7 @@ impl Receipt {
         if file.metadata()?.len() > LIMIT {
             return Err("build input receipt exceeds 16 MiB".into());
         }
-        let value: serde_json::Value = serde_json::from_reader(file.take(LIMIT + 1))?;
+        let value: serde_json::Value = crate::read_json(file.take(LIMIT + 1))?;
         if value.get("kind").and_then(serde_json::Value::as_str) == Some(crate::system_sdk::KIND) {
             let snapshot: crate::system_sdk::Snapshot = serde_json::from_value(value)?;
             snapshot.validate()?;

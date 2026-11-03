@@ -165,7 +165,7 @@ impl Plan {
         if file.metadata()?.len() > 1024 * 1024 {
             return Err("system SDK plan exceeds 1 MiB".into());
         }
-        let plan: Self = serde_json::from_reader(file.take(1024 * 1024 + 1))?;
+        let plan: Self = crate::read_json(file.take(1024 * 1024 + 1))?;
         plan.validate()?;
         Ok(plan)
     }
