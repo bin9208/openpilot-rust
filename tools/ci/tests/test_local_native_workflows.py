@@ -196,6 +196,18 @@ class LocalNativeWorkflowTests(unittest.TestCase):
         current = {n.name: n for n in after.body if isinstance(n, ast.FunctionDef)}
         dump = lambda n: ast.dump(n, include_attributes=False)
         combined = copy.deepcopy(current['native_bootstrap_seed_probe'])
+        # Shipping seed compilation is the one intentional profile change.
+        # Keep all subsequent source/ABI/license/cache/compiler assertions intact.
+        seed_assignment = next(n for n in combined.body if isinstance(n, ast.Assign)
+            and any(isinstance(t, ast.Name) and t.id == 'binary' for t in n.targets))
+        self.assertEqual(dump(seed_assignment.value), dump(ast.parse(
+            'build_release_seed(guest_command, work, source_mount, evidence, log, cargo)', mode='eval').body))
+        original_seed = next(n for n in original['native_bootstrap_seed_probe'].body if isinstance(n, ast.Assign)
+            and any(isinstance(t, ast.Name) and t.id == 'binary' for t in n.targets))
+        seed_assignment.value = copy.deepcopy(original_seed.value)
+        index = combined.body.index(seed_assignment)
+        self.assertTrue(any(isinstance(t, ast.Name) and t.id == 'cargo' for t in combined.body[index-1].targets))
+        combined.body[index-1], combined.body[index] = combined.body[index], combined.body[index-1]
         tail = copy.deepcopy(current['native_bootstrap_current_probe'].body)
         for statement in tail:
             for node in ast.walk(statement):

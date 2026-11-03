@@ -445,3 +445,42 @@ interpreter 경로가 있었다. GNU 문서는 메인 실행 파일의 `link_map
 실제 출력 형태와 기존 형태가 동일한 ABI pin을 만드는 회귀를 추가했다. 실제 native 시작
 성공은 후속 factory 결과로 판단한다. 실패 artifact `13271792094`의 ZIP SHA256은
 `acbd1584e3497e8f114bd0db8c69245d83a2bfb07537ef4da60456322032563b`다.
+
+## 2026-11-04 기본 후보 실제 성공과 디버그 seed 병목 — #676
+
+source `3092dd5cd01478a694e1726781e924290b5b258e`의
+[factory41721939609](https://github.com/bin9208/openpilot-rust/actions/runs/41721939609)는 성공했다.
+99개 전체 빌드·봉인, 실제 고정 seed의 정상 launcher/package 확인, 새 빌드 요청 없는
+무변경 시작, 같은 경로의 작은 logger 수정과 실제 sealed logger 실행까지 완료했다.
+원래 generation은 `5bae5976cbc880bb1a7d41a07b5fb71a20202d5f851333bad69918fe933dc77f`,
+작은 수정의 CI 파생 source는 `e2e5dec6140b6e7d525aac385ec5f60d05695de1`이다.
+
+| 실제 CLI 구간 | ARM CI 시간 |
+| --- | ---: |
+| 최초 source 빌드와 package 확인 | 66분 14.090초 |
+| 무변경 package 확인·시작, 새 빌드 요청 0 | 7분 17.641초 |
+| 작은 logger 수정의 source 빌드 | 21분 48.985초 |
+| 작은 수정 중 current_tools 준비 | 15분 36.665초 |
+| 작은 수정 중 runtime 입력 준비 | 1분 49.243초 |
+| 작은 수정 중 Cargo+봉인 | 4분 5.300초 |
+| 위 구간 중 실제 Cargo 합계 | 32.308초 |
+| 위 구간 중 봉인 | 2분 20.458초 |
+
+하위 구간은 상위 시간에 포함된다. 최초 source-entry 내부 시간은58분55.883초이고,
+패키지 확인/시작을 포함한 CLI 총시간과 다르다. 작은 수정은07/08/09 세 그룹의 logger·
+bootlog·manager만 재빌드했고 나머지96개는 fresh였다. 실제 ELF 변경은 logger/bootlog이며
+manager는 재링크 후 동일한 바이트일 수 있다. bootstrap13개 도구도 모두 fresh였고 Cargo는
+0.26초였다. 모든 worker 실제 OOM0, peak3GiB, 무변경과 작은 수정에서 원본 HTTP 전송0이다.
+이 수치는 기기 시간이 아니다. 실제 manager·모델·화면·녹화·업로드·주행은 실행하지 않았다.
+
+증거 artifact `13278364440`의 ZIP SHA256은
+`e012d5b623ab89f43894e172920a6513a5e3923bf9d5f515729ec6dae5534b18`이다.
+최종 `source-entry-full/result.json`의 cleanup_verified는true이고 전역 controller/binfmt를
+바꾸지 않았다. 중간 execution-summary의 cleanup 전 false를 최종 결과로 해석하지 않는다.
+
+실제 남은 병목은 재컴파일 대신 bootstrap 준비/검사에 집중됐다. 생성 코드에서 설치 seed가
+`project-target/debug/openpilot-runtime-inputs`인 것을 확인했다. [#676](https://github.com/bin9208/openpilot-rust/issues/676)에서
+별도 runtime 전체 묶음을 만들지 않고 기존 bootstrap 경계로 release seed만 내보낸다.
+나머지 모델·SDK·Rust/Cargo 원본 입력은 재사용한다. 향후 producer도 release 컴파일 증거의
+opt_level3/debug_assertions=false/test=false와 실제 executable을 확인해 같은 혼입을 막는다.
+현재 기본 후보3092는 통과했지만 개선된 seed의 시간과 최종 PR/병합 후 결과는 아직 남았다.

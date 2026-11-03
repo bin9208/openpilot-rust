@@ -1,4 +1,5 @@
 """Owned Git/descriptor fixtures exercise resolution, never a native runtime."""
+import ast
 import copy
 import hashlib
 import importlib.util
@@ -650,6 +651,27 @@ class PublicSourceReuseTests(unittest.TestCase):
 
 
 class NativeArmAdmissionTests(unittest.TestCase):
+  def test_published_seed_requires_the_release_compiler_profile_even_when_the_path_looks_release(self):
+    path = Path(__file__).resolve().parents[1]/'probe_native_agnos.py'
+    tree = ast.parse(path.read_text())
+    function = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == 'release_seed_artifact')
+    namespace = {}
+    exec(compile(ast.Module(body=[function], type_ignores=[]), str(path), 'exec'), namespace)
+    verify = namespace['release_seed_artifact']
+    expected = '/owned/project-target/release/openpilot-runtime-inputs'
+    row = dict(reason='compiler-artifact', target=dict(name='openpilot-runtime-inputs'), executable=expected,
+               profile=dict(opt_level='3', debug_assertions=False, test=False))
+    self.assertEqual(verify([row], expected), row)
+    for field, value in (('opt_level', '0'), ('debug_assertions', True), ('test', True)):
+      invalid = copy.deepcopy(row)
+      invalid['profile'][field] = value
+      with self.assertRaisesRegex(ValueError, 'debug or unbound'):
+        verify([invalid], expected)
+    with self.assertRaises(ValueError):
+      verify([dict(row, executable=expected.replace('/release/', '/debug/'))], expected)
+    with self.assertRaises(ValueError):
+      verify([row, row], expected)
+
   def test_release_seed_rejects_debug_or_unbound_compiler_artifacts(self):
     release = '/owned/target/aarch64-unknown-linux-gnu/release/openpilot-runtime-inputs'
     artifact = dict(executable=release, sha256='a'*64)
@@ -680,6 +702,9 @@ class NativeArmAdmissionTests(unittest.TestCase):
         self.assertEqual(full_entry.stage_metadata(entry, source, asset, target), (0, True))
         self.assertEqual(target.read_bytes(), data)
         target.unlink()
+        origin.write_bytes(data+b'\n')
+        with self.assertRaisesRegex(ValueError, 'Git index pin'):
+          full_entry.stage_metadata(entry, source, asset, target)
         origin.unlink()
         with self.assertRaises(FileNotFoundError):
           full_entry.stage_metadata(entry, source, asset, target)

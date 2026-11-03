@@ -519,8 +519,12 @@ def measurement_checkout(context, run_id, index_pin):
 def stage_metadata(entry, source, asset, target, force_local=False):
     root = source/entry.INSTALLED_INPUTS/'metadata'
     if force_local or os.path.lexists(root):
-        with entry.seed.regular(root/(asset['sha256']+'.json')) as incoming, target.open('xb') as out:
-            shutil.copyfileobj(incoming, out)
+        with entry.seed.regular(root/(asset['sha256']+'.json')) as incoming:
+            data = incoming.read(asset['bytes']+1)
+        if len(data) != asset['bytes'] or hashlib.sha256(data).hexdigest() != asset['sha256']:
+            raise ValueError('committed native metadata differs from its Git index pin')
+        with target.open('xb') as out:
+            out.write(data)
         return 0, True
     return entry.seed.fetch(asset, target), False
 

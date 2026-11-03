@@ -307,6 +307,34 @@ def native_cereal_probe(guest_command, work, source_mount, evidence, log, guest_
 
 
 
+def release_seed_artifact(rows, expected):
+  artifacts = [row for row in rows if row.get('reason') == 'compiler-artifact'
+      and row.get('target', {}).get('name') == 'openpilot-runtime-inputs' and row.get('executable')]
+  if len(artifacts) != 1:
+    raise ValueError('release seed requires exactly one compiler artifact')
+  artifact = artifacts[0]
+  profile = artifact.get('profile', {})
+  if (artifact['executable'] != str(expected) or profile.get('opt_level') != '3'
+      or profile.get('debug_assertions') is not False or profile.get('test') is not False):
+    raise ValueError('debug or unbound compiler artifact cannot become an installed bootstrap seed')
+  return artifact
+
+
+def build_release_seed(guest_command, work, source_mount, evidence, log, cargo):
+  room(work, 2*1024**3)
+  binary = work/'project-target/release/openpilot-runtime-inputs'
+  output = work/'native-bootstrap-release-build.jsonl'
+  evidence['commands'].append(run(guest_command([
+      '/usr/bin/env', f'RUSTC={Path(cargo).parent/"rustc"}', f'RUSTDOC={Path(cargo).parent/"rustdoc"}',
+      cargo, 'build', '--locked', '--offline', '--release', '--manifest-path', f'{source_mount}/rust/Cargo.toml',
+      '-p', 'openpilot-runtime-build', '--bin', 'openpilot-runtime-inputs',
+      '--target-dir', work/'project-target', '--message-format=json']), log, stdout_path=output))
+  rows = [json.loads(line) for line in output.read_text().splitlines()]
+  expected = str(binary).replace(str(work), NATIVE_PROOT['GUEST_WORK'])
+  release_seed_artifact(rows, expected)
+  return binary
+
+
 def native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log, guest_work):
   """Consume a separately pinned small seed, without a current runtime release."""
   room(work, 2*1024**3)
@@ -314,8 +342,8 @@ def native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log
   def execute(argv, name):
     evidence['commands'].append(run(guest_command(argv),log,stdout_path=work/name))
     return work/name
-  binary = work/'project-target/debug/openpilot-runtime-inputs'
   cargo = (work/'native-project-cargo-path.txt').read_text().strip()
+  binary = build_release_seed(guest_command, work, source_mount, evidence, log, cargo)
   vendor = json.loads((work/'native-cereal-cargo-inputs-reuse.json').read_text())['vendor']
   pinned_rust = json.loads((work.parent/'native-rust-first.json').read_text())
   guest_rust = Path(guest_work)/'pinned-rust'/Path(pinned_rust['root']).relative_to(work.parent/'native-rust-toolchains')
