@@ -363,3 +363,12 @@ uid1000 쓰기 권한이 없어 멈췄다. 정상 AGNOS 부팅의 임시 mount�
 공용 `/tmp`는 사용하지 않는다. runtime 빌드는 아직 시작하지 않았고 코드/정책/고정 입력은
 그대로다. 실패 evidence artifact `13260521492`의 SHA256은
 `21c32485241fad5caacd3d04e0ba89b0ffb1291f3903958634bc557fe288947a`다.
+
+기존 `4deb6ca13`의 RadarCAN Miri job `41693601007/job126118211650`도 검사 전에
+Git fetch만 20분 걸려 제한에 도달했다. 각 일반 소스 검사에서 고정 입력1.27GB를 반복
+전송한 것이 원인이므로 Rust CI와 messaging 비교도 Naver와 같은 sparse checkout을
+사용한다. Git tree에는 입력이 계속 포함되고 실제 factory/기기 빌드는 전체 입력을 받는다.
+원래 source 비교·명령·runner·제한 시간·gate는 유지한다. messaging의 기존
+`cancel-in-progress:true`가 PR 갱신마다 진행 중인 비교를 취소한 사실도 확인했으며
+최신 보존 지시에 맞춰 `queue:max`/`cancel-in-progress:false`로 바꾼다. 고정 대조는 이
+checkout/concurrency만 정확히 허용하고 나머지 원본 workflow 전체 비교를 유지한다.

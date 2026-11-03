@@ -135,6 +135,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -255,6 +259,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -374,6 +382,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - name: Reserve capacity and prepare Miri
@@ -418,6 +430,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -487,6 +503,11 @@ jobs:
         shell: openpilot-local-shell {0}
     steps:
       - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -587,6 +608,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -686,6 +711,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
         with: {validation-context: 'true'}
       - uses: ./.github/actions/rust-path
@@ -754,6 +783,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
         with: {validation-context: 'true'}
       - uses: ./.github/actions/rust-path
@@ -1048,6 +1081,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -1144,6 +1181,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -1208,6 +1249,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -1275,6 +1320,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -1339,6 +1388,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -1401,6 +1454,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -1491,6 +1548,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -1585,6 +1646,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -1658,6 +1723,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -1762,6 +1831,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -1821,6 +1894,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -1903,6 +1980,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -2063,6 +2144,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -2203,6 +2288,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -2268,6 +2357,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -2371,6 +2464,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -2461,6 +2558,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -2555,6 +2656,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -2616,6 +2721,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -2674,6 +2783,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -2725,6 +2838,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -2782,6 +2899,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -2859,6 +2980,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -2962,6 +3087,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -3026,6 +3155,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -3083,6 +3216,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -3151,6 +3288,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -3258,6 +3399,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -3358,6 +3503,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - run: sudo apt-get update && sudo apt-get install -y clang capnproto libcapnp-dev g++-aarch64-linux-gnu
@@ -3419,6 +3568,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -3727,6 +3880,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
@@ -3765,6 +3922,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/third_party/native_inputs/
+          sparse-checkout-cone-mode: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6

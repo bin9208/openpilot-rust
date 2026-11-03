@@ -584,10 +584,17 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             if path.name == 'messaging-allocation-431.yml':
                 # This independently merged workflow already uses two native
                 # hosted runners. Preserve every original command and trigger,
-                # including its hosted fork checks, by comparing the whole job.
+                # including its hosted fork checks. Only omit unused installed
+                # input blobs and preserve earlier runs on subsequent PR pushes.
                 original = yaml.load(subprocess.check_output(
                     ['git', 'show', MESSAGING_BASE+':.github/workflows/'+path.name],
                     cwd=ROOT, text=True), Loader=yaml.BaseLoader)
+                original['concurrency'] = dict(original['concurrency'], queue='max', **{'cancel-in-progress': 'false'})
+                for job in original['jobs'].values():
+                    for step in job['steps']:
+                        if step.get('uses', '').startswith('actions/checkout@'):
+                            step['with'].update({'sparse-checkout': '/*\n!/third_party/native_inputs/\n',
+                                                 'sparse-checkout-cone-mode': 'false'})
                 self.assertEqual(document, original)
                 self.assertEqual(set(document['jobs']), {'comparison'})
                 comparison = document['jobs']['comparison']
