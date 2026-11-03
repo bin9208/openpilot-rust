@@ -114,6 +114,9 @@ impl Contract {
     }
     fn selected(&self, path: &Path) -> bool {
         self.roots.iter().any(|root| path.starts_with(root))
+            // Installed input blobs are storage, not MPC generator sources.
+            // Their independent SHA/byte pins are checked by source entry.
+            && !path.starts_with("third_party/native_inputs")
             && (!self.excludes.iter().any(|root| path.starts_with(root))
                 || path.extension().is_some_and(|extension| {
                     ["py", "pyi", "capnp"].iter().any(|e| extension == *e)

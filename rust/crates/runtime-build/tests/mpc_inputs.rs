@@ -114,6 +114,7 @@ fn docs_and_rust_changes_reuse_the_recorded_generation_inputs_without_rewriting_
     for path in [
         "README.md",
         "rust/owned-runtime.rs",
+        "third_party/native_inputs/assets/owned-compiler-input",
         "openpilot/selfdrive/carrot/web/src/owned.js",
     ] {
         let file = f.source.join(path);
@@ -136,6 +137,8 @@ fn changed_or_added_generation_sources_and_dirty_inputs_are_rejected() {
     for path in [
         "openpilot/common/model.py",
         "openpilot/common/added.py",
+        "third_party/native_inputs_generator.py",
+        "third_party/owned-generator/input.py",
         "openpilot/selfdrive/carrot/web/src/added.py",
     ] {
         let f = fixture();
