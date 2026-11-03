@@ -162,6 +162,10 @@ def bootstrap_memory_observer(job, owner, work, pin, output):
 
 def main():
     assert os.geteuid() != 0 and not os.getgroups()
+    validation = os.environ.get('NATIVE_AGNOS_VALIDATION', 'full')
+    if validation not in ('inputs', 'full'):
+        raise ValueError('native bootstrap requires inputs or full validation')
+    full_validation = validation == 'full'
     runpy.run_path(str(Path(__file__).resolve().parent/'runner_policy.py'))['require_github_native_arm']()
     job = Path(os.environ['CI_JOB_TEMP'])
     assert job.parent == Path('/tmp') and job.name.startswith('openpilot-ci.') and job.resolve() == job
@@ -287,7 +291,7 @@ def main():
     reports = {}
     metrics = {}
     initial_hashes = None
-    for phase in ('initial', 'reused', 'docs', 'small'):
+    for phase in (('initial', 'reused', 'docs', 'small') if full_validation else ('initial',)):
         if phase == 'docs':
             path = fixture/'README.md'
             path.write_bytes(path.read_bytes()+b'\nOwned bootstrap docs reuse fixture.\n')
@@ -345,8 +349,11 @@ def main():
         concurrent_component_growth_budget_bytes=shared_growth,
         filesystem_measurement_scope='shared filesystem; includes admitted concurrent components',
         seed_source=manifest['source'], expected_seed_descriptor_sha256=seed['descriptor_sha256'],
-        repeated_and_docs_all_fresh=True, repeated_and_docs_binary_storage_bytes=0,
-        small_changed_tool='openpilot-runtime-build', unmodified_tools_fresh=12,
+        full_regression_executed=full_validation,
+        repeated_and_docs_all_fresh=full_validation,
+        repeated_and_docs_binary_storage_bytes=0 if full_validation else None,
+        small_changed_tool='openpilot-runtime-build' if full_validation else None,
+        unmodified_tools_fresh=12 if full_validation else None,
         original_bundle_provenance_retained=True, public_seed_download_tested=False,
         request_owner_pid_and_start_time_bound=True,
         actual_host_kernel_cgroup=True, process_architecture='aarch64', physical_arm_cpu=False,

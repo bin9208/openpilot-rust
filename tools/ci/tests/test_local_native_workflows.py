@@ -200,6 +200,8 @@ class LocalNativeWorkflowTests(unittest.TestCase):
         for statement in tail:
             for node in ast.walk(statement):
                 if isinstance(node, ast.Name) and node.id == 'runner': node.id = 'run'
+                if isinstance(node, ast.Constant) and isinstance(node.value, str) and node.value.endswith(',PATH,NATIVE_AGNOS_VALIDATION'):
+                    node.value = node.value.removesuffix(',NATIVE_AGNOS_VALIDATION')
         combined.body.extend(tail)
         self.assertEqual(dump(combined), dump(original['native_bootstrap_seed_probe']))
         def probe_calls(node):

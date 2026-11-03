@@ -182,3 +182,29 @@ factory 측정 workflow 파일은 작업 브랜치에만 있고 GitHub workflow 
 기존 작은 fixture matrix를 함께 실행하지 않는다. 일반 push/수동 집중 검사는 원래
 matrix를 유지한다. 이 연결은 원래 측정 경로를 실행 가능하게 하는 CI 변경이며 기기에
 새 준비 단계나 서비스를 추가하지 않는다.
+
+## 2026-11-03 사용자 시험 후보로 범위 축소
+
+사용자는 런타임 prebuilt 설치에서 자체 빌드·업데이트 유지보수를 개선하는 작업에
+일주일 이상 소요됐으며, 전체 언어 전환은 점진적으로 진행할 계획이었다고 재확인했다.
+전체 회귀·성능 검증을 시험 후보 전달의 선행 조건으로 계속 쌓지 않는다. 기본 빌드·
+실행 파일/라이브러리 호환성·실패 시 기존 실행 보존을 확인하고 기기 수용은 사용자가 한다.
+
+입력 전용 CI도 별도 encoder release 빌드·codec 원본 비교를 실행하고, bootstrap 도구를
+최초/재사용/문서/작은 변경 네 번 검증하고 있었다. 입력 전용에서는 검증된 encoder prefix와
+현재 도구의 최초 준비만 수행하도록 줄였다. 원래 검사와 네 가지 경우는 명시적 `full`에
+그대로 남긴다. bootstrap summary는 반복 검사를 실행하지 않았음을 표시하며, 생략한 검사를
+통과했다고 주장하지 않는다. 로컬은 AST·diff만 확인했고 이 후속 CI 조정 때문에 새 검사나
+producer를 요청하지 않았다. 진행 중인 기존 source의 실행은 보존했다.
+
+계측 코드 source `4736f914e317360fac45604d3f54c32309f64d51`의
+[집중41593307923](https://github.com/bin9208/openpilot-rust/actions/runs/41593307923)은 ARM/X64 모두
+성공했다. 측정 workflow 연결 source `44c2c4726c27447e680bdd7b025568a303d7f5db`의
+[집중41593758428](https://github.com/bin9208/openpilot-rust/actions/runs/41593758428)은 진행 중이다.
+최초 계측 source `ec96b2149`의 실패는 CI가 고정한 artifact 목록에 `build.log` 추가를
+반영하지 않았기 때문이며, `4736f914e`는 그 한 항목만 명시적으로 허용해 수정했다.
+
+현재 브랜치에는 실제 `rust/native-bootstrap-inputs.json`, `rust/native-machine.json`,
+`third_party/native_inputs/` 묶음이 없다. 이것이 직접 설치 가능한 후보를 막고 있으며
+전체 검증 성공을 추가로 기다리는 문제와 구분한다. 실제 파일을 제공하기 전에는
+설치 가능·최초/작은 변경 시간 측정 완료·기기 성능 개선을 주장하지 않는다.

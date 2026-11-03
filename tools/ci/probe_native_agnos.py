@@ -381,7 +381,7 @@ def native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log
 def native_bootstrap_current_probe(guest_command, work, source_mount, evidence, log, guest_work, *, runner=run):
   # Only this added bootstrap test enters a job-owned host-kernel scope. The
   # original guest commands and the other engineering probes remain unchanged.
-  preserve = 'GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE,PATH'
+  preserve = 'GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE,PATH,NATIVE_AGNOS_VALIDATION'
   scope = Path(os.environ['GITHUB_WORKSPACE'])/'tools/ci/native_resource_scope.py'
   driver = Path(os.environ['GITHUB_WORKSPACE'])/'tools/ci/verify_native_bootstrap.py'
   evidence['commands'].append(runner(['sudo','-n',f'--preserve-env={preserve}','/usr/bin/python3',scope,
@@ -1092,6 +1092,13 @@ def native_encoder_probe(guest_command,work,source_mount,evidence,log,guest_work
   assert prefix['linked_bytes']>0 and not prefix['compiler_executed'] and not prefix['runtime_activated']
   for part in ('headers','provider'):
     assert prefix[part]['asset']['transferred_bytes']==prefix[part]['asset']['stored_bytes']==0
+  if os.environ.get('NATIVE_AGNOS_VALIDATION', 'full') == 'inputs':
+    # The production input builder consumes this verified prefix. Compiling
+    # encoderd and comparing codec behavior belongs to the separate full run.
+    evidence['native_encoder_inputs'] = dict(tree_sha256=prefix['tree_sha256'],
+        identity=prefix['identity'], independent_host_tree_matches=True,
+        runtime_built=False, codec_regression_executed=False)
+    return
   sdk=json.loads((work/'native-cereal-preparation-initial.json').read_text())
   registry=json.loads((work/'native-cereal-cargo-inputs-reuse.json').read_text())
   yuv=json.loads((work/'native-codec-initial.json').read_text())['libyuv']
