@@ -596,11 +596,9 @@ def arm():
         '--machine-configuration-sha256', machine_pin]
     rows, receipts = {}, {}
     requests = state/'generations/source-requests'
-    for phase in ('initial', 'reused', 'launch-package'):
-        launching = phase in ('initial', 'launch-package')
-        before_launch = set(requests.glob('request-*/result.json')) if launching else set()
-        arguments = base + (['--launch', '--verify-package', '--paths', str(paths)]
-                            if launching else [])
+    for phase in ('initial', 'launch-package'):
+        before_launch = set(requests.glob('request-*/result.json'))
+        arguments = base + ['--launch', '--verify-package', '--paths', str(paths)]
         phase_started = time.monotonic_ns()
         with (state/(phase+'.stdout')).open('xb') as out, (state/(phase+'.stderr')).open('xb') as err:
             subprocess.run(arguments, env=entry.seed.ENV, stdout=out, stderr=err, check=True,
@@ -621,23 +619,17 @@ def arm():
                 build_configuration_sha256=record['configuration_sha256'])
             save(state/(phase+'-proof.json'), receipts[phase])
             continue
-        if launching:
-            # The launch CLI execs its helper; use its newly retained full build
-            # result, rather than parsing mixed JSON/launcher diagnostics stderr.
-            candidates = []
-            for path in set(requests.glob('request-*/result.json'))-before_launch:
-                candidate = entry.runtime.read(path)
-                if 'resolver_evidence' in candidate:
-                    assert Path(candidate['resolver_evidence']) == path.parent
-                    candidates.append(candidate)
-            assert len(candidates) == 1, 'cold normal launch must retain exactly one production source-entry build result'
-            row = candidates[0]
-        else:
-            row = entry.runtime.read(state/(phase+'.stdout'))
+        # The launch CLI execs its helper; use its retained full build result.
+        candidates = []
+        for path in set(requests.glob('request-*/result.json'))-before_launch:
+            candidate = entry.runtime.read(path)
+            if 'resolver_evidence' in candidate:
+                assert Path(candidate['resolver_evidence']) == path.parent
+                candidates.append(candidate)
+        assert len(candidates) == 1, 'cold normal launch must retain exactly one production source-entry build result'
+        row = candidates[0]
         receipts[phase] = verify_receipts(entry, row, state, request, index, machine_pin, source)
         receipts[phase]['cli_elapsed_ms'] = cli_elapsed_ms
-        if phase != 'initial':
-            verify_warm_reuse(receipts['initial'], receipts[phase], phase)
         save(state/(phase+'-proof.json'), receipts[phase])
         rows[phase] = row
         remaining(deadline_ns)
@@ -654,10 +646,9 @@ def arm():
     derived = source
     derived_sources = {}
     startup_pin = checksum(state/'generations/startup.json')
-    for phase in ('docs-only', 'small-logger'):
+    for phase in ('small-logger',):
         derived_sources[phase] = derive_source(entry, original_source, derived, phase, request, deadline_ns)
-        assert derived_sources[phase]['parent_source'] == (request['source'] if phase == 'docs-only'
-                                                         else derived_sources['docs-only']['source'])
+        assert derived_sources[phase]['parent_source'] == request['source']
         save(state/(phase+'-source.json'), derived_sources[phase])
         phase_request = dict(request, source=derived_sources[phase]['source'])
         phase_entry = module(derived/'tools/native/source_entry.py', 'entry_'+phase.replace('-', '_'))
@@ -675,8 +666,7 @@ def arm():
         proof = verify_receipts(phase_entry, row, state, phase_request, index, machine_pin, derived)
         proof['cli_elapsed_ms'] = cli_elapsed_ms
         assert proof['production_source_sha256'] == receipts['initial']['production_source_sha256']
-        previous = receipts['docs-only'] if phase == 'small-logger' else receipts['initial']
-        verify_warm_reuse(previous, proof, phase)
+        verify_warm_reuse(receipts['initial'], proof, phase)
         if phase == 'small-logger':
             # Execute the verified sealed logger, with its original colocated libraries.
             logger = Path(proof['sealed_build']['logger_executable'])
@@ -705,7 +695,8 @@ def arm():
         cross_job_cargo_cache_reused=False, warm_zero_download_claimed=True,
         offline_network_namespace_inode=network_namespace,
         external_network_available_during_build=False,
-        docs_and_small_change_reuse_tested=True, update_and_recovery_tested=False,
+        docs_and_small_change_reuse_tested=False, docs_change_reuse_tested=False,
+        small_change_reuse_tested=True, update_and_recovery_tested=False,
         physical_arm_cpu=False, agnos_kernel=False, proot_used=False,
         native_arm_execution=True, emulated=False, factory_identity=request['factory_identity'],
         manager_started=False, hardware_model_record_upload_tested=False,

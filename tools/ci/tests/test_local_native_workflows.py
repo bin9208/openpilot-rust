@@ -370,6 +370,11 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     self.assertEqual(new['env'].pop('NATIVE_ENTRY_INPUT_PRODUCER'), '${{ inputs.input_producer_run }}')
                     check = next(s for s in new['steps'] if s.get('name') == 'Require real published metadata and the committed index before allocating an image')
                     self.assertEqual(check.pop('env'), dict(GH_TOKEN='${{ github.token }}'))
+                    original_check = next(s for s in old['steps'] if s.get('name') == check['name'])
+                    self.assertEqual(check['run'],
+                        '/usr/bin/python3 -I -B -S -m unittest discover -s tools/ci/tests -p test_native_source_entry.py -v\n'
+                        +original_check['run']+'\n')
+                    check['run'] = original_check['run']
                     artifact = next(s for s in new['steps'] if s.get('uses') == 'actions/upload-artifact@v6')
                     paths = artifact['with']['path'].splitlines()
                     proof = '${{ env.CI_JOB_TEMP }}/source-entry-authenticated-inputs/proof.json'
