@@ -455,6 +455,14 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                         self.assertEqual(paths.count(path), 1)
                         paths.remove(path)
                     artifact['with']['path'] = '\n'.join(paths)+'\n'
+                elif filename == 'native-source-entry.yml':
+                    artifact = next(step for step in new['steps']
+                                    if step.get('with', {}).get('name') == 'native-source-entry-${{ github.sha }}-${{ github.run_attempt }}')
+                    paths = artifact['with']['path'].splitlines()
+                    worker_log = '${{ env.CI_JOB_TEMP }}/source-entry-full/state/generations/**/build.log'
+                    self.assertEqual(paths.count(worker_log), 1)
+                    paths.remove(worker_log)
+                    artifact['with']['path'] = '\n'.join(paths)+'\n'
                 self.assertEqual(after, before, 'unreviewed workflow, command, pin, gate or deadline change')
 
     def test_provider_submodule_changes_keep_original_foundation_push_boundary(self):
