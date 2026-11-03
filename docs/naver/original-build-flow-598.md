@@ -332,3 +332,8 @@ checkout의 `fetch-depth: 0` 고정값과 변경한 `1`의 차이를 거부했�
 API 전송 수정 `e5bf9cb877c0182fb1301efeda914dc7556e368e`의
 [factory41690428995](https://github.com/bin9208/openpilot-rust/actions/runs/41690428995)를 보존하며,
 이 검사 기록 갱신 때문에 동일 코드의 최초/작은 수정 빌드를 다시 요청하지 않는다.
+
+실제 index를 모든 Git 후보에 포함한 뒤에는 그 파일의 존재만으로 X64 개발 호스트까지
+기기 경로로 보내면 안 된다. ARM 자동 선택과 기존 machine 설정/명시적 선택을 유지하고,
+중복된 index 존재 조건을 제거한다. 기존 시작 fixture에서 index가 있는 ARM과 X64를
+함께 확인한다. ARM의 실제 source build 동작과 고정 입력은 바꾸지 않는다.

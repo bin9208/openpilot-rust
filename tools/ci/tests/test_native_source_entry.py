@@ -196,23 +196,34 @@ class SourceEntryTests(unittest.TestCase):
       self.assertIn(b'--machine-config', result.stdout)
       self.assertIn(b'--launch', result.stdout)
 
-  def test_normal_arm_startup_selects_source_build_without_a_runtime_release(self):
+  def test_installed_inputs_select_source_build_on_arm_and_preserve_host_startup(self):
     with tempfile.TemporaryDirectory() as temp:
       root = Path(temp)
       source = Path(entry.__file__).resolve().parents[2]
-      (root/'launch_openpilot.sh').write_bytes((source/'launch_openpilot.sh').read_bytes())
+      (root/'launch_openpilot.sh').write_text((source/'launch_openpilot.sh').read_text().replace(
+          '/data/openpilot-native/machine.json', str(root/'uninstalled-machine.json')))
       (root/'tools').mkdir()
       (root/'tools/native').symlink_to(source/'tools/native', target_is_directory=True)
       (root/'bin').mkdir()
-      (root/'bin/uname').write_text('#!/bin/sh\nprintf "aarch64\\n"\n')
-      (root/'bin/uname').chmod(0o755)
+      (root/'rust/bin').mkdir(parents=True)
+      (root/'rust/native-bootstrap-inputs.json').write_text('{}\n')
+      host = root/'rust/bin/openpilot-launch'
+      host.write_text('#!/bin/sh\nprintf "owned host startup\\n"\n')
+      host.chmod(0o755)
       env = dict(os.environ, PATH=str(root/'bin')+':/usr/bin:/bin')
       env.pop('OPENPILOT_NATIVE_MACHINE_CONFIG', None)
-      result = subprocess.run(['/usr/bin/bash', str(root/'launch_openpilot.sh'), '--help'], env=env,
-          cwd=temp, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30, check=False)
-      self.assertEqual(result.returncode, 0, result.stderr.decode())
-      self.assertIn(b'--machine-config', result.stdout)
-      self.assertIn(b'--launch', result.stdout)
+      for arch in ('aarch64', 'x86_64'):
+        with self.subTest(architecture=arch):
+          (root/'bin/uname').write_text('#!/bin/sh\nprintf "'+arch+'\\n"\n')
+          (root/'bin/uname').chmod(0o755)
+          result = subprocess.run(['/usr/bin/bash', str(root/'launch_openpilot.sh'), '--help'], env=env,
+              cwd=temp, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30, check=False)
+          self.assertEqual(result.returncode, 0, result.stderr.decode())
+          if arch == 'aarch64':
+            self.assertIn(b'--machine-config', result.stdout)
+            self.assertIn(b'--launch', result.stdout)
+          else:
+            self.assertEqual(result.stdout, b'owned host startup\n')
 
   def startup(self, f):
     parent = f.root/'generations/configurations'
