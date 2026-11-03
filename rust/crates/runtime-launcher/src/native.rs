@@ -208,7 +208,7 @@ impl Context {
         let Some(path) = &self.machine_path else {
             return Ok(false);
         };
-        let requested = match openpilot_runtime_build::source::inspect(&self.requested_checkout) {
+        let requested = match openpilot_runtime_build::inspect_source(&self.requested_checkout) {
             Ok(source) => source,
             Err(error) => {
                 eprintln!("native boot keeps verified source; requested checkout is unavailable or dirty: {error}");
@@ -259,7 +259,7 @@ impl Context {
             )));
         }
         machine::Config::verify_pin(path, &pin).map_err(error)?;
-        if openpilot_runtime_build::source::inspect(&self.requested_checkout).map_err(error)?
+        if openpilot_runtime_build::inspect_source(&self.requested_checkout).map_err(error)?
             != requested
         {
             return Err(error("requested checkout changed during startup build"));

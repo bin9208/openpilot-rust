@@ -65,6 +65,15 @@ source-entry CLI와 pending 전환을 재사용한다. 현재 source·dirty chec
 `inputs` 결과는 전체 runtime 검증 성공을 주장할 수 없고 실행 runtime은 발행하지 않는다.
 원래 `full` 결과를 검증하는 경계도 보존한다. 최종 완전 후보의 전체 검증은 #601에 남긴다.
 
+최초·변경 후 시간 측정은 기존 factory source-entry workflow를 재사용한다. 아직 공개
+입력 pin이 없는 개발 단계에서는 성공한 실제 ARM producer의 입력 전용 artifact를
+전체 ZIP digest와 모든 source/profile/seed/SDK/provider·로컬 입력 파일 SHA로 검증한 뒤
+독립 CI Git checkout에 넣는다. 바꾸는 경로는 입력 인덱스와 `third_party/native_inputs/`
+뿐이며 runtime 코드와 Cargo cache를 가져오지 않는다. 입력 준비용 공개 발행/PR 통합을
+시간 측정의 선행 조건으로 만들지 않으며 어떤 release나 공개 Git 브랜치도 변경하지 않는다.
+원래 source와 실제 입력 포함 commit object, producer source/run/attempt, artifact digest를
+함께 남긴다. 이 측정용 checkout을 사용자에게 전달한 최종 후보로 표현하지 않는다.
+
 ## 이슈 정리
 
 #598의 직접 실행 단위는 #599(설치·시작), #600(변경분·시간), #601(최종 통합·전달)로

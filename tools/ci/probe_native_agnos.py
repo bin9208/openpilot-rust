@@ -2377,6 +2377,17 @@ def native_complete_layout_probe(guest_command,work,source_mount,evidence,log,gu
 
 
 
+def project_growth_estimates(source, catalog):
+  # Shared CI admission estimates for input preparation and the full build.
+  # These are not a measured device resource policy.
+  groups = json.loads((source/'rust/native-runtime-catalog.json').read_text())['groups']
+  return dict(schema=1,
+      group_growth_bytes={name:len(group['packages'])*512*1024**2+len(group['binaries'])*64*1024**2
+          for name,group in groups.items()},
+      expected_source_growth_bytes=2*1024**3,remaining_object_growth_bytes=catalog['binaries']*64*1024**2,
+      estimate_basis='CI plan-only conservative envelope: 512 MiB per selected package + 64 MiB per binary per group; 2 GiB source staging; 64 MiB immutable storage per binary. Not measured full-runtime growth; calibrate for the scheduled full build.')
+
+
 def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,guest_work):
   """Assemble the actual 99-target plan using all independently prepared inputs."""
   room(work,4*1024**2)
@@ -2402,12 +2413,7 @@ def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,g
   catalog=read('native-project-catalog.json')
   # Explicit conservative plan-only envelopes. This probe does not reserve or
   # consume these build budgets and is not a measured full-build resource trial.
-  source_catalog=json.loads((Path(os.environ['GITHUB_WORKSPACE'])/'rust/native-runtime-catalog.json').read_text())
-  budgets=dict(schema=1,
-      group_growth_bytes={name:len(group['packages'])*512*1024**2+len(group['binaries'])*64*1024**2
-          for name,group in source_catalog['groups'].items()},
-      expected_source_growth_bytes=2*1024**3,remaining_object_growth_bytes=catalog['binaries']*64*1024**2,
-      estimate_basis='CI plan-only conservative envelope: 512 MiB per selected package + 64 MiB per binary per group; 2 GiB source staging; 64 MiB immutable storage per binary. Not measured full-runtime growth; calibrate for the scheduled full build.')
+  budgets=project_growth_estimates(Path(os.environ['GITHUB_WORKSPACE']), catalog)
   pins_path=work/'native-project-input-pins.json'
   budgets_path=work/'native-project-growth-estimates.json'
   for path,value in ((pins_path,pins),(budgets_path,budgets)):
@@ -2839,30 +2845,37 @@ def main():
     with independent_bootstrap(bootstrap, source, work, evidence, log):
       with record_phase(evidence, 'native_eigen_probe'):
         native_eigen_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with record_phase(evidence, 'native_raylib_probe'):
-        native_raylib_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with record_phase(evidence, 'native_opencv_headers_probe'):
-        native_opencv_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with record_phase(evidence, 'native_opencv_prefix_probe'):
-        native_opencv_prefix_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with record_phase(evidence, 'native_runtime_companions_probe'):
-        native_runtime_companions_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with record_phase(evidence, 'native_display_inputs_probe'):
-        native_display_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with record_phase(evidence, 'native_media_inputs_probe'):
-        native_media_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with record_phase(evidence, 'native_source_assets_probe'):
-        native_source_assets_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with record_phase(evidence, 'native_mpc_inputs_probe'):
-        native_mpc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with record_phase(evidence, 'native_panda_inputs_probe'):
-        native_panda_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with record_phase(evidence, 'native_dbc_inputs_probe'):
-        native_dbc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with record_phase(evidence, 'native_usbgpu_inputs_probe'):
-        native_usbgpu_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with record_phase(evidence, 'native_catalog_bindings_probe'):
-        native_catalog_bindings_probe(guest_command, work, source_mount, evidence, log, guest_work)
+      if validation_scope == 'inputs':
+        # Production preparation below consumes and verifies all original host
+        # provider exports. Independent runtime consumer regressions belong to
+        # the final full candidate, not another input-publication prerequisite.
+        catalog = json.loads((work/'native-project-catalog.json').read_text())
+        (work/'native-project-growth-estimates.json').write_text(json.dumps(project_growth_estimates(source, catalog))+'\n')
+      else:
+        with record_phase(evidence, 'native_raylib_probe'):
+          native_raylib_probe(guest_command, work, source_mount, evidence, log, guest_work)
+        with record_phase(evidence, 'native_opencv_headers_probe'):
+          native_opencv_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
+        with record_phase(evidence, 'native_opencv_prefix_probe'):
+          native_opencv_prefix_probe(guest_command, work, source_mount, evidence, log, guest_work)
+        with record_phase(evidence, 'native_runtime_companions_probe'):
+          native_runtime_companions_probe(guest_command, work, source_mount, evidence, log, guest_work)
+        with record_phase(evidence, 'native_display_inputs_probe'):
+          native_display_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+        with record_phase(evidence, 'native_media_inputs_probe'):
+          native_media_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+        with record_phase(evidence, 'native_source_assets_probe'):
+          native_source_assets_probe(guest_command, work, source_mount, evidence, log, guest_work)
+        with record_phase(evidence, 'native_mpc_inputs_probe'):
+          native_mpc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+        with record_phase(evidence, 'native_panda_inputs_probe'):
+          native_panda_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+        with record_phase(evidence, 'native_dbc_inputs_probe'):
+          native_dbc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+        with record_phase(evidence, 'native_usbgpu_inputs_probe'):
+          native_usbgpu_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+        with record_phase(evidence, 'native_catalog_bindings_probe'):
+          native_catalog_bindings_probe(guest_command, work, source_mount, evidence, log, guest_work)
     evidence.update(validation_scope=validation_scope, full_runtime_validation=False)
     if validation_scope == 'full':
       with record_phase(evidence, 'native_model_generation_probe'):

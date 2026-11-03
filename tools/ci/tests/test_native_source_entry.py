@@ -603,6 +603,36 @@ class PublicSourceReuseTests(unittest.TestCase):
 
 
 class NativeArmAdmissionTests(unittest.TestCase):
+  def test_timing_checkout_rejects_failed_wrong_runner_and_changed_profiles_before_download(self):
+    publication = full_entry.module(Path(__file__).resolve().parents[2]/'native/publish_inputs.py', 'owned_timing_input_publication')
+    for fault in ('failed-run', 'wrong-run', 'wrong-runner', 'changed-profile'):
+      with self.subTest(fault=fault), tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        source = root/'source'
+        (source/'rust').mkdir(parents=True)
+        for role in publication.ROLES:
+          (source/f'rust/native-{role}-provider.json').write_text('{"profile":"current"}')
+        (source/'rust/native-system-sdk.json').write_text('{"profile":"current"}')
+        producer = dict(id=42, head_sha='a'*40, repository=dict(full_name=publication.REPO),
+            head_repository=dict(full_name=publication.REPO), path=publication.PRODUCER,
+            event='workflow_dispatch', status='completed', conclusion='success')
+        job = dict(run_id=42, name=publication.PRODUCER_ARM_JOB, head_sha='a'*40, status='completed', conclusion='success',
+            labels=['ubuntu-24.04-arm'], runner_group_id=0, runner_group_name='GitHub Actions',
+            runner_id=1, runner_name='Owned native ARM fixture')
+        if fault == 'failed-run': producer['conclusion'] = 'failure'
+        if fault == 'wrong-run': producer['id'] = 43
+        if fault == 'wrong-runner': job['labels'] = ['ubuntu-24.04']
+        client = mock.Mock()
+        client.json.return_value = producer
+        client.collect.return_value = [job]
+        client.source_json.return_value = dict(profile='different' if fault == 'changed-profile' else 'current')
+        with mock.patch.object(full_entry, 'module', return_value=publication), \
+             mock.patch.object(publication, 'GitHub', return_value=client):
+          with self.assertRaises(ValueError):
+            full_entry.measurement_checkout(SimpleNamespace(workspace=source, job=root), 42, 'b'*64)
+        client.download.assert_not_called()
+        self.assertFalse((root/'source-entry-authenticated-inputs').exists())
+
   def test_oracle_context_forwards_only_validated_parent_metadata(self):
     hosted = dict(GITHUB_ACTIONS='true', RUNNER_ENVIRONMENT='github-hosted', RUNNER_OS='Linux', RUNNER_ARCH='ARM64')
     actual = runner_policy.github_native_arm_context(env=dict(hosted,

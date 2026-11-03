@@ -53,7 +53,7 @@ pub mod system_sdk;
 #[cfg(feature = "prepare-rust")]
 pub mod toolchain;
 pub mod usbgpu_inputs;
-pub use source::Source;
+pub use source::{inspect as inspect_source, Source};
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};

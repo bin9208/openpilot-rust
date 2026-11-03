@@ -137,6 +137,15 @@ def provider_batch_updates():
     return changes
 
 
+def restore_full_candidate_only_steps(job):
+    names = {'Build the pinned original planner ABI before deep ARM preparation',
+             'Exercise the unchanged original planner ABI before the full AGNOS build'}
+    matched = [step for step in job['steps'] if step.get('name') in names]
+    assert len(matched) == 2
+    for step in matched:
+        assert step.pop('if') == "inputs.validation != 'inputs'"
+
+
 def restore_provider_batch_steps(job):
     for new, old in provider_batch_updates():
         assert job['steps'].count(new) == 1, 'provider batch command changed without review'
@@ -345,6 +354,24 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     self.assertEqual(after['on']['push']['branches'], ['codex/feat-599-*', *branches])
                     after['on']['push']['branches'] = branches
                 old, new = before['jobs'][name], after['jobs'][name]
+                if filename == 'native-source-entry.yml':
+                    index = after['on']['workflow_dispatch']['inputs']['index_sha256']
+                    self.assertEqual(index['description'], 'SHA256 of the committed index or authenticated producer index for a timing checkout')
+                    index['description'] = before['on']['workflow_dispatch']['inputs']['index_sha256']['description']
+                    timing_input = after['on']['workflow_dispatch']['inputs'].pop('input_producer_run')
+                    self.assertEqual(timing_input, dict(
+                        description='Optional successful input producer for an isolated Git-input timing checkout; publishes nothing',
+                        required='false', default='', type='string'))
+                    self.assertEqual(after['permissions'].pop('actions'), 'read')
+                    self.assertEqual(new['env'].pop('NATIVE_ENTRY_INPUT_PRODUCER'), '${{ inputs.input_producer_run }}')
+                    check = next(s for s in new['steps'] if s.get('name') == 'Require real published metadata and the committed index before allocating an image')
+                    self.assertEqual(check.pop('env'), dict(GH_TOKEN='${{ github.token }}'))
+                    artifact = next(s for s in new['steps'] if s.get('uses') == 'actions/upload-artifact@v6')
+                    paths = artifact['with']['path'].splitlines()
+                    proof = '${{ env.CI_JOB_TEMP }}/source-entry-authenticated-inputs/proof.json'
+                    self.assertEqual(paths.count(proof), 1)
+                    paths.remove(proof)
+                    artifact['with']['path'] = '\n'.join(paths)+'\n'
                 if filename == 'runtime-native-environment.yml':
                     # 2026-11-03: full candidate validation is manual, not a
                     # repeated feature-push prerequisite. Job commands stay intact.
@@ -354,6 +381,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                         type='choice', default='inputs', options=['inputs', 'full']))
                     self.assertEqual(after.pop('env'), dict(NATIVE_AGNOS_VALIDATION="${{ inputs.validation || 'full' }}"))
                     after['on'] = before['on']
+                    restore_full_candidate_only_steps(new)
                     restore_provider_batch_steps(new)
                 self.assertEqual(new['runs-on'], route)
                 new['runs-on'] = old['runs-on']
@@ -611,6 +639,8 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             for name, before in original['jobs'].items():
                 with self.subTest(path=relative, job=name):
                     after = current['jobs'][name]
+                    if relative == '.github/workflows/runtime-native-environment.yml' and name == 'compiler':
+                        restore_full_candidate_only_steps(after)
                     native_arm = relative == '.github/workflows/rust.yml' and name == 'arm64'
                     expected_needs = before.get('needs')
                     if relative == '.github/workflows/rust.yml' and name == 'fast':

@@ -3,8 +3,13 @@ on:
   workflow_dispatch:
     inputs:
       index_sha256:
-        description: SHA256 of the actually published and committed input index
+        description: SHA256 of the committed index or authenticated producer index for a timing checkout
         required: true
+        type: string
+      input_producer_run:
+        description: Optional successful input producer for an isolated Git-input timing checkout; publishes nothing
+        required: false
+        default: ''
         type: string
       operation_estimates_json:
         description: Explicit CI growth and memory estimates, including all runtime groups
@@ -12,6 +17,7 @@ on:
         type: string
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: native-source-entry-${{ github.ref }}-preserve-v1
   queue: max
@@ -28,6 +34,7 @@ jobs:
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       NATIVE_ENTRY_INDEX: ${{ inputs.index_sha256 }}
+      NATIVE_ENTRY_INPUT_PRODUCER: ${{ inputs.input_producer_run }}
       NATIVE_ENTRY_BUDGETS: ${{ inputs.operation_estimates_json }}
       SCOPE_CONTEXT: GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE
     steps:
@@ -45,6 +52,8 @@ jobs:
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - name: Require real published metadata and the committed index before allocating an image
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: /usr/bin/python3 -I -B -S tools/ci/verify_native_source_entry.py --preflight
       - name: Admit only this operation and install its host transport tools
         run: |
@@ -92,6 +101,7 @@ jobs:
         with:
           name: native-source-entry-${{ github.sha }}-${{ github.run_attempt }}
           path: |
+            ${{ env.CI_JOB_TEMP }}/source-entry-authenticated-inputs/proof.json
             ${{ env.CI_JOB_TEMP }}/source-entry-request.json
             ${{ env.CI_JOB_TEMP }}/source-entry-full/result.json
             ${{ env.CI_JOB_TEMP }}/source-entry-full/namespace.stdout

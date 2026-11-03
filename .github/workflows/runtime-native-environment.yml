@@ -69,6 +69,7 @@ jobs:
         with:
           python-version: '3.12.14'
       - name: Build the pinned original planner ABI before deep ARM preparation
+        if: inputs.validation != 'inputs'
         env:
           OPENBLAS_NUM_THREADS: '1'
           PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
@@ -103,6 +104,7 @@ jobs:
           python rust/tools/plannerd_ci_builder.py -- rust/tools/build_plannerd_acados.py --architecture aarch64 --cc gcc --python "$(command -v python)" --acados "$planner_generator" --wheel "$CI_JOB_TEMP"/host-planner-wheel/*.whl --output "$CI_JOB_TEMP/host-planner-artifact"
           python rust/tools/plannerd_ci_builder.py -- rust/tools/build_plannerd_source.py --artifact "$CI_JOB_TEMP/host-planner-artifact" --python "$(command -v python)" --acados "$planner_generator" --generator-wheel "$CI_JOB_TEMP"/host-planner-wheel/*.whl --cc gcc --output "$CI_JOB_TEMP/host-planner-source"
       - name: Exercise the unchanged original planner ABI before the full AGNOS build
+        if: inputs.validation != 'inputs'
         id: planner-host-abi
         env:
           OPENBLAS_NUM_THREADS: '1'

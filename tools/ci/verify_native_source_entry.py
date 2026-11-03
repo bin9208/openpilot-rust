@@ -381,6 +381,92 @@ def policy(raw, source):
     return value
 
 
+def measurement_checkout(context, run_id, index_pin):
+    """Use authenticated real input bytes in an owned Git clone, without release/Git publication."""
+    started = time.monotonic_ns()
+    publication = module(ROOT/'tools/native/publish_inputs.py', 'entry_input_artifact')
+    client = publication.GitHub()
+    producer = client.json('GET', f'actions/runs/{run_id}')
+    source_commit = producer['head_sha']
+    publication.trusted_run(producer, source_commit)
+    if (producer['id'] != run_id or producer['path'] != publication.PRODUCER or producer['event'] not in ('push', 'workflow_dispatch')
+            or producer['status'] != 'completed' or producer['conclusion'] != 'success'):
+        raise ValueError('timing inputs require a completed successful native producer')
+    jobs = client.collect(f'actions/runs/{run_id}/jobs', 'jobs')
+    if not any(job['name'] == publication.PRODUCER_ARM_JOB and job['head_sha'] == source_commit and job['run_id'] == run_id
+               and job['status'] == 'completed' and job['conclusion'] == 'success'
+               and publication.gate_job_allowed('runtime-native-environment.yml', job) for job in jobs):
+        raise ValueError('timing input producer lacks its real official ARM job')
+    profiles = {role: client.source_json(source_commit, f'rust/native-{role}-provider.json')
+                for role in publication.ROLES}
+    sdk = client.source_json(source_commit, 'rust/native-system-sdk.json')
+    for name, plan in [(f'rust/native-{role}-provider.json', plan) for role, plan in profiles.items()] + [('rust/native-system-sdk.json', sdk)]:
+        if json.loads((context.workspace/name).read_text()) != plan:
+            raise ValueError('timing source changed an authenticated input profile: '+name)
+    artifacts = client.collect(f'actions/runs/{run_id}/artifacts', 'artifacts')
+    name = 'native-input-payload-'+source_commit+'-'+str(producer['run_attempt'])
+    selected = [row for row in artifacts if row['name'] == name and not row['expired']]
+    if len(selected) != 1:
+        raise ValueError('timing input producer requires one unexpired input-only artifact')
+    artifact = selected[0]
+    pin = publication.artifact_pin(artifact, producer, source_commit, 8*1024**3)
+    root = context.job/'source-entry-authenticated-inputs'
+    root.mkdir()
+    publication.room(root, pin['bytes']+8*1024**3)
+    archive = root/'producer.zip'
+    client.download(f'actions/artifacts/{artifact["id"]}/zip', pin, archive)
+    commit = client.json('GET', 'git/commits/'+source_commit)
+    if commit['sha'] != source_commit or not publication.checksum(commit['tree']['sha'], 40):
+        raise ValueError('timing input producer has an invalid Git tree')
+    bundle = publication.Bundle(archive)
+    try:
+        index, files = publication.validate_bundle(bundle, source_commit, producer, index_pin, profiles, sdk, commit['tree']['sha'])
+        staged = root/'verified-assets'
+        staged.mkdir()
+        rows = publication.stage(bundle, files, staged)
+        raw_index = bundle.zip.read(publication.PREFIX+'native-bootstrap-inputs.candidate.json')
+        retained = publication.installed_source(bundle, root, source_commit, index, rows, raw_index)
+        if retained is None:
+            raise ValueError('timing producer did not retain the actual offline Git inputs')
+    finally:
+        bundle.close()
+    source = context.job/'source-entry-input-checkout'
+    env = dict(os.environ, GIT_LFS_SKIP_SMUDGE='1')
+    git_base = ['/usr/bin/git', '-c', 'core.hooksPath=/dev/null', '-c', 'commit.gpgsign=false',
+                '-c', 'user.name=Owned real-input timing', '-c', 'user.email=timing@example.invalid']
+    subprocess.run([*git_base, 'clone', '--no-hardlinks', '--no-checkout', str(context.workspace), str(source)], env=env, check=True)
+    def git(*args):
+        return subprocess.check_output([*git_base, '-C', str(source), *args], env=env, text=True).strip()
+    git('checkout', '--detach', os.environ['GITHUB_SHA'])
+    git('remote', 'set-url', 'origin', 'https://github.com/bin9208/openpilot-rust.git')
+    for path in (root/'installed-source').rglob('*'):
+        if path.is_file():
+            destination = source/path.relative_to(root/'installed-source')
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(path, destination)
+    git('add', '--', 'rust/native-bootstrap-inputs.json', 'third_party/native_inputs')
+    if git('diff', '--cached', '--name-only'):
+        git('commit', '-m', '실제 인증 입력을 포함한 독립 CI 빌드 시간 측정')
+    changed = git('diff', '--name-only', os.environ['GITHUB_SHA'], 'HEAD').splitlines()
+    if any(name != 'rust/native-bootstrap-inputs.json' and not name.startswith('third_party/native_inputs/') for name in changed):
+        raise ValueError('timing checkout altered project code instead of only authenticated inputs')
+    commit_raw = subprocess.check_output([*git_base, '-C', str(source), 'cat-file', 'commit', 'HEAD'], env=env)
+    if hashlib.sha1(b'commit '+str(len(commit_raw)).encode()+b'\0'+commit_raw).hexdigest() != git('rev-parse', 'HEAD'):
+        raise ValueError('timing checkout commit object changed')
+    report = dict(producer_run=run_id, producer_source=source_commit, producer_attempt=producer['run_attempt'],
+        artifact_id=artifact['id'], artifact_sha256=pin['sha256'], installed_inputs=retained,
+        elapsed_ms=(time.monotonic_ns()-started)//1_000_000, changed_paths=changed,
+        workflow_source=os.environ['GITHUB_SHA'], actual_commit_object=commit_raw.decode(),
+        published=False, committed_to_public_branch=False, cross_job_cargo_cache_reused=False)
+    save(root/'proof.json', report)
+    # The independent Git checkout now owns the verified bytes. Keep the receipt,
+    # not duplicate ZIP/extraction copies during the actual build measurement.
+    archive.unlink()
+    shutil.rmtree(root/'verified-assets')
+    shutil.rmtree(root/'installed-source')
+    return source, report
+
+
 def preflight():
     transport = module(ROOT/'tools/ci/probe_native_source_transport.py', 'entry_transport')
     transport.source_module('runner_policy')['require_github_native_arm']()
@@ -391,7 +477,16 @@ def preflight():
     identity = entry.runtime.source_identity(source)
     if identity['commit'] != os.environ['GITHUB_SHA'] or not (source/'.git').is_dir():
         raise ValueError('an independent exact Actions checkout is required')
-    # Read the exact committed Git blob; no candidate artifact or local fixture.
+    workflow_source = identity
+    producer = os.environ.get('NATIVE_ENTRY_INPUT_PRODUCER', '')
+    input_proof = None
+    if producer:
+        if not producer.isascii() or not producer.isdecimal() or int(producer) <= 0:
+            raise ValueError('input producer run must be a positive Actions run ID')
+        source, input_proof = measurement_checkout(context, int(producer), os.environ['NATIVE_ENTRY_INDEX'])
+        identity = entry.runtime.source_identity(source)
+    # Both paths read a real committed index. Timing-only inputs are authenticated
+    # producer bytes in a separate Git checkout; runtime code is unchanged.
     index, pin = entry.input_index(source)
     if pin != os.environ['NATIVE_ENTRY_INDEX']:
         raise ValueError('committed public input index differs from dispatch pin')
@@ -403,7 +498,11 @@ def preflight():
     assert shutil.disk_usage(context.job).free >= sum(a['bytes']+65536 for _, a in assets)+estimates['minimum_free_bytes']
     for role, asset in assets:
         target = metadata/(role+'.json')
-        count = entry.seed.fetch(asset, target)
+        if input_proof is None:
+            count = entry.seed.fetch(asset, target)
+        else:
+            shutil.copyfile(source/'third_party/native_inputs/metadata'/(asset['sha256']+'.json'), target)
+            count = 0
         if target.stat().st_size != asset['bytes'] or checksum(target) != asset['sha256']:
             raise ValueError('public metadata body differs from committed pin: '+role)
         transferred[role] = count
@@ -424,9 +523,11 @@ def preflight():
     if json.loads((source/'rust/native-system-sdk.json').read_text())['factory_image_sha256'] != transport.RAW_SHA:
         raise ValueError('factory image differs from the source SDK pin')
     save(context.job/'source-entry-request.json', dict(schema=1, source=identity,
+        workflow_source=workflow_source, source_checkout=str(source), input_producer=input_proof,
         index_sha256=pin, seed=index['seed'], estimates=estimates,
         public_metadata_transferred_bytes=transferred))
-    print(json.dumps(dict(source=identity, index_sha256=pin, public_metadata_verified=True,
+    print(json.dumps(dict(source=identity, index_sha256=pin,
+        public_metadata_verified=input_proof is None, authenticated_git_inputs_verified=input_proof is not None,
         source_entry_full_build_executed=False, cross_job_cargo_cache_reused=False)))
 
 
@@ -647,11 +748,13 @@ def run():
     transport.factory_id_map(uid)
     transport.factory_id_map(gid)
     request = json.loads((job/'source-entry-request.json').read_text())
-    source = Path(os.environ['GITHUB_WORKSPACE'])
-    assert source == ROOT and source.resolve() == source
+    assert Path(os.environ['GITHUB_WORKSPACE']) == ROOT
+    source = Path(request.get('source_checkout', os.environ['GITHUB_WORKSPACE']))
+    assert source.resolve(strict=True) == source
+    assert source == ROOT or source == job/'source-entry-input-checkout'
     # Git is checked again by the mapped uid1000 factory caller before sudo,
     # avoiding root safe.directory overrides for the runner-owned checkout.
-    assert request['source']['commit'] == os.environ['GITHUB_SHA']
+    assert request.get('workflow_source', request['source'])['commit'] == os.environ['GITHUB_SHA']
     raw = job/'native-agnos/system.raw'
     assert raw.resolve(strict=True) == raw and raw.stat().st_uid == uid
     assert raw.stat().st_size == transport.RAW_BYTES and checksum(raw) == transport.RAW_SHA
@@ -759,6 +862,7 @@ def run():
     # Any payload/cleanup exception skips this final success result entirely.
     assert result is not None and cleanup['owned_cgroup_removed']
     result.update(cleanup_verified=True, cleanup_evidence_sha256=checksum(state/'cleanup.json'),
+        workflow_source=request.get('workflow_source', request['source']), input_producer=request.get('input_producer'),
         host_kernel=os.uname().release, host_architecture=os.uname().machine,
         factory_image_sha256=transport.RAW_SHA, native_arm_execution=True, emulated=False)
     save(work/'result.json', result)
