@@ -81,6 +81,28 @@ source-entry CLI와 pending 전환을 재사용한다. 현재 source·dirty chec
 아래로 옮긴다. 각 문제의 원문·SHA·Actions·미해결 조건을 보존하고 미검증 결함은
 완료 처리하지 않는다. 개별 사건마다 전체 후보 성공을 복제 요구하지 않는다.
 
+GitHub 실제 관계를 57개 점검해 56개를 재배치했다. #598의 직접 하위는 #599/#600/#601
+세 개이며 기존 이슈 상태는 유지했다. 원문과 변경 전/후 API 결과는 이 작업의 비공개
+분석 기록에 보존했다.
+
+추가 감사에서 같은 시작 과정의 세대 인계 중 실패한 checkout 빌드를 반복할 수 있는
+경우를 막았다. 시도한 source는 그 시작의 launcher 인계에만 전달하고 새로운
+`source_entry --launch`에서는 지워서 재시작 후 재시도를 허용한다. 디스크 상태나
+사용자 설정으로 저장하지 않는다. 기존 fixture도 실패한 CLI의 중복 실행 거부를 확인한다.
+
+factory 검사 설정은 실제 sudo helper가 요구하는 uid별 `openpilot-native-build-1000`
+자식 cgroup을 사용한다. 공통 controller root 자체를 worker 부모로 넘기던 미실행
+경로의 설정 오류를 고쳤다. 또한 최초/반복/문서/작은 수정이 동일한 독립 작업 checkout
+경로를 쓰도록 정리했다. 원래 읽기 전용 source는 보존하고 Git 준비 시간은 빌드 시간과
+따로 남긴다. 서로 다른 Cargo/model compiler 경로를 비교해 변경분 재사용을 잘못
+측정하지 않는다.
+
+최초 측정은 실제 `--launch --verify-package`로 빈 캐시에서 시작한다. 반복 빌드 요청과
+무변경 시작을 구분하며, 무변경 시작은 새 source build request를 만들지 않아야 한다.
+종전 검사처럼 시작 검증을 위해 세 번째 source 빌드를 강제하지 않는다. 문서/작은 소스
+변경은 같은 작업 경로에서 정상 builder를 호출한다. `--verify-package`는 manager·장치
+동작 전에 반환하므로 이 CI의 시간을 실제 기기 부팅·실기 수용으로 표현하지 않는다.
+
 ## 검증과 남은 작업
 
 로컬은 서식·AST/Bash 구문·diff만 확인한다. 실제 기능 검증은 기존

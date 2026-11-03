@@ -222,14 +222,10 @@ def derive_source(entry, original, derived, phase, request, deadline_ns):
     assert not derived.is_relative_to(original) and not original.is_relative_to(derived)
     assert entry.runtime.source_identity(original) == request['source']
     if phase == 'docs-only':
-        assert not derived.exists() and derived.parent.resolve(strict=True) == derived.parent
+        assert derived.is_dir() and derived.resolve(strict=True) == derived
         estimates = request['estimates']
         assert shutil.disk_usage(derived.parent).free >= (estimates['expected_source_growth_bytes']
                                                         + estimates['minimum_free_bytes'])
-        reuse_git(entry, deadline_ns, 'clone', '--shared', '--no-checkout', '--', original, derived)
-        reuse_git(entry, deadline_ns, '-C', derived, 'remote', 'set-url', 'origin',
-                  'https://github.com/bin9208/openpilot-rust.git')
-        reuse_git(entry, deadline_ns, '-C', derived, 'checkout', '--detach', request['source']['commit'])
     before = entry.runtime.source_identity(derived)
     name = 'README.md' if phase == 'docs-only' else 'rust/crates/loggerd/src/main.rs'
     path = derived/name
@@ -454,7 +450,7 @@ def measurement_checkout(context, run_id, index_pin):
     if hashlib.sha1(b'commit '+str(len(commit_raw)).encode()+b'\0'+commit_raw).hexdigest() != git('rev-parse', 'HEAD'):
         raise ValueError('timing checkout commit object changed')
     report = dict(producer_run=run_id, producer_source=source_commit, producer_attempt=producer['run_attempt'],
-        artifact_id=artifact['id'], artifact_sha256=pin['sha256'], installed_inputs=retained,
+        artifact_id=artifact['id'], artifact_sha256=pin['sha256'], artifact_bytes=pin['bytes'], installed_inputs=retained,
         elapsed_ms=(time.monotonic_ns()-started)//1_000_000, changed_paths=changed,
         workflow_source=os.environ['GITHUB_SHA'], actual_commit_object=commit_raw.decode(),
         published=False, committed_to_public_branch=False, cross_job_cargo_cache_reused=False)
@@ -563,6 +559,17 @@ def arm():
     assert entry.runtime.source_identity(source) == request['source']
     index, pin = entry.input_index(source)
     assert pin == request['index_sha256'] and index['seed'] == request['seed']
+    original_source = source
+    source = state/'reuse-source'
+    checkout_started = time.monotonic_ns()
+    # All timed cases use this one working path, as a normal Git installation
+    # does. Changing checkout paths would change Cargo/compiler output identity.
+    reuse_git(entry, deadline_ns, 'clone', '--shared', '--no-checkout', '--', original_source, source)
+    reuse_git(entry, deadline_ns, '-C', source, 'remote', 'set-url', 'origin',
+              'https://github.com/bin9208/openpilot-rust.git')
+    reuse_git(entry, deadline_ns, '-C', source, 'checkout', '--detach', request['source']['commit'])
+    assert entry.runtime.source_identity(source) == request['source']
+    checkout_ms = (time.monotonic_ns()-checkout_started)//1_000_000
     stores = {name: str(state/name) for name in ('sources', 'objects', 'generations', 'params')}
     for name in (*stores, 'cache', 'seed', 'updater'):
         (state/name).mkdir()
@@ -572,7 +579,9 @@ def arm():
         updater_staging=str(state/'updater'), budgets=estimates['budgets'], boot_seed=index['seed'],
         **{k: estimates[k] for k in ('expected_source_growth_bytes', 'expected_compile_growth_bytes',
                                    'remaining_object_growth_bytes', 'compiler_growth_bytes')},
-        resources=dict(schema=1, memory_cgroup_parent='/sys/fs/cgroup',
+        # The real sudo helper accepts only its fixed per-user child scope,
+        # never the shared/delegated controller root itself.
+        resources=dict(schema=1, memory_cgroup_parent=f'/sys/fs/cgroup/openpilot-native-build-{os.getuid()}',
             maximum_memory_bytes=estimates['maximum_memory_bytes'],
             minimum_available_memory_bytes=estimates['minimum_available_memory_bytes'],
             filesystems={str(state): {k: estimates[k] for k in ('maximum_growth_bytes', 'minimum_free_bytes')}}))
@@ -588,9 +597,10 @@ def arm():
     rows, receipts = {}, {}
     requests = state/'generations/source-requests'
     for phase in ('initial', 'reused', 'launch-package'):
-        before_launch = set(requests.glob('request-*/result.json')) if phase == 'launch-package' else set()
+        launching = phase in ('initial', 'launch-package')
+        before_launch = set(requests.glob('request-*/result.json')) if launching else set()
         arguments = base + (['--launch', '--verify-package', '--paths', str(paths)]
-                            if phase == 'launch-package' else [])
+                            if launching else [])
         phase_started = time.monotonic_ns()
         with (state/(phase+'.stdout')).open('xb') as out, (state/(phase+'.stderr')).open('xb') as err:
             subprocess.run(arguments, env=entry.seed.ENV, stdout=out, stderr=err, check=True,
@@ -598,6 +608,20 @@ def arm():
         cli_elapsed_ms = (time.monotonic_ns()-phase_started)//1_000_000
         remaining(deadline_ns)
         if phase == 'launch-package':
+            # A normal no-change start must not force a third source build.
+            assert set(requests.glob('request-*/result.json')) == before_launch
+            record = entry.startup_record(machine)
+            assert record is not None and record['initial_generation'] == rows['initial']['generation_id']
+            receipts[phase] = dict(source=request['source'], generation_id=record['initial_generation'],
+                cli_elapsed_ms=cli_elapsed_ms, source_build_executed=False,
+                no_new_build_requests=True, package_verification_executed=True)
+            rows[phase] = dict(generation_id=record['initial_generation'],
+                launch_configuration=record['configuration'],
+                launch_configuration_sha256=record['configuration_sha256'],
+                build_configuration_sha256=record['configuration_sha256'])
+            save(state/(phase+'-proof.json'), receipts[phase])
+            continue
+        if launching:
             # The launch CLI execs its helper; use its newly retained full build
             # result, rather than parsing mixed JSON/launcher diagnostics stderr.
             candidates = []
@@ -606,7 +630,7 @@ def arm():
                 if 'resolver_evidence' in candidate:
                     assert Path(candidate['resolver_evidence']) == path.parent
                     candidates.append(candidate)
-            assert len(candidates) == 1, 'fresh launch must retain exactly one production source-entry build result'
+            assert len(candidates) == 1, 'cold normal launch must retain exactly one production source-entry build result'
             row = candidates[0]
         else:
             row = entry.runtime.read(state/(phase+'.stdout'))
@@ -617,8 +641,8 @@ def arm():
         save(state/(phase+'-proof.json'), receipts[phase])
         rows[phase] = row
         remaining(deadline_ns)
-    # --verify-package returns before normal manager/hardware startup. Retained
-    # startup config is checked by the production launcher, not manufactured here.
+    # --verify-package returns before normal manager/hardware startup. Cold and
+    # warm launches use the real retained startup config, without extra builds.
     startup = entry.startup_record(machine)
     sealed = entry.runtime.read(state/'generations'/(startup['initial_generation']+'.json'))
     assert sealed['runtime']['source'] == request['source']
@@ -627,11 +651,11 @@ def arm():
     assert startup['configuration'] == launch['launch_configuration']
     assert startup['configuration_sha256'] == launch['launch_configuration_sha256'] == launch['build_configuration_sha256']
     assert entry.runtime.source_identity(source) == request['source']
-    derived = state/'reuse-source'
+    derived = source
     derived_sources = {}
     startup_pin = checksum(state/'generations/startup.json')
     for phase in ('docs-only', 'small-logger'):
-        derived_sources[phase] = derive_source(entry, source, derived, phase, request, deadline_ns)
+        derived_sources[phase] = derive_source(entry, original_source, derived, phase, request, deadline_ns)
         assert derived_sources[phase]['parent_source'] == (request['source'] if phase == 'docs-only'
                                                          else derived_sources['docs-only']['source'])
         save(state/(phase+'-source.json'), derived_sources[phase])
@@ -659,7 +683,7 @@ def arm():
             proof['logger_help_sha256'] = verify_logger_help(entry, logger, state, deadline_ns)
         assert checksum(machine_path) == machine_pin
         assert checksum(state/'generations/startup.json') == startup_pin
-        assert entry.runtime.source_identity(source) == request['source']
+        assert entry.runtime.source_identity(original_source) == request['source']
         receipts[phase], rows[phase] = proof, row
         save(state/(phase+'-proof.json'), proof)
         remaining(deadline_ns)
@@ -671,6 +695,7 @@ def arm():
         generation_ids={k: row['generation_id'] for k, row in rows.items()},
         production_sudo_receipts=receipts, cleanup_verified=False,
         derived_sources=derived_sources,
+        fixed_build_checkout=str(source), git_checkout_preparation_ms=checkout_ms,
         overall_budget_seconds=estimates['build_timeout_seconds'],
         factory_admission_in_overall_budget=True, startup_20_second_policy_changed=False,
         payload_finished_monotonic_ns=time.monotonic_ns(),

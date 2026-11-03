@@ -16,6 +16,9 @@ fn error(value: impl std::fmt::Display) -> Error {
     Error::Configuration(value.to_string())
 }
 
+// Passed only through this boot's launcher handoffs, never saved as build state.
+const BOOT_BUILD_SOURCE: &str = "OPENPILOT_NATIVE_BOOT_BUILD_SOURCE";
+
 #[derive(Debug)]
 pub struct Context {
     pub config_path: PathBuf,
@@ -218,6 +221,11 @@ impl Context {
         if requested.commit == selected.source_commit {
             return Ok(false);
         }
+        if std::env::var_os(BOOT_BUILD_SOURCE).as_deref()
+            == Some(std::ffi::OsStr::new(&requested.commit))
+        {
+            return Ok(false);
+        }
         let (policy, pin) = machine::Config::read_pinned(path).map_err(error)?;
         policy.verify_stores(&self.config.stores).map_err(error)?;
         policy
@@ -234,6 +242,9 @@ impl Context {
         generation::offroad(&self.config.stores.params).map_err(error)?;
         let owner = openpilot_runtime_build::supervision::process_identity(std::process::id())
             .map_err(error)?;
+        // A failed build must not repeat when this boot hands off to an already
+        // pending verified generation. A fresh boot can retry the checkout.
+        std::env::set_var(BOOT_BUILD_SOURCE, &requested.commit);
         let mut command = Command::new("/usr/bin/python3");
         command
             .env_remove("LD_LIBRARY_PATH")
@@ -439,6 +450,7 @@ mod checkout_build_tests {
             resources::{DiskBudget, Policy},
         };
         let temp = tempfile::tempdir().unwrap();
+        let original_attempt = std::env::var_os(BOOT_BUILD_SOURCE);
         let root = temp.path();
         let source = root.join("source");
         fs::create_dir_all(source.join("tools/native")).unwrap();
@@ -538,6 +550,7 @@ mod checkout_build_tests {
             .unwrap_err()
             .to_string();
         assert!(failure.contains("build did not complete"), "{failure}");
+        assert!(!context.prepare_checkout(&selected, &stopped).unwrap());
         let args: Vec<String> = serde_json::from_slice(&fs::read(&marker).unwrap()).unwrap();
         assert!(args
             .windows(2)
@@ -565,5 +578,10 @@ mod checkout_build_tests {
             .generations
             .join("pending.json")
             .exists());
+        if let Some(original) = original_attempt {
+            std::env::set_var(BOOT_BUILD_SOURCE, original);
+        } else {
+            std::env::remove_var(BOOT_BUILD_SOURCE);
+        }
     }
 }

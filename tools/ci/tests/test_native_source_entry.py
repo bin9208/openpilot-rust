@@ -270,7 +270,8 @@ class SourceEntryTests(unittest.TestCase):
       with mock.patch.object(entry, 'boot_seed', return_value=dict(helper='/owned/not-executed')) as boot, \
            mock.patch.object(entry, 'build_requested', side_effect=AssertionError('existing boot rebuilt runtime')), \
            mock.patch.object(runtime, 'source_identity', side_effect=AssertionError('existing boot read mutable Git source')), \
-           mock.patch.dict(os.environ, {'LD_LIBRARY_PATH': '/old-runtime', 'LD_PRELOAD': '/old-preload'}), \
+           mock.patch.dict(os.environ, {'LD_LIBRARY_PATH': '/old-runtime', 'LD_PRELOAD': '/old-preload',
+               'OPENPILOT_NATIVE_BOOT_BUILD_SOURCE': 'a'*40}), \
            mock.patch.object(os, 'execve', side_effect=ValueError('owned exec boundary')) as execute:
         with self.assertRaisesRegex(ValueError, 'owned exec boundary'):
           entry.launch(args, f.machine, f.source, pin)
@@ -282,6 +283,7 @@ class SourceEntryTests(unittest.TestCase):
       self.assertEqual(env['OPENPILOT_NATIVE_LAUNCH_MACHINE_SHA256'], pin)
       self.assertNotIn('LD_LIBRARY_PATH', env)
       self.assertNotIn('LD_PRELOAD', env)
+      self.assertNotIn('OPENPILOT_NATIVE_BOOT_BUILD_SOURCE', env)
       self.assertFalse((f.root/'generations/active.json').exists())
 
   def test_initial_repeat_docs_and_single_provider_change_only_prepare_the_changed_descriptor(self):
@@ -548,11 +550,16 @@ class PublicSourceReuseTests(unittest.TestCase):
       deadline_ns = time.monotonic_ns()+60_000_000_000
       with self.assertRaises(AssertionError):
         full_entry.derive_source(entry, f.source, f.source, 'small-logger', request, deadline_ns)
+      # The initial build and changed-source cases use this same working path.
+      full_entry.reuse_git(entry, deadline_ns, 'clone', '--shared', '--no-checkout', '--', f.source, derived)
+      full_entry.reuse_git(entry, deadline_ns, '-C', derived, 'checkout', '--detach', original['commit'])
+      initial_path = derived.resolve()
       docs = full_entry.derive_source(entry, f.source, derived, 'docs-only', request, deadline_ns)
       self.assertEqual(docs['parent_source'], original)
       self.assertNotEqual(docs['source'], original)
       entry.validate_machine(f.machine, derived)
       small = full_entry.derive_source(entry, f.source, derived, 'small-logger', request, deadline_ns)
+      self.assertEqual(derived.resolve(), initial_path)
       self.assertEqual(small['parent_source'], docs['source'])
       self.assertNotEqual(small['source'], original)
       self.assertEqual(runtime.source_identity(derived), small['source'])
