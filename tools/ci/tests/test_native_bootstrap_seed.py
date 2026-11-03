@@ -131,6 +131,21 @@ class BootstrapSeedTests(unittest.TestCase):
         self.assertEqual(details[name+'_bytes'], len(content))
         self.assertEqual(details[name+'_truncated'], len(content)>8192)
 
+  def test_abi_unresolved_mapping_retains_bounded_details_without_accepting_it(self):
+    interpreter = '/lib/ld-linux-aarch64.so.1'
+    program = f'[Requesting program interpreter: {interpreter}]\n'.encode()
+    mapping = 'owned-unsupported-loader-row\n'+'x'*9000+'\n'
+    with mock.patch.object(seed.subprocess, 'run', side_effect=[
+        subprocess.CompletedProcess([], 0, program, b''),
+        subprocess.CompletedProcess([], 0, mapping.encode(), b'')]), \
+         mock.patch.object(seed, 'file_pin') as file_pin:
+      with self.assertRaisesRegex(ValueError, 'unresolved or unsupported') as caught:
+        seed.inspect_abi(Path('/owned-seed'))
+    file_pin.assert_not_called()
+    details = json.loads(str(caught.exception).split(': ', 1)[1])
+    self.assertEqual(details, dict(interpreter=interpreter, line='owned-unsupported-loader-row',
+        loader_mapping=mapping[:8192], mapping_characters=len(mapping), mapping_truncated=True))
+
   def test_abi_combined_output_bound_applies_to_success_and_failure(self):
     interpreter = '/lib/ld-linux-aarch64.so.1'
     argv = [interpreter,'--list','/owned-seed']

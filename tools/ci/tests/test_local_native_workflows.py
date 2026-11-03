@@ -376,6 +376,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     self.assertEqual(check.pop('env'), dict(GH_TOKEN='${{ github.token }}'))
                     original_check = next(s for s in old['steps'] if s.get('name') == check['name'])
                     self.assertEqual(check['run'],
+                        '/usr/bin/python3 -I -B -S -m unittest discover -s tools/ci/tests -p test_native_bootstrap_seed.py -v\n'
                         '/usr/bin/python3 -I -B -S -m unittest discover -s tools/ci/tests -p test_native_source_entry.py -v\n'
                         +original_check['run']+'\n')
                     check['run'] = original_check['run']

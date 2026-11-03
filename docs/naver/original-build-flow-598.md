@@ -419,3 +419,17 @@ peak는 3 GiB였다. 외부 통신이 없는 빌드로 Git 전송 시간은 이 
 OOM 실패 처리와 이전 실행 보존은 유지한다. 속도 개선이나 성공은 새 결과로 판단한다.
 압축된 입력 blob에는 Git delta를 사용하지 않으며, CI는 30초 간격으로 현재 worker·빌드
 구간·메모리·OOM을 기록한다. 진단 출력은 기존 성공 조건이나 제한 시간을 바꾸지 않는다.
+
+[factory41717022776](https://github.com/bin9208/openpilot-rust/actions/runs/41717022776),
+source `769ee8246c6d25b64149c831db765bf61d629d85`는 이미지 전의 원래 seed namespace와
+입력 검사를 통과했지만 첫 seed ABI 조회에서 `unresolved or unsupported native seed dependency`로
+거부됐다. worker나 runtime Cargo는 시작하지 않았다. 기존 부팅 도구/ABI pin은 이전 실제
+빌드와 같으며, 현재 오류는 거부한 loader 출력 행을 남기지 않아 상세 원인은 아직 미확인이다.
+알 수 없는 행의 거부와 ABI 비교를 유지하면서 loader 출력과 해당 행을 각각 최대8KiB로
+오류에 남긴다. 이 진단과 거부 유지 회귀는 기존 seed 검사에 추가하고 실제 factory의 이미지
+준비 전에도 실행한다. Git 수신11분5초와 전체 CI16분46초는 runtime 빌드 시간으로 쓰지 않는다.
+실패 artifact `13271387545`의 ZIP SHA256은
+`4f5326715ad62bd2d783a39838b2e0d407f21ecb3cd7db021b4cfc0c484f64dd`다.
+동일 source의 [집중41716594416](https://github.com/bin9208/openpilot-rust/actions/runs/41716594416)는
+X64 성공, ARM은 이미지·기기 없는 기존 회귀를 진행 중이다. 이 결과를 실제 seed ABI 성공으로
+대신하지 않는다.

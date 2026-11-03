@@ -70,6 +70,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          /usr/bin/python3 -I -B -S -m unittest discover -s tools/ci/tests -p test_native_bootstrap_seed.py -v
           /usr/bin/python3 -I -B -S -m unittest discover -s tools/ci/tests -p test_native_source_entry.py -v
           /usr/bin/python3 -I -B -S tools/ci/verify_native_source_entry.py --preflight
       - name: Admit only this operation and install its host transport tools

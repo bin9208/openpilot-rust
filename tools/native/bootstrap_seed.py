@@ -120,7 +120,8 @@ def inspect_abi(binary):
   if not match or match[1] != '/lib/ld-linux-aarch64.so.1':
     raise ValueError('unexpected native seed interpreter')
   libraries = {}
-  for line in output([match[1], '--list', str(binary)]).splitlines():
+  mapping = output([match[1], '--list', str(binary)])
+  for line in mapping.splitlines():
     fields = line.split()
     if not fields or fields[0] == 'linux-vdso.so.1':
       continue
@@ -129,7 +130,9 @@ def inspect_abi(binary):
     elif fields[0].startswith('/'):
       path = fields[0]
     else:
-      raise ValueError('unresolved or unsupported native seed dependency')
+      raise ValueError('unresolved or unsupported native seed dependency: '+json.dumps(dict(
+          interpreter=match[1], line=line[:8192], loader_mapping=mapping[:8192],
+          mapping_characters=len(mapping), mapping_truncated=len(mapping) > 8192)))
     if not (path.startswith('/lib/') or path.startswith('/usr/lib/')) or path in libraries:
       raise ValueError('unexpected native seed provider path')
     libraries[path] = file_pin(path)
