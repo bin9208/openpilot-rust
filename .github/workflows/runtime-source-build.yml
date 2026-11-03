@@ -144,6 +144,11 @@ on:
         required: false
         default: ''
         type: string
+      export_seed:
+        description: Export only the source-built release bootstrap seed, without building the full runtime
+        required: false
+        default: false
+        type: boolean
 # Branch push checks the actual x64/ARM build driver once; the required PR Rust
 # workspace gate also includes this crate. Do not duplicate this focused matrix on PR.
 permissions:
@@ -151,15 +156,16 @@ permissions:
   actions: read
 jobs:
   source-entry:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.input_producer_run != '' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.index_sha256 != '' }}
     uses: ./.github/workflows/native-source-entry.yml
     with:
       input_producer_run: ${{ inputs.input_producer_run }}
       index_sha256: ${{ inputs.index_sha256 }}
       operation_estimates_json: ${{ inputs.operation_estimates_json }}
+      export_seed: ${{ inputs.export_seed || false }}
   offline-cargo-reuse:
     name: Actual offline Cargo reuse (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
-    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && inputs.input_producer_run == '' }}
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && inputs.index_sha256 == '' }}
     runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     strategy:
       fail-fast: false

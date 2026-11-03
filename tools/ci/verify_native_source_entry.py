@@ -516,6 +516,15 @@ def measurement_checkout(context, run_id, index_pin):
     return source, report
 
 
+def stage_metadata(entry, source, asset, target, force_local=False):
+    root = source/entry.INSTALLED_INPUTS/'metadata'
+    if force_local or os.path.lexists(root):
+        with entry.seed.regular(root/(asset['sha256']+'.json')) as incoming, target.open('xb') as out:
+            shutil.copyfileobj(incoming, out)
+        return 0, True
+    return entry.seed.fetch(asset, target), False
+
+
 def preflight():
     transport = module(ROOT/'tools/ci/probe_native_source_transport.py', 'entry_transport')
     transport.source_module('runner_policy')['require_github_native_arm']()
@@ -528,6 +537,9 @@ def preflight():
         raise ValueError('an independent exact Actions checkout is required')
     workflow_source = identity
     producer = os.environ.get('NATIVE_ENTRY_INPUT_PRODUCER', '')
+    export_seed = os.environ.get('NATIVE_ENTRY_EXPORT_SEED', 'false')
+    if export_seed not in ('true', 'false'):
+        raise ValueError('release seed export selection must be a workflow boolean')
     input_proof = None
     if producer:
         if not producer.isascii() or not producer.isdecimal() or int(producer) <= 0:
@@ -542,16 +554,14 @@ def preflight():
     estimates = policy(os.environ['NATIVE_ENTRY_BUDGETS'], source)
     metadata = context.job/'source-entry-public-metadata'
     metadata.mkdir()
-    transferred = {}
+    transferred, git_metadata = {}, []
     assets = [('seed', index['seed']), ('system_sdk', index['system_sdk']), *index['providers'].items()]
     assert shutil.disk_usage(context.job).free >= sum(a['bytes']+65536 for _, a in assets)+estimates['minimum_free_bytes']
     for role, asset in assets:
         target = metadata/(role+'.json')
-        if input_proof is None:
-            count = entry.seed.fetch(asset, target)
-        else:
-            shutil.copyfile(source/entry.INSTALLED_INPUTS/'metadata'/(asset['sha256']+'.json'), target)
-            count = 0
+        count, local = stage_metadata(entry, source, asset, target, input_proof is not None)
+        if local:
+            git_metadata.append(role)
         if target.stat().st_size != asset['bytes'] or checksum(target) != asset['sha256']:
             raise ValueError('public metadata body differs from committed pin: '+role)
         transferred[role] = count
@@ -573,11 +583,69 @@ def preflight():
         raise ValueError('factory image differs from the source SDK pin')
     save(context.job/'source-entry-request.json', dict(schema=1, source=identity,
         workflow_source=workflow_source, source_checkout=str(source), input_producer=input_proof,
+        export_seed=export_seed == 'true', committed_git_metadata_roles=git_metadata,
         index_sha256=pin, seed=index['seed'], estimates=estimates,
         public_metadata_transferred_bytes=transferred))
     print(json.dumps(dict(source=identity, index_sha256=pin,
-        public_metadata_verified=input_proof is None, authenticated_git_inputs_verified=input_proof is not None,
+        public_metadata_verified=not git_metadata, committed_git_metadata_verified=len(git_metadata) == len(assets),
+        authenticated_git_inputs_verified=input_proof is not None,
         source_entry_full_build_executed=False, cross_job_cargo_cache_reused=False)))
+
+
+def release_helper_from_report(report, pins):
+    artifacts = [artifact for group in report['build']['reports'].values()
+                 for artifact in group['artifacts'] if Path(artifact['executable']).name == 'openpilot-runtime-inputs']
+    if (len(artifacts) != 1
+            or Path(artifacts[0]['executable']).parts[-3:] != ('aarch64-unknown-linux-gnu', 'release', 'openpilot-runtime-inputs')
+            or artifacts[0]['sha256'] != pins['openpilot-runtime-inputs']):
+        raise ValueError('bootstrap seed must come from the verified native release artifact')
+    return artifacts[0]
+
+
+def export_release_seed(entry, machine, source, state, request, deadline_ns):
+    """Reuse the production bootstrap boundary; export no full runtime bytes."""
+    owner = entry.seed.owner_chain()
+    commands = entry.runtime.OwnedCommands(owner, Path(machine['stores']['params']))
+    with entry.runtime.operation(Path(machine['stores']['generations'])) as attempt:
+        resolved = entry.resolve(machine, source, attempt, commands, commands.observe,
+                                 source/entry.INSTALLED_INPUTS/'metadata')
+        entry.import_installed_assets(machine, source, commands.observe,
+            sum(row['stored_bytes'] for row in resolved['receipts'].values()))
+    prepared, plan = entry.seed.prepare(Path(resolved['receipts']['seed']['path']), resolved['receipts']['seed']['sha256'],
+        Path(machine['seed_cache']), offline=source/entry.INSTALLED_INPUTS/'seeds'/resolved['receipts']['seed']['sha256'])
+    config = entry.runtime.read(Path(resolved['configuration']), resolved['configuration_sha256'])
+    small = {name: config[name] for name in entry.runtime.TOOLS_FIELDS}
+    path = state/'release-seed-tools-config.json'
+    entry.seed.write(path, entry.seed.json_bytes(small))
+    first = entry.seed.current_tools(prepared, plan, path, source, request_owner=owner, run=commands.run)
+    save(state/'release-seed-tools-result.json', first)
+    current = first['current_tools']
+    tools, pins = entry.runtime.tools_from_report(current, request['source'], config)
+    artifact = release_helper_from_report(current, {p.name: pin for p, pin in pins.items()})
+    rust, cargo = (current['preparations'][name] for name in ('rust', 'cargo'))
+    toolchain = Path(rust['root'])/'bin'
+    cargo_home = state/'release-seed-cargo'
+    cargo_home.mkdir()
+    (cargo_home/'config.toml').write_text('[source.crates-io]\nreplace-with="openpilot-native"\n'
+        '[source.openpilot-native]\ndirectory='+json.dumps(cargo['vendor'])+'\n[net]\noffline=true\n')
+    argv = ['/usr/bin/python3', '-I', '-B', '-S', str(source/'tools/native/bootstrap_seed.py'),
+        'export', '--source', str(source), '--binary', str(tools/'openpilot-runtime-inputs'),
+        '--cargo', str(toolchain/'cargo'), '--vendor', cargo['vendor'],
+        '--rust-licenses', str(Path(rust['root'])/'share/licenses/rust'), '--output', str(state/'release-seed')]
+    with (state/'release-seed-export.json').open('xb') as out, (state/'release-seed-export.stderr').open('xb') as err:
+        subprocess.run(argv, env=dict(entry.seed.ENV, CARGO_HOME=str(cargo_home), RUSTC=str(toolchain/'rustc')),
+                       stdout=out, stderr=err, check=True, timeout=remaining(deadline_ns))
+    exported = entry.runtime.read(state/'release-seed-export.json')
+    exported_plan, _ = entry.seed.read_plan(state/'release-seed/manifest.json', exported['descriptor_sha256'])
+    assert exported['source'] == entry.runtime.source_identity(source) == request['source']
+    assert exported_plan['assets']['helper']['sha256'] == artifact['sha256']
+    assert exported_plan['protocols'] == dict(current_tools=1, request_owner=2, generation_boot=1)
+    save(state/'execution-summary.json', dict(schema=1, kind='release-seed-export', source=request['source'],
+        index_sha256=request['index_sha256'], exported=exported, release_artifact=artifact,
+        current_tools_resource_evidence=current['resource_evidence'],
+        source_entry_full_build_executed=False, runtime_activated=False, manager_started=False,
+        hardware_model_record_upload_tested=False, cleanup_verified=False,
+        payload_finished_monotonic_ns=time.monotonic_ns()))
 
 
 def arm():
@@ -644,6 +712,9 @@ def arm():
     machine_pin = checksum(machine_path)
     paths = state/'launch-paths.json'
     save(paths, dict(data=str(state), temporary='/tmp', system='/'))
+    if request.get('export_seed', False):
+        export_release_seed(entry, machine, source, state, request, deadline_ns)
+        return
     base = ['/usr/bin/python3', '-I', '-B', '-S', str(source/'tools/native/source_entry.py'),
         '--source', str(source), '--machine-config', str(machine_path),
         '--machine-configuration-sha256', machine_pin]
@@ -743,7 +814,8 @@ def arm():
         factory_admission_in_overall_budget=True, startup_20_second_policy_changed=False,
         payload_finished_monotonic_ns=time.monotonic_ns(),
         cargo_cache_identity_path=str(state/'cache/cargo-build'),
-        public_metadata_verified=request['input_producer'] is None,
+        public_metadata_verified=not request.get('committed_git_metadata_roles', []),
+        committed_git_metadata_verified=len(request.get('committed_git_metadata_roles', [])) == 17,
         authenticated_git_inputs_verified=request['input_producer'] is not None,
         warm_same_path_entry_completed=True,
         public_metadata_preflight_transferred_bytes=request['public_metadata_transferred_bytes'],

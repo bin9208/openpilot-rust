@@ -650,6 +650,43 @@ class PublicSourceReuseTests(unittest.TestCase):
 
 
 class NativeArmAdmissionTests(unittest.TestCase):
+  def test_release_seed_rejects_debug_or_unbound_compiler_artifacts(self):
+    release = '/owned/target/aarch64-unknown-linux-gnu/release/openpilot-runtime-inputs'
+    artifact = dict(executable=release, sha256='a'*64)
+    report = dict(build=dict(reports={'bootstrap-tools':dict(artifacts=[artifact])}))
+    pins = {'openpilot-runtime-inputs':'a'*64}
+    self.assertEqual(full_entry.release_helper_from_report(report, pins), artifact)
+    for path, sha in ((release.replace('/release/', '/debug/'), 'a'*64), (release, 'b'*64)):
+      invalid = copy.deepcopy(report)
+      invalid['build']['reports']['bootstrap-tools']['artifacts'][0].update(executable=path, sha256=sha)
+      with self.assertRaisesRegex(ValueError, 'verified native release'):
+        full_entry.release_helper_from_report(invalid, pins)
+    duplicate = copy.deepcopy(report)
+    duplicate['build']['reports']['bootstrap-tools']['artifacts'].append(artifact)
+    with self.assertRaises(ValueError):
+      full_entry.release_helper_from_report(duplicate, pins)
+
+  def test_committed_metadata_preflight_uses_git_bytes_and_cannot_hide_missing_or_redirected_files(self):
+    with tempfile.TemporaryDirectory() as temporary:
+      source = Path(temporary)
+      root = source/entry.INSTALLED_INPUTS/'metadata'
+      root.mkdir(parents=True)
+      data = b'{"owned":true}\n'
+      asset = dict(sha256=hashlib.sha256(data).hexdigest(), bytes=len(data))
+      origin = root/(asset['sha256']+'.json')
+      origin.write_bytes(data)
+      target = source/'verified.json'
+      with mock.patch.object(entry.seed, 'fetch', side_effect=AssertionError('unexpected release request')):
+        self.assertEqual(full_entry.stage_metadata(entry, source, asset, target), (0, True))
+        self.assertEqual(target.read_bytes(), data)
+        target.unlink()
+        origin.unlink()
+        with self.assertRaises(FileNotFoundError):
+          full_entry.stage_metadata(entry, source, asset, target)
+        origin.symlink_to(source/'outside')
+        with self.assertRaises((ValueError, FileNotFoundError)):
+          full_entry.stage_metadata(entry, source, asset, target)
+
   def test_live_progress_uses_complete_private_rows_and_ignores_partial_or_redirected_data(self):
     with tempfile.TemporaryDirectory() as temporary:
       state = Path(temporary)

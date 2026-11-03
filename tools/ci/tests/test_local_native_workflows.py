@@ -357,6 +357,11 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     after['on']['push']['branches'] = branches
                 old, new = before['jobs'][name], after['jobs'][name]
                 if filename == 'native-source-entry.yml':
+                    export = after['on']['workflow_dispatch']['inputs'].pop('export_seed')
+                    self.assertEqual(export, dict(description='Export only the source-built release bootstrap seed, without building the full runtime',
+                                                 required='false', default='false', type='boolean'))
+                    self.assertEqual(after['on']['workflow_call']['inputs'].pop('export_seed'), export)
+                    self.assertEqual(new['env'].pop('NATIVE_ENTRY_EXPORT_SEED'), "${{ inputs.export_seed && 'true' || 'false' }}")
                     checkout = next(s for s in new['steps'] if s.get('uses') == 'actions/checkout@v7')
                     self.assertEqual(checkout['with']['fetch-depth'], '1')
                     original_checkout = next(s for s in old['steps'] if s.get('uses') == 'actions/checkout@v7')
@@ -382,6 +387,9 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     check['run'] = original_check['run']
                     artifact = next(s for s in new['steps'] if s.get('uses') == 'actions/upload-artifact@v6')
                     paths = artifact['with']['path'].splitlines()
+                    release_seed = '${{ env.CI_JOB_TEMP }}/source-entry-full/state/release-seed/*'
+                    self.assertEqual(paths.count(release_seed), 1)
+                    paths.remove(release_seed)
                     proof = '${{ env.CI_JOB_TEMP }}/source-entry-authenticated-inputs/proof.json'
                     self.assertEqual(paths.count(proof), 1)
                     paths.remove(proof)
@@ -486,6 +494,9 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             cwd=ROOT, text=True), Loader=yaml.BaseLoader)['on']
         after = load(ROOT/relative)['on']
         inputs = after['workflow_dispatch']['inputs']
+        self.assertEqual(inputs.pop('export_seed'), dict(
+            description='Export only the source-built release bootstrap seed, without building the full runtime',
+            required='false', default='false', type='boolean'))
         self.assertEqual(set(inputs), {'input_producer_run', 'index_sha256', 'operation_estimates_json'})
         self.assertTrue(all(value['required'] == 'false' and value['default'] == ''
                             and value['type'] == 'string' for value in inputs.values()))
@@ -501,12 +512,13 @@ class LocalNativeWorkflowTests(unittest.TestCase):
         self.assertEqual(document['permissions'], dict(contents='read', actions='read'))
         job = document['jobs']['source-entry']
         self.assertEqual(job, {
-            'if': "${{ github.event_name == 'workflow_dispatch' && inputs.input_producer_run != '' }}",
+            'if': "${{ github.event_name == 'workflow_dispatch' && inputs.index_sha256 != '' }}",
             'uses': './.github/workflows/native-source-entry.yml',
-            'with': {name: '${{ inputs.'+name+' }}' for name in
-                     ('input_producer_run', 'index_sha256', 'operation_estimates_json')}})
+            'with': {**{name: '${{ inputs.'+name+' }}' for name in
+                     ('input_producer_run', 'index_sha256', 'operation_estimates_json')},
+                     'export_seed': '${{ inputs.export_seed || false }}'}})
         self.assertEqual(document['jobs']['offline-cargo-reuse']['if'],
-                         "${{ ("+SAFETY+") && inputs.input_producer_run == '' }}")
+                         "${{ ("+SAFETY+") && inputs.index_sha256 == '' }}")
 
     def test_native_arm_probe_preserves_original_acceptance_and_deadlines(self):
         path = 'rust/tools/check_aarch64.py'

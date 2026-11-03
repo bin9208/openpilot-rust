@@ -2,6 +2,11 @@ name: Full production source entry from public Git pins
 on:
   workflow_dispatch:
     inputs:
+      export_seed:
+        description: Export only the source-built release bootstrap seed, without building the full runtime
+        required: false
+        default: false
+        type: boolean
       index_sha256:
         description: SHA256 of the committed index or authenticated producer index for a timing checkout
         required: true
@@ -17,6 +22,11 @@ on:
         type: string
   workflow_call:
     inputs:
+      export_seed:
+        description: Export only the source-built release bootstrap seed, without building the full runtime
+        required: false
+        default: false
+        type: boolean
       index_sha256:
         description: SHA256 of the committed index or authenticated producer index for a timing checkout
         required: true
@@ -51,6 +61,7 @@ jobs:
       NATIVE_ENTRY_INDEX: ${{ inputs.index_sha256 }}
       NATIVE_ENTRY_INPUT_PRODUCER: ${{ inputs.input_producer_run }}
       NATIVE_ENTRY_BUDGETS: ${{ inputs.operation_estimates_json }}
+      NATIVE_ENTRY_EXPORT_SEED: ${{ inputs.export_seed && 'true' || 'false' }}
       SCOPE_CONTEXT: GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE
     steps:
       - uses: actions/checkout@v7
@@ -127,6 +138,7 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/source-entry-full/state/*.json
             ${{ env.CI_JOB_TEMP }}/source-entry-full/state/*.stdout
             ${{ env.CI_JOB_TEMP }}/source-entry-full/state/*.stderr
+            ${{ env.CI_JOB_TEMP }}/source-entry-full/state/release-seed/*
             ${{ env.CI_JOB_TEMP }}/source-entry-full/state/generations/source-requests/*/*.json
             ${{ env.CI_JOB_TEMP }}/source-entry-full/state/generations/source-requests/*/*.stderr
             ${{ env.CI_JOB_TEMP }}/source-entry-full/state/generations/**/resources.jsonl
