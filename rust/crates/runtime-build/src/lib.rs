@@ -341,14 +341,14 @@ pub fn build_with_metadata(
         return Err("runtime build needs a native Rust 1.94.0 toolchain for its target".into());
     }
     timing.mark("tools_before");
-    // Selection is Cargo's job: package/bin choices do not change the native ABI
-    // or compiler inputs. Share dependency artifacts between serial build groups
-    // rather than storing a complete target tree for each selected binary set.
-    // Cargo retains its package/source/feature fingerprints inside this cache.
+    // Cargo tracks package/bin/feature selection inside a target directory.
+    // Keep compiler, input and environment changes in the ABI cache identity,
+    // while allowing serial feature selections to reuse unchanged dependencies.
     let mut cache_recipe = recipe.clone();
     cache_recipe.expected_growth_bytes = 0;
     cache_recipe.packages.clear();
     cache_recipe.binaries.clear();
+    cache_recipe.features.clear();
     let identity = serde_json::to_vec(&(
         "openpilot-native-cargo-cache-v2",
         cache_recipe,

@@ -121,6 +121,7 @@ fn actual_cargo_feature_messages_match_executed_binaries_and_keep_report_schema_
     fs::write(fixture.root.join("rust/src/main.rs"),
         "fn main() { println!(\"{}\", if cfg!(feature=\"recorded-feature\") { 7 } else { 42 }); }\n").unwrap();
     commit(&fixture.root);
+    let mut previous_cache: Option<(String, PathBuf)> = None;
     for selected in [true, false] {
         fixture.recipe.features = if selected {
             vec!["recorded-feature".into()]
@@ -134,6 +135,11 @@ fn actual_cargo_feature_messages_match_executed_binaries_and_keep_report_schema_
             &fixture.recipe,
         )
         .unwrap();
+        let current_cache = (&observed.build.cache_key, &observed.build.target_directory);
+        if let Some(previous) = &previous_cache {
+            assert_eq!(current_cache, (&previous.0, &previous.1));
+        }
+        previous_cache = Some((current_cache.0.clone(), current_cache.1.clone()));
         assert_eq!(observed.cargo_artifacts.len(), 1);
         let metadata = &observed.cargo_artifacts[0];
         assert_eq!(metadata.features, fixture.recipe.features);
@@ -250,7 +256,7 @@ fn serial_package_groups_reuse_their_real_shared_dependency() {
     fs::write(fixture.root.join("rust/Cargo.toml"),
         "[package]\nname='runtime-fixture'\nversion='0.1.0'\nedition='2021'\n[workspace]\nmembers=['shared','other']\n[dependencies]\nruntime-shared={path='shared'}\n").unwrap();
     fs::write(fixture.root.join("rust/other/Cargo.toml"),
-        "[package]\nname='runtime-other'\nversion='0.1.0'\nedition='2021'\n[dependencies]\nruntime-shared={path='../shared'}\n").unwrap();
+        "[package]\nname='runtime-other'\nversion='0.1.0'\nedition='2021'\n[dependencies]\nruntime-shared={path='../shared'}\n[features]\nselected-feature=[]\n").unwrap();
     fs::write(
         fixture.root.join("rust/shared/Cargo.toml"),
         "[package]\nname='runtime-shared'\nversion='0.1.0'\nedition='2021'\n",
@@ -265,7 +271,7 @@ fn serial_package_groups_reuse_their_real_shared_dependency() {
     .unwrap();
     fs::write(
         fixture.root.join("rust/other/src/main.rs"),
-        "fn main() { println!(\"other {}\", runtime_shared::value()); }\n",
+        "fn main() { assert!(cfg!(feature=\"selected-feature\")); println!(\"other {}\", runtime_shared::value()); }\n",
     )
     .unwrap();
     fs::write(
@@ -298,6 +304,8 @@ fn main() {
     let mut other = fixture.recipe.clone();
     other.packages = vec!["runtime-other".into()];
     other.binaries = vec!["runtime-other".into()];
+    other.features = vec!["runtime-other/selected-feature".into()];
+    assert_ne!(fixture.recipe.features, other.features);
     let first = fixture.run();
     let libraries: Vec<_> = fs::read_dir(
         first
@@ -362,7 +370,7 @@ fn main() {
         assert!(output.status.success());
         assert_eq!(output.stdout, expected.as_bytes());
     }
-    println!("serial_groups=2 shared_build_script_initial_runs=1 shared_library_hash_and_mtime_retained=true changed_shared_build_script_runs=1 actual_consumers_rebuilt=true");
+    println!("serial_groups=2 distinct_feature_selections=true shared_build_script_initial_runs=1 shared_library_hash_and_mtime_retained=true changed_shared_build_script_runs=1 actual_consumers_rebuilt=true");
 }
 
 #[test]
