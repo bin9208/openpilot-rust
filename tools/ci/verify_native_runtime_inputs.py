@@ -55,6 +55,9 @@ with tempfile.TemporaryDirectory(prefix='native-index-bytecode-', dir='/tmp') as
 
 def main():
   assert os.geteuid() != 0 and not os.getgroups()
+  validation = os.environ.get('NATIVE_AGNOS_VALIDATION', 'full')
+  if validation not in ('inputs', 'full'):
+    raise ValueError('native input preparation requires inputs or full validation')
   runpy.run_path(str(Path(__file__).resolve().parent/'runner_policy.py'))['require_github_native_arm']()
   job = Path(os.environ['CI_JOB_TEMP'])
   assert job.parent == Path('/tmp') and job.name.startswith('openpilot-ci.') and job.resolve() == job
@@ -208,7 +211,7 @@ def main():
     assert (work/'bootstrap-current-generations/previous-log').read_bytes() == b'owned previous log sentinel\n'
     return prepared
 
-  for phase in ('initial', 'reused', 'docs'):
+  for phase in (('initial',) if validation == 'inputs' else ('initial', 'reused', 'docs')):
     if phase == 'docs':
       path = fixture/'README.md'
       path.write_bytes(path.read_bytes()+b'\nOwned production runtime input docs fixture.\n')
@@ -267,7 +270,8 @@ def main():
   machine_path.write_text(json.dumps(machine)+'\n')
   machine_pin = digest(machine_path)
   resolved_rows = {}
-  for phase in ('git-index-initial', 'git-index-reused', 'git-index-docs'):
+  for phase in (('git-index-initial',) if validation == 'inputs'
+                else ('git-index-initial', 'git-index-reused', 'git-index-docs')):
     if phase == 'git-index-docs':
       path = fixture/'README.md'
       path.write_bytes(path.read_bytes()+b'\nOwned actual input index documentation-only fixture.\n')
@@ -298,6 +302,7 @@ def main():
       files=publication_files, published_release=False, committed_input_index=False,
       source_index_resolver_cases_passed=list(resolved_rows), physical_device_execution=False), indent=2)+'\n')
   (evidence/'summary.json').write_text(json.dumps(dict(schema=1, source_commit=context['source_commit'],
+      validation_scope=validation,
       cases=list(metrics), metrics=metrics, production_input_orchestrator_executed=True,
       provider_roles=15, runtime_roles=18, compiler_input_roles=9, actual_host_kernel_cgroup=True,
       process_architecture='aarch64', physical_arm_cpu=False, agnos_kernel=False,

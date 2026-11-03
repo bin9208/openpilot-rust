@@ -142,6 +142,12 @@ def installed_machine_configuration(source, path, expected=None):
   # a second setup flow, nor permission to replace an installed device policy.
   runtime.source_identity(source)
   machine, _ = git_json(source, 'rust/native-machine.json')
+  if 'boot_seed' not in machine:
+    machine['boot_seed'] = input_index(source)[0]['seed']
+  if (machine['resources']['memory_cgroup_parent'] == '/sys/fs/cgroup/openpilot-native-build-1000'
+      and not Path('/sys/fs/cgroup/cgroup.controllers').is_file()
+      and Path('/sys/fs/cgroup/memory/cgroup.procs').is_file()):
+    machine['resources']['memory_cgroup_parent'] = '/sys/fs/cgroup/memory/openpilot-native-build-1000'
   directory(path.parent)
   validate_machine(machine, source)
   with tempfile.TemporaryDirectory(prefix='.pending-machine-', dir=path.parent) as temporary:

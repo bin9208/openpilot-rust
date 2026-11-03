@@ -2892,7 +2892,7 @@ def main():
       evidence['full_runtime_validation'] = True
     # Add the production orchestration as a separate guarded command after all
     # original ARM commands. Keep their user space, pins and evidence intact.
-    preserve = 'GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE,PATH'
+    preserve = 'GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE,PATH,NATIVE_AGNOS_VALIDATION'
     scope = Path(os.environ['GITHUB_WORKSPACE'])/'tools/ci/native_resource_scope.py'
     driver = Path(os.environ['GITHUB_WORKSPACE'])/'tools/ci/verify_native_runtime_inputs.py'
     with record_phase(evidence, 'final-production-validation'):

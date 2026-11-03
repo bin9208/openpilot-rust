@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import runpy
 from pathlib import Path
 import shutil
@@ -35,6 +36,21 @@ def git_inputs(job, payload, source):
   targets = {name: job/path for name, path in aliases.items()}
   targets.update({name: cache/name for name in ('codecs-assets', 'component-assets')})
   files, categories = {}, set()
+  folder = work/Path(initial['runtime_inputs']['native_configuration']).relative_to(guest).parent
+  operations = json.loads((folder/'operations.json').read_text())
+  expanded_lfs = {}
+  if 'source-lfs' in operations:
+    lfs = operations['source-lfs']
+    if not re.fullmatch('[0-9a-f]{64}', lfs['identity']):
+      raise ValueError('installed LFS generation has no content identity')
+    root = guest/'bootstrap-current-cache/source-lfs-prefixes'/lfs['identity']/'generation/tree'
+    if Path(lfs['root']) != root or lfs['source']['commit'] != source:
+      raise ValueError('installed LFS generation differs from the consumed source')
+    for name, asset in lfs['assets'].items():
+      relative, path = Path(name), Path(asset['path'])
+      if relative.is_absolute() or '..' in relative.parts or path != root/relative:
+        raise ValueError('installed LFS member escaped its consumed generation')
+      expanded_lfs[path] = (asset['sha256'], asset['bytes'])
 
   def retain(path, target, checksum, size):
     if (not path.is_relative_to(job) or path.resolve(strict=True) != path or path.is_symlink()
@@ -59,6 +75,10 @@ def git_inputs(job, payload, source):
         suffix = Path('sha256')/value['sha256']/'blob'
         matches = [name for name in targets if path == guest/'bootstrap-current-cache'/name/suffix
                    or path == targets[name]/suffix]
+        if not matches and expanded_lfs.get(path) == (value['sha256'], value['bytes']):
+          # Source-LFS preparation reports its expanded output. Retain the
+          # independently hashed raw cache blob used to produce that output.
+          matches = ['source-lfs-assets']
         if len(matches) != 1:
           raise ValueError('consumed asset is outside its existing cache')
         name = matches[0]
@@ -68,8 +88,7 @@ def git_inputs(job, payload, source):
       for child in value.values():
         consumed(child)
 
-  folder = work/Path(initial['runtime_inputs']['native_configuration']).relative_to(guest).parent
-  for report in (initial, json.loads((folder/'operations.json').read_text()),
+  for report in (initial, operations,
                  json.loads((job/'native-model-wheels-initial.json').read_text())):
     consumed(report)
   if categories != set(targets):
@@ -123,10 +142,14 @@ def git_inputs(job, payload, source):
 
 def stage(job, source, run_id, attempt):
   manifest = json.loads((job/(PREFIX+'publication-candidate.json')).read_text())
+  cases = manifest['source_index_resolver_cases_passed']
+  environment = json.loads((job/'native-agnos-environment-599.json').read_text())
+  if (cases != ['git-index-initial', 'git-index-reused', 'git-index-docs']
+      and not (environment.get('validation_scope') == 'inputs' and cases == ['git-index-initial'])):
+    raise ValueError('native payload lacks its selected input preparation cases')
   if (manifest['workflow_source_commit'] != source or manifest['source_run_id'] != run_id
       or manifest['source_run_attempt'] != attempt or manifest['source_job'] != 'compiler'
       or manifest['published_release'] is not False or manifest['committed_input_index'] is not False
-      or manifest['source_index_resolver_cases_passed'] != ['git-index-initial', 'git-index-reused', 'git-index-docs']
       or len(manifest['files']) != 34):
     raise ValueError('native payload requires this completed producer identity and cases')
   files = {}

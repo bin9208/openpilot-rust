@@ -158,7 +158,7 @@ class SourceEntryTests(unittest.TestCase):
       f.commit()
       with mock.patch.object(entry, 'DEFAULT_MACHINE', path):
         machine, pin = entry.installed_machine_configuration(f.source, path)
-        self.assertEqual(machine, f.machine)
+        self.assertEqual(machine, dict(f.machine, boot_seed=f.index['seed']))
         first = path.stat()
         (f.source/'README').write_text('uncommitted updater checkout')
         self.assertEqual(entry.installed_machine_configuration(f.source, path), (machine, pin))

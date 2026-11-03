@@ -273,15 +273,14 @@ def main():
     log = work/'bootstrap-current-generations/previous-log'
     active.write_bytes(b'owned previous selection sentinel\n')
     log.write_bytes(b'owned previous log sentinel\n')
-    # The real 9b8 CI worker reached its 3 GiB cgroup cap. Six GiB is a
-    # conservative CI retry ceiling, not a measured requirement or device budget.
-    # Production resource guards and the normal-runtime margin remain unchanged.
+    # Cargo now bounds concurrent compiler/linker processes to two. Exercise
+    # the candidate's 3 GiB ceiling instead of requiring a 6 GiB CI-only policy.
     config = dict(schema=1, stores=stores, cache=str(guest_work/'bootstrap-current-cache'),
         system_sdk_receipt=str(guest_work/'native-system-sdk.json'), system_sdk_sha256=digest(work/'native-system-sdk.json'),
         expected_source_growth_bytes=source_growth, expected_compile_growth_bytes=compile_growth,
         remaining_object_growth_bytes=object_growth,
         resources=dict(schema=1, memory_cgroup_parent=os.environ['NATIVE_TEST_CGROUP_PARENT'],
-            maximum_memory_bytes=6*1024**3, minimum_available_memory_bytes=128*1024**2,
+            maximum_memory_bytes=3*1024**3, minimum_available_memory_bytes=128*1024**2,
             filesystems={str(guest_work):dict(maximum_growth_bytes=growth+shared_growth, minimum_free_bytes=64*1024**2)}))
     configuration = work/'bootstrap-current-config.json'
     configuration.write_text(json.dumps(config)+'\n')

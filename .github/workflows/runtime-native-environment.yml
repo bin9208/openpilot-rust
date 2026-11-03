@@ -62,6 +62,7 @@ jobs:
         run: sudo -n --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA /usr/bin/python3 tools/ci/native_resource_scope.py prepare
       - name: Validate the current package growth policy before deep ARM preparation
         run: |
+          /usr/bin/python3 -I -B -S -m unittest discover -s tools/ci/tests -p test_native_input_publication.py -v
           sudo apt-get -o APT::Architectures=arm64 install -y g++ liblzma-dev pkg-config
           set -o pipefail
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib package::tests \

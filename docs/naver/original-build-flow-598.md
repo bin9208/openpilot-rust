@@ -208,3 +208,33 @@ producer를 요청하지 않았다. 진행 중인 기존 source의 실행은 보
 `third_party/native_inputs/` 묶음이 없다. 이것이 직접 설치 가능한 후보를 막고 있으며
 전체 검증 성공을 추가로 기다리는 문제와 구분한다. 실제 파일을 제공하기 전에는
 설치 가능·최초/작은 변경 시간 측정 완료·기기 성능 개선을 주장하지 않는다.
+
+## 2026-11-03 입력 묶음 실패 수정과 실제 후보 준비
+
+기존 입력 producer `d02fc7cdd3f458e0233d10fc9d002163bc2f22de`의
+[41589186195](https://github.com/bin9208/openpilot-rust/actions/runs/41589186195)는 원본 입력 준비를
+마친 뒤 `stage_native_input_payload.py`에서 실패했다. 해시 검증한 증거 ZIP의 SHA256은
+`a574a3a33fc8edb016dc97678b146fdf504e40c1a98699e71c5839cf1119e49f`이다.
+실제 Source-LFS receipt는 raw cache가 아니라 펼쳐진 generation의 SVG/ONNX 경로를
+반환했다. 묶음 생성기가 이를 raw asset으로만 해석해 거부한 것이 직접 원인이다.
+
+현재 source·generation identity·멤버 경로가 맞는 Source-LFS 결과만 원래
+`source-lfs-assets/sha256/<SHA>/blob`으로 연결하고, raw 파일의 실제 SHA/byte를 확인해
+보존하도록 고쳤다. 기존 패키징 fixture도 실제와 같은 펼쳐진 receipt를 사용하고
+다른 source/경로를 거부한다. 이 경계 검사는 기존 producer의 깊은 준비 전에 실행한다.
+
+입력 전용은 현재 도구 최초 준비와 직접/committed-index 최초 입력 소비만 수행한다.
+재사용·문서 변경 반복은 `full`에 보존하며 보고서는 실제 실행한 경우만 기록한다.
+발행/측정 consumer도 입력 전용의 두 기본 경우와 전체 여섯 경우를 구분하고, 입력 전용
+결과를 전체 검증 성공으로 인정하지 않는다. 별도 전체 runtime 검증을 요청하지 않는다.
+
+기본 `rust/native-machine.json`을 추가했다. 최초 설치만 현재 Git index의 seed를 고정하고
+cgroup v1/v2 경로를 선택하며, 이미 설치한 정책은 보존한다. 작업별 성장량은 보수적
+추정이고 실제 기기 측정값이 아니다. 메모리 한도 3 GiB와 정상 실행 여유 128 MiB를
+유지하면서 Cargo의 동시 compiler/linker를 2개로 제한한다. 기존 bootstrap의 최초
+커널 peak는 3,336,716,288바이트였으므로, 새 기본 한도에서의 실제 성공을 확인해야 한다.
+부족한 메모리/공간을 오류 무시로 숨기거나 사용자 로그를 삭제하지 않는다.
+
+로컬에서는 AST·JSON/YAML 구문·Rust 서식·diff만 확인한다. 실제 입력 준비를 다시
+요청할 때는 위 수정 source의 `validation=inputs` 한 번을 사용하고, 결과 파일을 후보에
+반영한 뒤 최초/작은 변경 시간을 기존 factory source-entry에서 확인한다.

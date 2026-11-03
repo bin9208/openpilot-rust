@@ -54,7 +54,7 @@ NATIVE_OWNED_SCRIPTS = {
     'runtime-native-environment.yml': {
         'Admit this host tool and extract operation': 'a8f29b03f073d10d7ccb13847f0129c3f21d0aa880a4aeacb4c8ac7aa399ba15',
         'Prepare only this bootstrap job kernel scope': 'a064e70610c4026fabcb73c73197f55f4c09b1de564140e39a97423c080076a6',
-        'Validate the current package growth policy before deep ARM preparation': '31cc69fd7f9a618858b1b68ce623790d65fa83638373fc053684f8a6128f2d8b',
+        'Validate the current package growth policy before deep ARM preparation': 'e891b17091b881425d3fe0959392705c14371e6bc5471878bd0b934ddb982e8e',
         'Build the pinned original planner ABI before deep ARM preparation': '0f744307858558c68e223e58936f3b8feacd6d56c713ed62b639547439fb0130',
         'Stop and remove only the bootstrap job kernel scope': '790f8d0e9ca2d60b658c7871776bee48508b76e7afa96742a53bf9e7f9cb0d94',
     },

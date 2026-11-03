@@ -449,6 +449,11 @@ class Bundle:
 
 def validate_bundle(bundle, source, run, index_pin, profiles, sdk_plan, source_tree):
   manifest = bundle.json(PREFIX+'publication-candidate.json')
+  environment = bundle.json('native-agnos-environment-599.json', 16*1024**2)
+  scope = environment.get('validation_scope', 'full')
+  cases = manifest['source_index_resolver_cases_passed']
+  if cases != CASES and not (scope == 'inputs' and cases == CASES[:1]):
+    raise ValueError('native publication lacks its selected input preparation cases')
   index_name = PREFIX+'native-bootstrap-inputs.candidate.json'
   index = bundle.json(index_name)
   with bundle.zip.open(bundle.member(index_name)) as stream:
@@ -459,7 +464,7 @@ def validate_bundle(bundle, source, run, index_pin, profiles, sdk_plan, source_t
       or manifest['source_run_id'] != run['id'] or manifest['source_run_attempt'] != run['run_attempt']
       or manifest['source_job'] != 'compiler' or manifest['index_sha256'] != index_pin
       or manifest['published_release'] is not False or manifest['committed_input_index'] is not False
-      or manifest['physical_device_execution'] is not False or manifest['source_index_resolver_cases_passed'] != CASES):
+      or manifest['physical_device_execution'] is not False):
     raise ValueError('native publication provenance or completed cases differ')
   if (set(index) != {'schema', 'seed', 'system_sdk', 'providers'} or type(index['schema']) is not int
       or index['schema'] != 1 or set(index['providers']) != set(ROLES)):
@@ -469,17 +474,19 @@ def validate_bundle(bundle, source, run, index_pin, profiles, sdk_plan, source_t
       or summary['provider_roles'] != 15 or summary['runtime_roles'] != 18 or summary['compiler_input_roles'] != 9
       or summary['published_release'] is not False or summary['input_index_committed'] is not False
       or summary['input_index_candidate_sha256'] != index_pin
-      or set(summary['input_index_cases']) != set(CASES)
+      or set(summary['input_index_cases']) != set(cases)
+      or summary.get('validation_scope', scope) != scope
       or any(row['index_sha256'] != index_pin for row in summary['input_index_cases'].values())):
     raise ValueError('native resolver proof is incomplete')
-  for case in ['initial', 'reused', 'docs', *CASES]:
+  required_metrics = ['initial', *cases] if cases == CASES[:1] else ['initial', 'reused', 'docs', *CASES]
+  if set(summary['metrics']) != set(required_metrics):
+    raise ValueError('native preparation metrics differ from its selected cases')
+  for case in required_metrics:
     sample = summary['metrics'][case]
     if sample['state'] != 'success' or sample['memory']['kernel_peak_bytes'] <= 0:
       raise ValueError('native preparation lacks successful real-controller evidence')
-  environment = bundle.json('native-agnos-environment-599.json', 16*1024**2)
   if environment['source_commit'] != source:
     raise ValueError('native input engineering result belongs to a different source')
-  scope = environment.get('validation_scope', 'full')
   if scope == 'inputs':
     # Publication contains compiler/provider inputs, never a runnable runtime.
     # Final 99-binary build/seal/boot validation belongs to the frozen candidate.

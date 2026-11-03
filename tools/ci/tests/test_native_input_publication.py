@@ -148,7 +148,7 @@ class Fixture:
         'codecs-assets': 'native-agnos/bootstrap-current-cache/codecs-assets',
         'component-assets': 'native-agnos/bootstrap-current-cache/component-assets',
     }
-    receipts = []
+    receipts, direct, operations = [], [], {}
     for name, cache in aliases.items():
       data = b'Owned actual consumed '+name.encode()
       if large and name == 'model-assets':
@@ -160,11 +160,19 @@ class Fixture:
       path.chmod(0o444)
       receipts.append(dict(path=str(guest/'bootstrap-current-cache'/name/'sha256'/checksum/'blob'),
           bytes=len(data), sha256=checksum, transferred_bytes=0, stored_bytes=0))
+      if name == 'source-lfs-assets':
+        identity = 'e'*64
+        lfs_root = guest/'bootstrap-current-cache/source-lfs-prefixes'/identity/'generation/tree'
+        operations['source-lfs'] = dict(identity=identity, root=str(lfs_root),
+            source=dict(commit=SOURCE), assets={'models/owned.onnx':dict(receipts[-1],
+              path=str(lfs_root/'models/owned.onnx'))})
+      else:
+        direct.append(receipts[-1])
     initial = dict(runtime_inputs=dict(source=dict(commit=SOURCE),
-        native_configuration=str(guest/'owned-attempt/native-config.json')), preparations=dict(assets=receipts))
+        native_configuration=str(guest/'owned-attempt/native-config.json')), preparations=dict(assets=direct))
     (self.root/(publication.PREFIX+'initial.json')).write_bytes(encode(initial))
     (work/'owned-attempt').mkdir()
-    (work/'owned-attempt/operations.json').write_bytes(encode({}))
+    (work/'owned-attempt/operations.json').write_bytes(encode(operations))
     (self.root/'native-model-wheels-initial.json').write_bytes(encode({}))
     return receipts
 
@@ -259,7 +267,7 @@ class PublicationTests(unittest.TestCase):
         bundle.close()
 
   def test_installed_input_capture_rejects_corruption_and_missing_categories_before_copy(self):
-    for fault in ('corrupt', 'missing'):
+    for fault in ('corrupt', 'missing', 'foreign-lfs-path', 'foreign-lfs-source'):
       with self.subTest(fault=fault), tempfile.TemporaryDirectory() as temporary:
         root = Path(temporary)/'job'
         root.mkdir()
@@ -271,11 +279,19 @@ class PublicationTests(unittest.TestCase):
           path = root/'native-rust-assets/sha256'/receipts[0]['sha256']/'blob'
           path.chmod(0o644)
           path.write_bytes(b'X'*receipts[0]['bytes'])
-        else:
+        elif fault == 'missing':
           path = root/(publication.PREFIX+'initial.json')
           initial = json.loads(path.read_bytes())
           initial['preparations']['assets'].pop()
           path.write_bytes(encode(initial))
+        else:
+          path = root/'native-agnos/owned-attempt/operations.json'
+          operations = json.loads(path.read_bytes())
+          if fault == 'foreign-lfs-path':
+            operations['source-lfs']['assets']['models/owned.onnx']['path'] = '/tmp/foreign-lfs'
+          else:
+            operations['source-lfs']['source']['commit'] = 'b'*40
+          path.write_bytes(encode(operations))
         with self.assertRaises(ValueError):
           payload.git_inputs(root, output, SOURCE)
         self.assertFalse((output/'installed-source').exists())
@@ -399,17 +415,22 @@ class PublicationTests(unittest.TestCase):
         self.assertFalse((f.root/'staged').exists())
 
   def test_authenticated_inputs_do_not_require_a_whole_runtime_and_cannot_claim_one(self):
-    for fault in (None, 'failed', 'full-claim', 'fabricated-runtime', 'different-summary', 'unknown-scope'):
+    for fault in (None, 'initial-only', 'initial-full-claim', 'failed', 'full-claim', 'fabricated-runtime', 'different-summary', 'unknown-scope'):
       with self.subTest(fault=fault), tempfile.TemporaryDirectory() as temp:
         f = Fixture(Path(temp))
+        if fault in ('initial-only', 'initial-full-claim'):
+          f.manifest['source_index_resolver_cases_passed'] = publication.CASES[:1]
+          f.summary['input_index_cases'] = {case:f.summary['input_index_cases'][case] for case in publication.CASES[:1]}
+          f.summary['metrics'] = {case:f.summary['metrics'][case] for case in ['initial', *publication.CASES[:1]]}
         f.environment = dict(source_commit=SOURCE, validation_scope='inputs', success=True,
             full_runtime_validation=False, native_production_runtime_inputs=copy.deepcopy(f.summary))
+        if fault == 'initial-full-claim': f.environment['validation_scope'] = 'full'
         if fault == 'failed': f.environment['success'] = False
         if fault == 'full-claim': f.environment['full_runtime_validation'] = True
         if fault == 'fabricated-runtime': f.environment['native_complete_generation'] = dict(binaries=99)
         if fault == 'different-summary': f.environment['native_production_runtime_inputs']['provider_roles'] = 1
         if fault == 'unknown-scope': f.environment['validation_scope'] = 'skip'
-        if fault is None:
+        if fault in (None, 'initial-only'):
           f.validated()
         else:
           with self.assertRaises(ValueError):
