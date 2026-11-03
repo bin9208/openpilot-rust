@@ -122,6 +122,22 @@ factory 검사 설정은 실제 sudo helper가 요구하는 uid별 `openpilot-na
 실제 Cargo 입력 변경/충돌 거부·기존 실행 보존과 ARM shell 경로를 확인했다. 이후의
 CPU/새 checkout/캐시 경로/검증 단계 분리 변경은 다음 집중 검사로 별도 확인한다.
 
+후속 source `d02fc7cdd3f458e0233d10fc9d002163bc2f22de`의
+[집중41588655110](https://github.com/bin9208/openpilot-rust/actions/runs/41588655110)은 ARM/X64 모두
+성공했다. 같은 시작 과정의 실패 중복 방지·새 시작 재시도·고정 경로 측정 source
+`607959ca97b5eef4b1b409138a9cf1f74ef82e56`의
+[집중41591463895](https://github.com/bin9208/openpilot-rust/actions/runs/41591463895)도
+[ARM125768925930](https://github.com/bin9208/openpilot-rust/actions/runs/41591463895/job/125768925930)과
+[X64125768925733](https://github.com/bin9208/openpilot-rust/actions/runs/41591463895/job/125768925733)이
+성공했다. 실제 CLI 실패/미검증 성공 거부, CPU 마스크 복구, 독립 Git 변경 source와
+캐시 재사용 fixture를 포함한다. 이후 실행 제목/작업 절차 문서 변경은 구문·diff만 확인하며
+그 때문에 이 기능 검사나 전체 검증을 재시작하지 않는다.
+
+실제 입력만 준비하는 [Genuine #137/41589186195](https://github.com/bin9208/openpilot-rust/actions/runs/41589186195)는
+`validation=inputs`로 한 번 요청했다. 모델 생성·전체99개 빌드/봉인/반복은 실행하지 않는
+입력 producer다. 이 실행에서 얻을 실제 입력으로 기존 factory source-entry의 최초·변경 후
+시간을 측정하며, 현재 측정 완료나 배포 후보 성공을 주장하지 않는다.
+
 전체 입력 공개를 위해 모든 과거 CI 사건을 재실행하거나, 수정마다 전체 Genuine을 새로
 시작하지 않는다. 최종 고정 후보의 실제 정상 entry 전체 빌드·변경 후 빌드 시간과 사용자의
 콤마 결과는 별도로 필요하다. 현재 선행 입력/Git pin과 기본 정책이 미완료이므로, 시간
