@@ -109,6 +109,12 @@ impl Config {
 
     /// Full native build/seal entry. Activation remains a separate offroad step.
     pub fn build(&self, root: &Path) -> Result<String> {
+        let mut timing = crate::PhaseTimer {
+            enabled: std::env::var_os("OPENPILOT_NATIVE_BUILD_TIMINGS").as_deref()
+                == Some(std::ffi::OsStr::new("1")),
+            marked: std::time::Instant::now(),
+            binaries: &[],
+        };
         offroad(&self.stores.params)?;
         agnos_identity()?;
         let layout: Layout = read(&self.layout)?;
@@ -127,16 +133,20 @@ impl Config {
                 .values()
                 .flat_map(|r| r.binaries.iter().map(String::as_str)),
         )?;
+        timing.mark("generation_plan");
         let source = crate::source_store::retain(
             root,
             &self.stores.sources,
             plan.expected_source_growth_bytes,
         )?;
+        timing.mark("generation_source_retention");
         let workspace =
             source.workspace(&self.stores.sources, layout.expected_source_growth_bytes)?;
+        timing.mark("generation_workspace");
         crate::catalog::verify_source_plan(&workspace.root, &plan)?;
         crate::system_sdk::generation_profiles(&workspace.root, &plan)?;
         crate::runtime_layout::verify(&workspace.root, &layout.provider_root, &layout.files)?;
+        timing.mark("generation_input_checks");
         let prepared = crate::prepare::from_retained(
             &workspace.root,
             &self.cache,
@@ -146,7 +156,10 @@ impl Config {
             &plan,
             source,
         )?;
-        seal(root, &self.stores, prepared, layout)
+        timing.mark("generation_prepare_and_build");
+        let id = seal(root, &self.stores, prepared, layout)?;
+        timing.mark("generation_seal");
+        Ok(id)
     }
 }
 
@@ -1029,6 +1042,12 @@ pub fn seal(
     prepared: Prepared,
     layout: Layout,
 ) -> Result<String> {
+    let mut timing = crate::PhaseTimer {
+        enabled: std::env::var_os("OPENPILOT_NATIVE_BUILD_TIMINGS").as_deref()
+            == Some(std::ffi::OsStr::new("1")),
+        marked: std::time::Instant::now(),
+        binaries: &[],
+    };
     offroad(&stores.params)?;
     let agnos_identity = agnos_identity()?;
     prepared.verify(&stores.sources, &stores.objects)?;
@@ -1038,6 +1057,7 @@ pub fn seal(
     let pins = layout.verify(&prepared)?;
     crate::runtime_layout::verify(&prepared.source.root, &layout.provider_root, &layout.files)?;
     let metadata = metadata(request_root, &prepared)?;
+    timing.mark("seal_input_checks");
     directory(&stores.generations)?;
     let _lock = lock(&stores.generations)?;
     let evidence = tempfile::Builder::new()
@@ -1127,6 +1147,7 @@ pub fn seal(
             .ok_or("generation accounting overflow")?;
         files.insert(destination.clone(), imported.object);
     }
+    timing.mark("seal_materialize");
     let source_assets = files
         .iter()
         .filter(|(p, _)| source_asset_allowed(p))
@@ -1186,6 +1207,7 @@ pub fn seal(
     if prepared.binaries.contains_key("openpilot-plannerd") {
         crate::mpc_inputs::verify_runtime(&prepared.source.root, &runtime.root.join("rust/bin"))?;
     }
+    timing.mark("seal_source_and_model_checks");
     let source_input = evidence.join("source.json");
     write(
         &source_input,
@@ -1257,6 +1279,7 @@ pub fn seal(
         }
     }
     crate::source_lfs::verify_recorded(&prepared.source.root, &files)?;
+    timing.mark("seal_manager_manifest");
     let libraries = runtime_provider_libraries(&runtime.root, &layout.files, &layout.libraries)?;
     let mut roots = Vec::new();
     for path in files.keys() {
@@ -1296,6 +1319,7 @@ pub fn seal(
     let abi = evidence.join("abi.json");
     write(&abi, &report, false)?;
     validate_abi(&report, &runtime.root, &files)?;
+    timing.mark("seal_abi_audit");
     let mut system = BTreeMap::new();
     for object in report["objects"]
         .as_array()
@@ -1342,6 +1366,7 @@ pub fn seal(
             }
         }
     }
+    timing.mark("seal_system_bindings");
     write(&runtime.root.join("build.json"), &metadata, false)?;
     fs::set_permissions(
         runtime.root.join("build.json"),
@@ -1381,6 +1406,7 @@ pub fn seal(
     let id = format!("{:x}", Sha256::digest(serde_json::to_vec_pretty(&sealed)?));
     let destination = stores.generations.join(format!("{id}.json"));
     write(&destination, &sealed, false)?;
+    timing.mark("seal_final_checks_and_publish");
     Ok(id)
 }
 

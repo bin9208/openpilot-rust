@@ -151,6 +151,9 @@ fn run() -> Result<()> {
             let output = supervision::retain_output(&mut command, &output_path)?;
             eprintln!("native build worker output: {}", output_path.display());
             command
+                // Retained worker diagnostics distinguish Cargo from input,
+                // copying and sealing costs without changing cache identities.
+                .env("OPENPILOT_NATIVE_BUILD_TIMINGS", "1")
                 .env(memory_cgroup::ENV, &monitor.group.path)
                 .env(resources::ATTEMPT, &attempt)
                 .arg(if staging {
