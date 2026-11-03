@@ -15,6 +15,21 @@ on:
         description: Explicit CI growth and memory estimates, including all runtime groups
         required: true
         type: string
+  workflow_call:
+    inputs:
+      index_sha256:
+        description: SHA256 of the committed index or authenticated producer index for a timing checkout
+        required: true
+        type: string
+      input_producer_run:
+        description: Optional successful input producer for an isolated Git-input timing checkout; publishes nothing
+        required: false
+        default: ''
+        type: string
+      operation_estimates_json:
+        description: Explicit CI growth and memory estimates, including all runtime groups
+        required: true
+        type: string
 permissions:
   contents: read
   actions: read

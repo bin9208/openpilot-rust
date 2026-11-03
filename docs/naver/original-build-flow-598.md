@@ -158,3 +158,11 @@ Rust 전환의 효과는 빌드 시간과 분리한다. 원본이 이미 네이�
 이 추가 계측은 최초/작은 변경 측정을 위한 변경이며 별도 준비 서비스·전체 검증·
 자동 배포를 추가하지 않는다. 로컬은 Rust 서식·YAML 구문·diff만 확인하고 기존
 `Runtime source build foundation`의 정확 source ARM/X64 집중 검사 결과를 기록한다.
+
+factory 측정 workflow 파일은 작업 브랜치에만 있고 GitHub workflow 목록에 등록되지 않아
+`native-source-entry.yml` 조회가 404였다. 기본 브랜치나 보호 규칙을 바꾸지 않고 기존
+`Runtime source build foundation`의 명시적 수동 요청에서 같은 factory workflow를 재사용한다.
+인증한 producer run·index SHA·작업별 용량/메모리 추정치를 전달한 측정 요청에서는
+기존 작은 fixture matrix를 함께 실행하지 않는다. 일반 push/수동 집중 검사는 원래
+matrix를 유지한다. 이 연결은 원래 측정 경로를 실행 가능하게 하는 CI 변경이며 기기에
+새 준비 단계나 서비스를 추가하지 않는다.

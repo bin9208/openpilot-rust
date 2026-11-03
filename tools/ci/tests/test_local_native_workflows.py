@@ -355,6 +355,8 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     after['on']['push']['branches'] = branches
                 old, new = before['jobs'][name], after['jobs'][name]
                 if filename == 'native-source-entry.yml':
+                    self.assertEqual(after['on'].pop('workflow_call'),
+                                     dict(inputs=after['on']['workflow_dispatch']['inputs']))
                     index = after['on']['workflow_dispatch']['inputs']['index_sha256']
                     self.assertEqual(index['description'], 'SHA256 of the committed index or authenticated producer index for a timing checkout')
                     index['description'] = before['on']['workflow_dispatch']['inputs']['index_sha256']['description']
@@ -471,11 +473,28 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             ['git', 'show', '44fbc7a34526950063713fd8255b96b0e543f554:'+relative],
             cwd=ROOT, text=True), Loader=yaml.BaseLoader)['on']
         after = load(ROOT/relative)['on']
+        inputs = after['workflow_dispatch']['inputs']
+        self.assertEqual(set(inputs), {'input_producer_run', 'index_sha256', 'operation_estimates_json'})
+        self.assertTrue(all(value['required'] == 'false' and value['default'] == ''
+                            and value['type'] == 'string' for value in inputs.values()))
+        after['workflow_dispatch'] = before['workflow_dispatch']
         paths = after['push']['paths']
         addition = 'rust/crates/dev-tools/src/native_provider/**'
         self.assertEqual(paths.count(addition), 1)
         paths.remove(addition)
         self.assertEqual(after, before, 'original trigger boundary changed beyond the batch dependency')
+
+    def test_factory_timing_calls_the_same_production_workflow_without_fixture_jobs(self):
+        document = load(ROOT/'.github/workflows/runtime-source-build.yml')
+        self.assertEqual(document['permissions'], dict(contents='read', actions='read'))
+        job = document['jobs']['source-entry']
+        self.assertEqual(job, {
+            'if': "${{ github.event_name == 'workflow_dispatch' && inputs.input_producer_run != '' }}",
+            'uses': './.github/workflows/native-source-entry.yml',
+            'with': {name: '${{ inputs.'+name+' }}' for name in
+                     ('input_producer_run', 'index_sha256', 'operation_estimates_json')}})
+        self.assertEqual(document['jobs']['offline-cargo-reuse']['if'],
+                         "${{ ("+SAFETY+") && inputs.input_producer_run == '' }}")
 
     def test_native_arm_probe_preserves_original_acceptance_and_deadlines(self):
         path = 'rust/tools/check_aarch64.py'
@@ -645,6 +664,8 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                                                         cwd=ROOT, text=True), Loader=yaml.BaseLoader)
             current = load(ROOT / relative)
             extras = {'recovery-runtime'} if relative == '.github/workflows/rust.yml' else set()
+            if relative == '.github/workflows/runtime-source-build.yml':
+                extras = {'source-entry'}
             self.assertEqual(set(current['jobs']), set(original['jobs']) | extras)
             for name, before in original['jobs'].items():
                 with self.subTest(path=relative, job=name):
@@ -672,7 +693,10 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                                           for s in after.get('steps', []) if 'run' in s)
                     self.assertFalse(before_steps - after_steps, 'original command gained an escape/skip')
                     if 'runs-on' in before:
-                        self.assertEqual(after['if'], condition(before.get('if', '')))
+                        expected_condition = condition(before.get('if', ''))
+                        if relative == '.github/workflows/runtime-source-build.yml':
+                            expected_condition = expected_condition[:-3] + " && inputs.input_producer_run == '' }}"
+                        self.assertEqual(after['if'], expected_condition)
                     for event, config in original.get('on', {}).items():
                         if relative == '.github/workflows/fast-checks.yml' and event == 'push':
                             self.assertNotIn('push', current['on'])

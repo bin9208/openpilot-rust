@@ -128,14 +128,38 @@ on:
       - 'rust/crates/disk-space/**'
       - 'rust/tools/check-disk-space'
   workflow_dispatch:
+    inputs:
+      input_producer_run:
+        description: Successful input producer for factory source-entry timing instead of foundation fixtures
+        required: false
+        default: ''
+        type: string
+      index_sha256:
+        description: Authenticated input index SHA256 for factory timing
+        required: false
+        default: ''
+        type: string
+      operation_estimates_json:
+        description: Explicit operation estimates for factory timing
+        required: false
+        default: ''
+        type: string
 # Branch push checks the actual x64/ARM build driver once; the required PR Rust
 # workspace gate also includes this crate. Do not duplicate this focused matrix on PR.
 permissions:
   contents: read
+  actions: read
 jobs:
+  source-entry:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.input_producer_run != '' }}
+    uses: ./.github/workflows/native-source-entry.yml
+    with:
+      input_producer_run: ${{ inputs.input_producer_run }}
+      index_sha256: ${{ inputs.index_sha256 }}
+      operation_estimates_json: ${{ inputs.operation_estimates_json }}
   offline-cargo-reuse:
     name: Actual offline Cargo reuse (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
-    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && inputs.input_producer_run == '' }}
     runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     strategy:
       fail-fast: false
