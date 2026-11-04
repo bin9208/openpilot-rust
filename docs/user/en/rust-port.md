@@ -1,8 +1,7 @@
 # Experimental Rust port
 
-This independent repository has begun porting the openpilot device runtime to
-Rust. The initial workspace contains scalar filters and a Linux CPU diagnostic.
-It does not yet replace vehicle processes or enable an additional AI model.
+This document covers the initial diagnostic tool and device source build work (#598).
+The CPU diagnostic below does not replace vehicle processes or enable an additional AI model.
 
 On a Linux development host, with Rust 1.94.0 installed, run from `rust/`:
 
@@ -24,8 +23,47 @@ Do not deploy the generic CI build to a vehicle; target validation remains open.
 ### Device source build preparation (#598)
 
 Model preparation retains its existing Python path while performance improvements and
-source builds without a complete runtime redownload take priority. The initial developer
-tool `openpilot-runtime-build` builds selected targets with a prepared native Rust 1.94.0
-toolchain and offline Cargo dependencies. It is not connected to automatic installation
-or startup and does not yet provide a complete device source build.
+source builds without a complete runtime redownload take priority. `openpilot-runtime-build`
+builds the required targets with a pinned native Rust 1.94.0 toolchain and offline Cargo dependencies.
 Track progress and acceptance in [#598](https://github.com/bin9208/openpilot-rust/issues/598).
+
+The current work branch selects source builds at ARM startup instead of automatically
+downloading a complete runtime release for the checkout's commit. It uses the existing
+Git install/update and restart flow. Pinned build inputs and default configuration are
+included with the Git branch. First startup prepares the required tools and dependencies
+automatically; later builds reuse the common cache. Check #598 above for the exact test
+candidate commit and its results.
+After a branch change, normal startup builds and verifies the changed checkout under the
+existing boot lock before starting manager. Build failures preserve the previous generation and logs.
+Startup does not run the full functional test suite or Clippy. It checks the required
+inputs and executable/library compatibility; full regression tests run separately in Actions.
+
+For device testing, install or update the candidate identified in #598 through the existing
+Git flow, then restart. No manual Rust installation or separate input preparation command
+is required. Check the commit in the software screen, normal display, recording and the
+existing log upload path. For initial installation and a small change, record separate times
+from the start of Git transfer until the display appears. Record device results in
+[#528](https://github.com/bin9208/openpilot-rust/issues/528); CI timings do not replace device measurements.
+
+The developer command `openpilot-runtime-assets --plan JSON --cache DIRECTORY` verifies
+HTTPS assets by SHA-256 and byte count and stores them by content. Preparing the same
+assets again transfers zero HTTP body bytes; changing one provider fetches only that
+asset. `transferred_bytes` reports HTTP body bytes. This tool does not extract or install
+a runtime. The build driver requires a clean Git checkout and reports the actual commit,
+tree, recipe, compiler, linker and executable hashes. Initial and changed-source startup
+with the actual inputs, and user acceptance on the device, are tracked separately.
+
+Transient connection errors before any body arrives retry up to three times after
+2, 4 and 8 seconds, within a total 1800-second transfer budget. Partial-body failures
+and HTTP, size or hash errors remain failures; existing assets and the working runtime
+generation are preserved.
+
+For unpacked toolchains/providers, `openpilot-runtime-inputs --root INPUT_TREE
+--output RECEIPT_JSON` records actual file hashes, lengths, modes and contained file
+links. Bind this receipt to independently verified asset provenance, pin its SHA-256
+in the recipe's `inputs`, and map the tree to the receipt in `input_trees`. The driver
+checks the complete actual tree before and after building, rejecting changes, additions
+and missing files. Capturing a new receipt alone does not establish trust; trees without
+receipts are not reported as verified.
+The [verification guide](../../naver/native-build-test-guide-598.md) records expected
+results and the final device acceptance procedure in Korean.

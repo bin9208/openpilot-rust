@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "profile": "turbojpeg3141-runtime",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "source_archive": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/runtime-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31/openpilot-rust-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31-aarch64.tar.gz",
+    "sha256": "9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291",
+    "bytes": 1155969168
+  },
+  "runtime_manifest_sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+  "members": {
+    "lib/libturbojpeg.so.0": {
+      "source": "rust/bin/lib/libturbojpeg.so.0",
+      "sha256": "4cfb37fc2335d5431272430ae4de6928688b17d1fffec3f5e05680588061bb4a",
+      "bytes": 0,
+      "mode": 0,
+      "link": "libturbojpeg.so.0.4.0"
+    },
+    "lib/libturbojpeg.so.0.4.0": {
+      "source": "rust/bin/lib/libturbojpeg.so.0.4.0",
+      "sha256": "4cfb37fc2335d5431272430ae4de6928688b17d1fffec3f5e05680588061bb4a",
+      "bytes": 842512,
+      "mode": 292,
+      "link": null
+    },
+    "provenance/original-runtime-manifest.json": {
+      "source": "rust/runtime-manifest.json",
+      "sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+      "bytes": 241671,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/turbojpeg/LICENSE.md": {
+      "source": "rust/bin/licenses/turbojpeg/LICENSE.md",
+      "sha256": "e10114e6e40f3d0311c401ca25245ac5ef459a43c20f976fd63f03e816f5741f",
+      "bytes": 5622,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/turbojpeg/PROVENANCE.md": {
+      "source": "rust/bin/licenses/turbojpeg/PROVENANCE.md",
+      "sha256": "9a54faf9535aa6e8991e47b22821539b05cb81ac3a56eef43db5c20cb696c4f4",
+      "bytes": 4521,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/turbojpeg/README.ijg": {
+      "source": "rust/bin/licenses/turbojpeg/README.ijg",
+      "sha256": "75815e3bf6484201a3c3d17a1bbf10f2e8e3237f84df10a2357ea896db2a81d6",
+      "bytes": 12799,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/turbojpeg/provenance.json": {
+      "source": "rust/bin/licenses/turbojpeg/provenance.json",
+      "sha256": "c454216c654785abf2ec57081310def1b884ca685b1e5bcaafff95211275f470",
+      "bytes": 1359,
+      "mode": 292,
+      "link": null
+    }
+  }
+}

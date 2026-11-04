@@ -243,5 +243,11 @@ fn hardware_commands(device: DeviceType) -> Vec<(String, Vec<u8>)> {
         "loggerd source tree".into(),
         env!("LOGGERD_SOURCE_TREE").as_bytes().to_vec(),
     ));
+    if env!("LOGGERD_SOURCE_STAMP_MODE") == "compiled-native-incremental" {
+        commands.push((
+            "loggerd source commit kind".into(),
+            b"compiled artifact".to_vec(),
+        ));
+    }
     commands
 }

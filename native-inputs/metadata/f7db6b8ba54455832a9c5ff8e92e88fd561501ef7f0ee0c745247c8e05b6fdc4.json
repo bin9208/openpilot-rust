@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "role": "openpilot-foreign-provider",
+  "profile": "numpy253-openblas",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "provider_source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "tree_sha256": "5e4960d1cd4d595ff4b6727f2a84b91699d1759772ccf6ff3c5acb77a8dea777",
+  "asset": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-numpy253-0590119e68a7a119581e4817dc1334fb7f921f5106dc7dadc14d2465822b8de8/numpy253-openblas.tar.gz",
+    "sha256": "0590119e68a7a119581e4817dc1334fb7f921f5106dc7dadc14d2465822b8de8",
+    "bytes": 9093437
+  }
+}

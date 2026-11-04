@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "python_roots": [
+    "rust/tools/model_export",
+    "tinygrad_repo/tinygrad",
+    "openpilot/common",
+    "openpilot/selfdrive/modeld",
+    "openpilot/system/camerad/cameras"
+  ],
+  "python_files": [
+    "rust/tools/native_model_inputs.py",
+    "rust/tools/native_model_cache.py",
+    "rust/tools/native_model_generation.py",
+    "rust/tools/native_model_export.py",
+    "rust/tools/build_offline_model_pipelines.py",
+    "pyproject.toml"
+  ],
+  "compiler_roots": ["rust/crates/model-runtime/src"],
+  "compiler_files": ["rust/Cargo.toml", "rust/Cargo.lock", "rust/crates/model-runtime/Cargo.toml"],
+  "plan_files": [
+    "rust/native-model-source-scope.json",
+    "rust/native-python-toolchain.json",
+    "rust/native-model-wheels.json",
+    "rust/native-model-compilers.json",
+    "rust/native-rust-toolchain.json",
+    "rust/native-cargo-inputs.json",
+    "rust/native-system-sdk.json"
+  ]
+}

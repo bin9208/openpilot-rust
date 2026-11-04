@@ -1,0 +1,162 @@
+{
+  "schema": 1,
+  "profile": "sdl228-runtime",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "source_archive": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/runtime-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31/openpilot-rust-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31-aarch64.tar.gz",
+    "sha256": "9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291",
+    "bytes": 1155969168
+  },
+  "runtime_manifest_sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+  "members": {
+    "lib/libSDL2-2-6e5c51a6.0.so.0.2800.4": {
+      "source": "rust/bin/lib/libSDL2-2-6e5c51a6.0.so.0.2800.4",
+      "sha256": "406febc77dfcbe74411915fca69f8a7d7d8a0c80aaeb58894d6d74bcbe3b828a",
+      "bytes": 1990609,
+      "mode": 292,
+      "link": null
+    },
+    "lib/libSDL2-2.0.so.0": {
+      "source": "rust/bin/lib/libSDL2-2.0.so.0",
+      "sha256": "406febc77dfcbe74411915fca69f8a7d7d8a0c80aaeb58894d6d74bcbe3b828a",
+      "bytes": 0,
+      "mode": 0,
+      "link": "libSDL2-2-6e5c51a6.0.so.0.2800.4"
+    },
+    "lib/libSDL2_ttf-2-e035a276.0.so.0.2000.1": {
+      "source": "rust/bin/lib/libSDL2_ttf-2-e035a276.0.so.0.2000.1",
+      "sha256": "20d4d82018cb652a3d62001870e8578e334dcfe9b202c0266c618bfb15495741",
+      "bytes": 265329,
+      "mode": 292,
+      "link": null
+    },
+    "lib/libSDL2_ttf-2.0.so.0": {
+      "source": "rust/bin/lib/libSDL2_ttf-2.0.so.0",
+      "sha256": "20d4d82018cb652a3d62001870e8578e334dcfe9b202c0266c618bfb15495741",
+      "bytes": 0,
+      "mode": 0,
+      "link": "libSDL2_ttf-2-e035a276.0.so.0.2000.1"
+    },
+    "lib/libbrotlicommon-35cadf93.so.1.0.9": {
+      "source": "rust/bin/lib/libbrotlicommon-35cadf93.so.1.0.9",
+      "sha256": "8f0d4eef84125a0d5c39e968c04f8a629e082f7d833eb6fdafef66f756e16291",
+      "bytes": 262657,
+      "mode": 292,
+      "link": null
+    },
+    "lib/libbrotlidec-2fea3617.so.1.0.9": {
+      "source": "rust/bin/lib/libbrotlidec-2fea3617.so.1.0.9",
+      "sha256": "d9a59a04af5476bec1dc736a4dff52fbf447ea499c04ce87ba656523a0415b82",
+      "bytes": 198169,
+      "mode": 292,
+      "link": null
+    },
+    "lib/libfreetype-8318b8e8.so.6.18.3": {
+      "source": "rust/bin/lib/libfreetype-8318b8e8.so.6.18.3",
+      "sha256": "f2095570d8229df17fb9b9e015b93dfd83a409fe382507dd38be02b04894c14c",
+      "bytes": 923305,
+      "mode": 292,
+      "link": null
+    },
+    "lib/libharfbuzz-20dec8a1.so.0.50100.0": {
+      "source": "rust/bin/lib/libharfbuzz-20dec8a1.so.0.50100.0",
+      "sha256": "d2c2114aab940254c1069d6366b0b91a2c32a67e8f6070d5541584cc08e1184b",
+      "bytes": 1257481,
+      "mode": 292,
+      "link": null
+    },
+    "lib/libpng16-665e6f2f.so.16.37.0": {
+      "source": "rust/bin/lib/libpng16-665e6f2f.so.16.37.0",
+      "sha256": "04ce8e40c0de7b7bc4eaf7728b0178c1fd340c9a6e01d6cfb781259ba1590fa1",
+      "bytes": 335145,
+      "mode": 292,
+      "link": null
+    },
+    "provenance/original-runtime-manifest.json": {
+      "source": "rust/runtime-manifest.json",
+      "sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+      "bytes": 241671,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/sdl/Brotli-LICENSE": {
+      "source": "rust/bin/licenses/sdl/Brotli-LICENSE",
+      "sha256": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94",
+      "bytes": 1084,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/sdl/COPYING-GPL-2.0.txt": {
+      "source": "rust/bin/licenses/sdl/COPYING-GPL-2.0.txt",
+      "sha256": "edaef632cbb643e4e7a221717a6c441a4c1a7c918e6e4d56debc3d8739b233f6",
+      "bytes": 17984,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/sdl/COPYING-GPL-3.0.txt": {
+      "source": "rust/bin/licenses/sdl/COPYING-GPL-3.0.txt",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "bytes": 35149,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/sdl/FreeSans-SOURCE-NOTICE.txt": {
+      "source": "rust/bin/licenses/sdl/FreeSans-SOURCE-NOTICE.txt",
+      "sha256": "3850499e03401df2cfbe8104f0a914b0bfb92fdc34da04d4a9f25879d4767b01",
+      "bytes": 826,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/sdl/FreeType-FTL.TXT": {
+      "source": "rust/bin/licenses/sdl/FreeType-FTL.TXT",
+      "sha256": "08c135755dd589039470f1fdbb400daaabaaa50d0b366d19cebff4d22986baa1",
+      "bytes": 6743,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/sdl/HarfBuzz-COPYING": {
+      "source": "rust/bin/licenses/sdl/HarfBuzz-COPYING",
+      "sha256": "4345e1735f8bc6d812fed5180cabb5a5e88a4109d332652f2a45c13cfa5ee692",
+      "bytes": 1829,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/sdl/SDL2-LICENSE.txt": {
+      "source": "rust/bin/licenses/sdl/SDL2-LICENSE.txt",
+      "sha256": "9928507f684c1965d07f2b6ef4b4723d5efc2f6b4ab731f743a413c51c319927",
+      "bytes": 884,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/sdl/SDL2_ttf-LICENSE.txt": {
+      "source": "rust/bin/licenses/sdl/SDL2_ttf-LICENSE.txt",
+      "sha256": "28aabfed22b3cb0b7e23ef40385e4f66297c960082f029c96d073cc1d4e008d5",
+      "bytes": 878,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/sdl/font-notice.json": {
+      "source": "rust/bin/licenses/sdl/font-notice.json",
+      "sha256": "ae6c643ceb563f5ef9253ef8b18369e86424854cd5daf591da31636f456021f1",
+      "bytes": 2674,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/sdl/libpng-LICENSE": {
+      "source": "rust/bin/licenses/sdl/libpng-LICENSE",
+      "sha256": "bf5e22b9dce8464064ae17a48ea1133c3369ac9e1d80ef9e320e5219aa14ea9b",
+      "bytes": 5345,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/sdl/records.json": {
+      "source": "rust/bin/licenses/sdl/records.json",
+      "sha256": "1d47b86e734605dd3979aadd2eb45f805fe0e67f8192e1bb596c3ce6368049bd",
+      "bytes": 1170,
+      "mode": 292,
+      "link": null
+    }
+  }
+}

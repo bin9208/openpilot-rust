@@ -15,9 +15,9 @@ def digest(path: Path) -> str:
   return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def run(command: list[str], log: Path, env: dict[str, str]) -> None:
+def run(command: list[str], log: Path, env: dict[str, str], timeout: int = 120) -> None:
   with log.open("wb") as output:
-    subprocess.run(command, stdout=output, stderr=subprocess.STDOUT, env=env, check=True, timeout=120)
+    subprocess.run(command, stdout=output, stderr=subprocess.STDOUT, env=env, check=True, timeout=timeout)
 
 
 def main() -> None:
@@ -25,8 +25,16 @@ def main() -> None:
   parser.add_argument("--rust", type=Path, required=True)
   parser.add_argument("--output", type=Path, required=True)
   parser.add_argument("--jpeg-build", type=Path, required=True)
-  parser.add_argument("--native", type=Path, required=True)
+  parser.add_argument("--native", type=Path)
+  parser.add_argument("--ffmpeg-prefix", type=Path)
+  parser.add_argument("--libyuv-prefix", type=Path)
+  parser.add_argument("--scope", choices=("host", "agnos-arm-userspace"), default="host")
+  parser.add_argument("--timeout", type=int, default=120)
   arguments = parser.parse_args()
+  if bool(arguments.native) == bool(arguments.ffmpeg_prefix) or bool(arguments.ffmpeg_prefix) != bool(arguments.libyuv_prefix):
+    parser.error("choose --native or both --ffmpeg-prefix and --libyuv-prefix")
+  if not 1 <= arguments.timeout <= 600:
+    parser.error("--timeout must be 1..600 seconds per command")
   root = Path(__file__).resolve().parents[2]
   output = arguments.output.resolve()
   output.mkdir(parents=True, exist_ok=False)
@@ -48,12 +56,24 @@ def main() -> None:
   generated = output / "source-oracle.cc"
   generated.write_text("\n".join(pieces))
   env = dict(os.environ)
-  native = arguments.native.resolve()
-  library = native / "usr/lib/x86_64-linux-gnu"
-  env["PKG_CONFIG_LIBDIR"] = str(library / "pkgconfig")
-  env["PKG_CONFIG_SYSROOT_DIR"] = str(native)
+  if arguments.native:
+    native = arguments.native.resolve()
+    library = native / "usr/lib/x86_64-linux-gnu"
+    include = native / "usr/include"
+    yuv_include = include
+    yuv_library = library / "libyuv.a"
+    env["PKG_CONFIG_LIBDIR"] = str(library / "pkgconfig")
+    env["PKG_CONFIG_SYSROOT_DIR"] = str(native)
+  else:
+    native = arguments.ffmpeg_prefix.resolve()
+    library = native / "lib"
+    include = native / "include"
+    yuv_library = arguments.libyuv_prefix.resolve() / "lib/libyuv.a"
+    yuv_include = arguments.libyuv_prefix.resolve() / "include"
+    flags = ["-L" + str(library), "-Wl,-rpath-link," + str(library), "-lavcodec", "-lavformat", "-lavutil"]
   env["LD_LIBRARY_PATH"] = str(library) + (":" + env["LD_LIBRARY_PATH"] if env.get("LD_LIBRARY_PATH") else "")
-  flags = shlex.split(subprocess.check_output(["pkg-config", "--cflags", "--libs", "libavcodec", "libavformat", "libavutil"], env=env, text=True))
+  if arguments.native:
+    flags = shlex.split(subprocess.check_output(["pkg-config", "--cflags", "--libs", "libavcodec", "libavformat", "libavutil"], env=env, text=True))
   jpeg_source = root / "rust/crates/jpeg/native/vendor/src"
   jpeg_build = arguments.jpeg_build.resolve()
   command = [
@@ -62,22 +82,23 @@ def main() -> None:
     "-O1",
     "-g0",
     str(generated),
-    "-I" + str(native / "usr/include"),
+    "-I" + str(include),
+    "-I" + str(yuv_include),
     "-I" + str(jpeg_source),
     "-I" + str(jpeg_build),
     *flags,
-    str(library / "libyuv.a"),
+    str(yuv_library),
     str(jpeg_build / "libjpeg.a"),
     "-o",
     str(output / "source-oracle"),
   ]
   free = shutil.disk_usage(output).free
-  guard = {"free": free, "growth": 128 * 1024**2, "floor": 25 * 1024**3}
+  guard = {"free": free, "growth": 128 * 1024**2}
   (output / "space.json").write_text(json.dumps(guard, indent=2) + "\n")
-  if free < guard["floor"] + guard["growth"]:
+  if free < guard["growth"]:
     raise RuntimeError(f"insufficient disk headroom: {guard}")
   (output / "build-command.json").write_text(json.dumps(command, indent=2) + "\n")
-  run(command, output / "build.log", env)
+  run(command, output / "build.log", env, arguments.timeout)
   cases = [
     ("lossless", 128, 80, 128, 80, 160, 8),
     ("lossless", 256, 160, 128, 80, 288, 8),
@@ -91,8 +112,8 @@ def main() -> None:
     expected = output / f"{name}-source"
     actual = output / f"{name}-rust"
     values = [str(value) for value in case]
-    run([str(output / "source-oracle"), str(expected), *values], output / f"{name}-source.log", env)
-    run([str(arguments.rust.resolve()), str(actual), *values], output / f"{name}-rust.log", env)
+    run([str(output / "source-oracle"), str(expected), *values], output / f"{name}-source.log", env, arguments.timeout)
+    run([str(arguments.rust.resolve()), str(actual), *values], output / f"{name}-rust.log", env, arguments.timeout)
     expected_trace = (expected / "trace.tsv").read_text()
     actual_trace = (actual / "trace.tsv").read_text()
     if expected_trace != actual_trace:
@@ -114,11 +135,13 @@ def main() -> None:
     "generated_sha256": digest(generated),
     "native_sha256": {
       str(path): digest(path)
-      for path in [library / "libavcodec.so.60.31.102", library / "libavutil.so.58.29.100", library / "libyuv.a", jpeg_build / "libjpeg.a"]
+      for path in [library / "libavcodec.so.60.31.102", library / "libavutil.so.58.29.100", yuv_library, jpeg_build / "libjpeg.a"]
     },
     "results": results,
     "status": "PASS",
-    "scope": "host source-method codec bytes and metadata; publication transport and hardware are separate",
+    "scope": arguments.scope + " source-method codec bytes and metadata; publication transport and hardware are separate",
+    "physical_device_execution": False,
+    "command_timeout_seconds": arguments.timeout,
   }
   (output / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
   print(json.dumps({"status": "PASS", "cases": len(results), "packets": sum(int(row["packets"]) for row in results)}))

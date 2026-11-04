@@ -31,8 +31,9 @@ def main() -> None:
     existing = args.output.resolve()
     while not existing.exists():
         existing = existing.parent
-    if shutil.disk_usage(existing).free < 27 * 1024**3:
-        parser.error("25 GiB free-space reserve plus 2 GiB build allowance required")
+    growth = len(specs) * max(64 * 1024**2, args.model.stat().st_size * 12) + 8 * 1024**2
+    if shutil.disk_usage(existing).free < growth:
+        parser.error(f"insufficient space for this model operation: estimated additional {growth} bytes")
     publish(args.output, specs, compiler)
     print(json.dumps({"catalog": str(args.output / "current.json"), "kind": args.kind, "source_sha256": args.sha256,
                       "cameras": [spec.camera for spec in specs], "gpu_executed": False}, sort_keys=True))

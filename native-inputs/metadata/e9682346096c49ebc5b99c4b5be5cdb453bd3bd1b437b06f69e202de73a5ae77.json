@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "role": "openpilot-foreign-provider",
+  "profile": "turbojpeg3141-runtime",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "provider_source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "tree_sha256": "cb04406ae162f073ae38142fa07910af1001bbb00d283a055423570b1583e276",
+  "asset": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-turbojpeg3141-765ff949bbf1740de948117044cf16ff73fc35719dd804f61237daaee5c4f5c9/turbojpeg3141-runtime.tar.gz",
+    "sha256": "765ff949bbf1740de948117044cf16ff73fc35719dd804f61237daaee5c4f5c9",
+    "bytes": 409308
+  }
+}

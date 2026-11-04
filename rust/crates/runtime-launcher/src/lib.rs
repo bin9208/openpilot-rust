@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 pub mod bootstrap;
 pub mod handoff;
+pub mod native;
 pub mod overlay;
 pub mod package;
 pub mod watchdog;

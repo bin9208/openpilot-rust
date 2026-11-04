@@ -30,7 +30,7 @@ pub(crate) const SOURCE_ASSETS: [&str; 17] = [
     "panda/board/obj/panda.bin.signed",
     "panda/board/obj/panda_h7.bin.signed",
 ];
-const REQUIRED: [&str; 14] = [
+pub(crate) const REQUIRED: [&str; 14] = [
     "openpilot-launch",
     "openpilot-runtime-install",
     "openpilot-manager",
@@ -87,17 +87,17 @@ impl Descriptor {
         Ok(())
     }
 }
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct Manifest {
+pub struct Manifest {
     pub schema: u32,
     pub source_commit: String,
     pub agnos_version: String,
     pub files: Vec<Artifact>,
 }
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct Artifact {
+pub struct Artifact {
     pub path: PathBuf,
     pub sha256: String,
     pub executable: bool,
@@ -256,7 +256,7 @@ pub(crate) fn verify_files(root: &Path, manifest: &Manifest) -> Result<()> {
     }
     verify_tree(&root, Path::new("rust/bin"), &expected)
 }
-fn verify_elf(path: &Path, executable: bool) -> Result<()> {
+pub(crate) fn verify_elf(path: &Path, executable: bool) -> Result<()> {
     let mut bytes = [0; 64];
     let n = File::open(path)?.read(&mut bytes)?;
     if (executable || bytes[..4] == *b"\x7fELF")

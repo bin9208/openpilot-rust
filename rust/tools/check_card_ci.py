@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 from card_qa.ci import ROOT, TOOLS, hashes, require_space, run, source_command
 from stage_card_corpus import BRANDS
+from ci_cases import readonly_inputs, run_cases
 
 SHARED = ('core', 'startup', 'startup_params', 'cruise', 'vehicle', 'mini_vehicle', 'isotp', 'query',
   'firmware', 'firmware_query', 'identification', 'diagnostic', 'xiaoge', 'toyota_secoc')
@@ -19,39 +20,52 @@ IPC_CANDIDATES = ('COMMA_BODY', 'MOCK', 'GENESIS_G70', 'TESLA_MODEL_3', 'TESLA_M
 def reference(arguments: argparse.Namespace) -> None:
   binary, dbc, numerics, output = arguments.binaries, arguments.dbc, arguments.numerics, arguments.evidence
   commands = output / 'commands'
+  cases = []
+  growth = 1024**3
+  def collect(command, evidence, name):
+    cases.append(dict(name=name, argv=command, growth_bytes=growth,
+                      memory_bytes=(2 if growth >= 4*1024**3 else 1)*1024**3))
   for name in SHARED:
-    require_space(output, 1024**3)
+    growth = 1024**3
     args = ['--binary', str(binary / f'{name}_trace'), '--evidence', str(output / name)]
-    run(source_command(TOOLS / f'check_card_{name}.py', args, dbc), commands, name)
+    collect(source_command(TOOLS / f'check_card_{name}.py', args, dbc), commands, name)
   for name in ('git_source', 'carlog'):
-    require_space(output, 1024**3)
-    run([sys.executable, str(TOOLS / f'check_card_{name}.py'), '--binary', str(binary / f'{name}_trace'),
+    growth = 1024**3
+    collect([sys.executable, str(TOOLS / f'check_card_{name}.py'), '--binary', str(binary / f'{name}_trace'),
       '--output', str(output / name)], commands, name)
-  require_space(output, 1024**3)
-  run(source_command(TOOLS / 'check_card_common.py', ['--binary', str(binary / 'common_trace'),
+  growth = 1024**3
+  collect(source_command(TOOLS / 'check_card_common.py', ['--binary', str(binary / 'common_trace'),
     '--numerics', str(numerics), '--evidence', str(output / 'common')], dbc), commands, 'common')
   for brand in BRANDS:
-    require_space(output, 4 * 1024**3)
+    growth = 4*1024**3
     args = ['--binary', str(binary / f'{brand}_trace'), '--numerics', str(numerics), '--evidence', str(output / brand)]
     if brand in ('subaru', 'toyota', 'honda'):
       args += ['--dbc', str(dbc)]
-    run(source_command(TOOLS / f'check_card_{brand}.py', args, dbc), commands, brand)
-  require_space(output, 1024**3)
-  run(source_command(TOOLS / 'check_card_psa_source.py', ['--binary', str(binary / 'psa_boundary'),
+    collect(source_command(TOOLS / f'check_card_{brand}.py', args, dbc), commands, brand)
+  growth = 1024**3
+  collect(source_command(TOOLS / 'check_card_psa_source.py', ['--binary', str(binary / 'psa_boundary'),
     '--evidence', str(output / 'psa')], dbc), commands, 'psa-boundaries')
-  require_space(output, 1024**3)
-  run([sys.executable, str(TOOLS / 'check_card_factory.py'), '--binary', str(binary / 'factory_trace'),
+  growth = 1024**3
+  collect([sys.executable, str(TOOLS / 'check_card_factory.py'), '--binary', str(binary / 'factory_trace'),
     '--binding', str(arguments.binding), '--numerics', str(numerics), '--output', str(output / 'factory')], commands, 'factory')
-  require_space(output, 2 * 1024**3)
-  run(source_command(TOOLS / 'check_can.py', ['--binary', str(binary / 'can_trace'), '--staging', str(output / 'can-assets'),
+  growth = 2*1024**3
+  collect(source_command(TOOLS / 'check_can.py', ['--binary', str(binary / 'can_trace'), '--staging', str(output / 'can-assets'),
     '--evidence', str(output / 'can')], dbc), commands, 'can')
-  require_space(output, 1024**3)
-  run(source_command(TOOLS / 'check_can_checksums.py', ['--binary', str(binary / 'checksum_trace'),
+  growth = 1024**3
+  collect(source_command(TOOLS / 'check_can_checksums.py', ['--binary', str(binary / 'checksum_trace'),
     '--evidence', str(output / 'checksums')], dbc), commands, 'checksums')
+
+  run_cases(cases, commands, ROOT)
 
 
 def ipc(arguments: argparse.Namespace) -> None:
   output = arguments.evidence
+  prior = json.loads((output.parent/'reference/result.json').read_text())
+  coverage = json.loads((output.parent/'reference/commands/summary.json').read_text())
+  assert prior == {'status': 'pass', 'phase': 'reference'} and coverage['success']
+  expected = set(SHARED) | set(BRANDS) | {'git_source', 'carlog', 'common', 'psa-boundaries', 'factory', 'can', 'checksums'}
+  assert set(coverage['expected_cases']) == set(coverage['cases']) == expected
+  assert all(case['state'] == 'success' for case in coverage['cases'].values())
   runtime_root = output / 'runtime-root'
   assets = runtime_root / 'opendbc_repo/opendbc'
   assets.mkdir(parents=True)
@@ -76,14 +90,20 @@ def main() -> None:
   arguments.evidence.mkdir(parents=True)
   sources = list((ROOT / 'rust/crates/card').rglob('*.rs')) + list((ROOT / 'rust/crates/can').rglob('*.rs'))
   sources += list(TOOLS.glob('*card*.py')) + list((TOOLS / 'card_qa').rglob('*.py')) + list(TOOLS.glob('*can*.py'))
+  sources.append(TOOLS/'ci_cases.py')
   binaries = [arguments.daemon, *arguments.binaries.glob('*_trace'), arguments.binaries / 'psa_boundary']
   receipt = {'phase': arguments.phase, 'source_sha256': hashes(sources), 'binary_sha256': {
     str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in binaries if path.is_file()}, 'argv': sys.argv}
   (arguments.evidence / 'invocation.json').write_text(json.dumps(receipt, indent=2) + '\n')
-  if arguments.phase == 'reference':
-    reference(arguments)
-  else:
-    ipc(arguments)
+  inputs = [arguments.binaries, arguments.daemon, arguments.numerics, arguments.binding, arguments.dbc]
+  if arguments.phase == 'ipc': inputs.append(arguments.corpus)
+  with readonly_inputs(inputs):
+    if arguments.phase == 'reference':
+      reference(arguments)
+    else:
+      ipc(arguments)
+  assert receipt['source_sha256'] == hashes(sources)
+  assert receipt['binary_sha256'] == {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in binaries if path.is_file()}
   (arguments.evidence / 'result.json').write_text(json.dumps({'status': 'pass', 'phase': arguments.phase}) + '\n')
 
 

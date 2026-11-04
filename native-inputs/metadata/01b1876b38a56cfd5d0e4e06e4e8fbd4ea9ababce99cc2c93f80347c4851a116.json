@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "role": "openpilot-foreign-provider",
+  "profile": "ffmpeg611-tools",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "provider_source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "tree_sha256": "663f303edcf11b198e9eeec6f88cf7b7baea0439e25639e585499bf219bb3c57",
+  "asset": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-ffmpeg611-tools-26398ee130ccfa90f4ba6fc7029284fbff3ba6cda525d7aa7452a30d4f8f7b1c/ffmpeg611-tools.tar.gz",
+    "sha256": "26398ee130ccfa90f4ba6fc7029284fbff3ba6cda525d7aa7452a30d4f8f7b1c",
+    "bytes": 298352
+  }
+}

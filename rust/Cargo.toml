@@ -11,6 +11,17 @@ license = "MIT"
 [workspace.lints.rust]
 unsafe_code = "forbid"
 
+# Input preparation repeatedly verifies canonical gzip archives in dev builds.
+# Optimize only their pinned codecs; retain dev assertions and overflow checks.
+[profile.dev.package."flate2:1.1.10"]
+opt-level = 3
+
+[profile.dev.package."miniz_oxide:0.9.1"]
+opt-level = 3
+
+[profile.dev.package."crc32fast:1.5.2"]
+opt-level = 3
+
 [profile.release]
 lto = "thin"
 codegen-units = 1

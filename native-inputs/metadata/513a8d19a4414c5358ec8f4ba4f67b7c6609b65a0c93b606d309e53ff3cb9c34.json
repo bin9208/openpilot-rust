@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "role": "openpilot-foreign-provider",
+  "profile": "sdl228-runtime",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "provider_source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "tree_sha256": "daf7f771a6a70e82291b9e59b8a7b059c83399ae09c3229b8a88d3d6811f1b50",
+  "asset": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-sdl228-8813a1fb5f2ea7f499417758a1f4959a7b86f3d999facfab93742398275f2296/sdl228-runtime.tar.gz",
+    "sha256": "8813a1fb5f2ea7f499417758a1f4959a7b86f3d999facfab93742398275f2296",
+    "bytes": 1928909
+  }
+}

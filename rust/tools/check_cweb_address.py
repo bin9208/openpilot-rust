@@ -19,7 +19,7 @@ def main():
   args = parser.parse_args()
   args.output = args.output.resolve()
   args.output.mkdir(parents=True, exist_ok=False)
-  assert shutil.disk_usage(args.output).free >= 26 * 1024**3
+  assert shutil.disk_usage(args.output).free >= 1024**3
   flags = ['clang++', '-std=c++17', '-fsanitize=address,undefined', '-fno-omit-frame-pointer', '-g', '-I' + str(CRATE)]
   object_file = args.output / 'address.o'
   build = [*flags, '-Dsocket=fixture_socket', '-Dioctl=fixture_ioctl', '-Dclose=fixture_close',

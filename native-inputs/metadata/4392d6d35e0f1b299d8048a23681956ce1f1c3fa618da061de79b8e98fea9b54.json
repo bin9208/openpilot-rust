@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "role": "openpilot-source-bound-provider",
+  "profile": "radarcan-dbc-runtime",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "provider_source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "tree_sha256": "f52b6556617c9c3c668e9f8f5dfba53c805b9705cb251586d989f919b41bfa17",
+  "asset": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-radarcan-dbc-52bddba60e3629fa052b594e1bfa857d5f29f56539029f7e33f6adb2f9dbbf86/radarcan-dbc-runtime.tar.gz",
+    "sha256": "52bddba60e3629fa052b594e1bfa857d5f29f56539029f7e33f6adb2f9dbbf86",
+    "bytes": 816427
+  }
+}

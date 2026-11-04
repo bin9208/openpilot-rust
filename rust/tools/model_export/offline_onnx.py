@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+import codecs
 import hashlib
+import pickle
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
 from tinygrad import Context, Tensor, dtypes
-from tinygrad.nn.onnx import OnnxRunner, _to_python_const, required_input_python_consts
+from tinygrad.device import Device
+from tinygrad.nn.onnx import OnnxDataType, OnnxPBParser, OnnxRunner, _to_python_const, required_input_python_consts
+
+from openpilot.selfdrive.modeld.get_model_metadata import MetadataOnnxPBParser, get_metadata_value_by_name, get_name_and_shape
 
 from .offline_model import InitializedBuffer, OfflineModel
 from .offline_devices import host_build
@@ -26,12 +31,101 @@ class OfflineOnnx:
     initialized: tuple[InitializedBuffer, ...]
 
 
+class InlineOnnxParser(OnnxPBParser):
+    """The input contract binds this ONNX object, not arbitrary external files."""
+
+    def __init__(self, path: Path | Tensor, load_external_data: bool = False) -> None:
+        if load_external_data:
+            raise ExportError("offline ONNX external reads must remain disabled")
+        super().__init__(path, load_external_data=False)
+
+    def _parse_TensorProto(self) -> dict:
+        # TensorProto decoding follows tinygrad.nn.onnx (MIT; tinygrad_repo/LICENSE).
+        # Keep inline-only inputs, decode BOOL by value, and preserve raw HALF
+        # storage without LLVM's emulated float conversion flushing subnormals.
+        value = {"dims": []}
+        for field, wire_type in self._parse_message(self._decode_end_pos()):
+            match field:
+                case 1: value["dims"].append(self.reader.read_int64())
+                case 2: value["data_type"] = self.reader.read_int64()
+                case 4: value["float_data"] = self.reader.read_packed_floats()
+                case 5: value["int32_data"] = self.reader.read_packed_int64s()
+                case 7: value["int64_data"] = self.reader.read_packed_int64s()
+                case 8: value["name"] = self.reader.read_string()
+                case 9: value["raw_data"] = self.reader.read_bytes()
+                case 10: value["double_data"] = self.reader.read_packed_floats()
+                case 11: value["uint64_data"] = self.reader.read_packed_int64s()
+                case 13: value.setdefault("external_data", []).append(self._parse_StringStringEntryProto())
+                case 14: value["data_location"] = self.reader.read_int64()
+                case _: self.reader.skip_field(wire_type)
+        if value.get("external_data") or value.get("data_location", 0) != 0:
+            raise ExportError("offline ONNX external tensor inputs are not bound")
+        fields = [name for name in ("float_data", "int32_data", "int64_data", "double_data", "uint64_data", "raw_data")
+                  if name in value]
+        if len(fields) != 1:
+            raise ExportError("offline ONNX requires self-contained constant tensors")
+        dtype = OnnxDataType(value["data_type"]).to_dtype()
+        shape = tuple(value["dims"])
+        data = value[fields[0]]
+        if isinstance(data, Tensor):
+            if data.dtype != dtypes.uint8:
+                raise ExportError("offline ONNX requires self-contained constant tensors")
+            if dtype == dtypes.float16:
+                # A typed byte buffer copies storage without executing floating
+                # arithmetic. Keep scalar payloads buffered too (including NaNs).
+                data = Tensor(data.data().tobytes(), dtype=dtype, device="CPU").realize().reshape(shape).to(Device.DEFAULT)
+            else:
+                data = (data.cast(dtype) if dtype == dtypes.bool else data.bitcast(dtype)).reshape(shape).to(Device.DEFAULT)
+            if shape == () and dtype != dtypes.float16:
+                data = Tensor(data.item(), dtype=dtype).reshape(shape)
+        else:
+            data = Tensor(data, dtype=dtype).reshape(shape)
+        value["parsed_tensor"] = data
+        return value
+
+
+class InlineOnnxRunner(OnnxRunner):
+    def __init__(self, path: Path | Tensor) -> None:
+        # Match the original constructor, with external reads disabled before
+        # any tensor (including one nested in an attribute) can be loaded.
+        self._init_from_graph(InlineOnnxParser(path, load_external_data=False).parse()["graph"])
+
+
+class InlineMetadataParser(MetadataOnnxPBParser, InlineOnnxParser):
+    """Retain original metadata parsing with the same inline tensor decoder."""
+
+
+def authenticated_bytes(path: Path, expected_sha256: str) -> bytes:
+    payload = path.read_bytes()
+    if hashlib.sha256(payload).hexdigest() != expected_sha256:
+        raise ExportError("ONNX model identity differs from the pinned object")
+    return payload
+
+
+@host_build
+def load_metadata(path: Path, expected_sha256: str) -> dict:
+    payload = authenticated_bytes(path, expected_sha256)
+    with Context(DEV="CPU:LLVM", IMAGE=1, FLOAT16=1, OPENPILOT_HACKS=1):
+        model = InlineMetadataParser(Tensor(payload, device="CPU")).parse()
+    # Match make_metadata_dict's fields and decoding without opening a DISK
+    # Tensor on the immutable cache. The shared original implementation stays unchanged.
+    output_slices = get_metadata_value_by_name(model, "output_slices")
+    assert output_slices is not None, "output_slices not found in metadata"
+    return {
+        "model_checkpoint": get_metadata_value_by_name(model, "model_checkpoint"),
+        "output_slices": pickle.loads(codecs.decode(output_slices.encode(), "base64")),
+        "input_shapes": dict(get_name_and_shape(value) for value in model["graph"]["input"]),
+        "output_shapes": dict(get_name_and_shape(value) for value in model["graph"]["output"]),
+    }
+
+
 @host_build
 def load_runner(path: Path, expected_sha256: str) -> OfflineOnnx:
-    if hashlib.sha256(path.read_bytes()).hexdigest() != expected_sha256:
-        raise ExportError("ONNX model identity differs from the pinned object")
+    payload = authenticated_bytes(path, expected_sha256)
     with Context(DEV="CPU:LLVM", IMAGE=1, FLOAT16=1, OPENPILOT_HACKS=1):
-        runner = OnnxRunner(path)
+        # The original DISK Tensor opens paths read/write. Parse the exact
+        # authenticated bytes without granting writes to the immutable cache.
+        runner = InlineOnnxRunner(Tensor(payload, device="CPU"))
         if runner.is_training:
             raise ExportError("offline ONNX training graph is unsupported")
         original_values = dict(runner.graph_values)

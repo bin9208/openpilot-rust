@@ -8,8 +8,9 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: integration-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: integration-${{ github.event_name }}-${{ github.ref }}-parallel-v2
+  queue: max
+  cancel-in-progress: false
 jobs:
   build:
     uses: ./.github/workflows/tests.yaml
@@ -23,11 +24,20 @@ jobs:
     uses: ./.github/workflows/jetlink.yml
   gate:
     name: integration gate
-    if: ${{ always() }}
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()) }}
     needs: [build, navigation, apk, jetlink]
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
+      - name: Require the registered execution environment
+        run: |
+          test "$GITHUB_ACTIONS" = true
+          if [[ $RUNNER_ENVIRONMENT == self-hosted ]]; then
+            [[ $RUNNER_NAME == bin-actions || $RUNNER_NAME == bin-actions2 || $RUNNER_NAME == bin-actions3 ]]
+          else
+            [[ $RUNNER_ENVIRONMENT == github-hosted && $RUNNER_OS == Linux &&
+               ( $RUNNER_ARCH == X64 || $RUNNER_ARCH == ARM64 ) ]]
+          fi
       - name: Require every integration suite to succeed
         env:
           BUILD: ${{ needs.build.result }}

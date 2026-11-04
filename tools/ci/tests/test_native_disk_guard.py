@@ -1,5 +1,6 @@
 """Native CI guard bootstrap must reserve capacity before any toolchain/build work."""
 import os
+from collections import Counter
 import hashlib
 import re
 from pathlib import Path
@@ -56,10 +57,10 @@ def invoke(environment):
 
 
 def test_capacity_failure_precedes_rustup_and_cargo(tmp_path):
-    environment, log = fixture(tmp_path, str(25 * 1024**3 + 1024**3 - 1))
+    environment, log = fixture(tmp_path, str(1024**3 - 1))
     result = invoke(environment)
     assert result.returncode != 0
-    assert 'recover at least 35 GiB' in result.stderr
+    assert 'below estimated operation growth' in result.stderr
     assert not log.exists(), 'toolchain/build ran before capacity admission'
 
 
@@ -84,17 +85,17 @@ def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
     workflow = ROOT / '.github/workflows/rust.yml'
     text = workflow.read_text()
     assert 'card_ci_space.py' not in text
-    assert text.count('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"') == 184
+    assert text.count('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"') == 186
     jobs = yaml.safe_load(text)['jobs']
     guarded = [job for job in jobs.values() if any('check-disk-space' in step.get('run', '') for step in job.get('steps', []))]
-    assert len(guarded) == 26
+    assert len(guarded) == 27
     def has_baseline_guard(script):
         lines = script.splitlines()
         return any('check-disk-space' in line and
                    (index + 1 == len(lines) or '--bin stage-startup-ui-raylib' not in lines[index + 1])
                    for index, line in enumerate(lines))
     assert sum(any(has_baseline_guard(step.get('run', '')) for step in job.get('steps', []))
-               for job in jobs.values()) == 24
+               for job in jobs.values()) == 25
     # Preserve the original179 migration baseline independently of the five
     # #326 guards added specifically before compiling its native stager.
     lines = text.splitlines()
@@ -106,6 +107,22 @@ def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
                 raylib_guards.append(match.group(1))
             else:
                 arguments.append(match.group(1))
+    # #649 adds one explicit dependency/build admission for the early hosted
+    # recovery job. Its two original guards moved intact from workspace.
+    new_guard = ' --path "$GITHUB_WORKSPACE" --growth-mib 3072'
+    recovery = jobs['recovery-runtime']
+    preparation = next(step for step in recovery['steps'] if step.get('name') == 'Prepare recovery comparison dependencies')
+    assert new_guard in preparation['run']
+    arguments.remove(new_guard)
+    # The FFmpeg fetch moved from the existing build tool into this CI step.
+    # Keep its original3GiB admission immediately before its600s command cap.
+    ffmpeg_guard = ' --path "$RUNNER_TEMP" --growth-mib 3072'
+    static_build = next(step for step in jobs['arm64']['steps']
+                        if step.get('name') == 'Build and inspect the static C3X probe candidate')
+    static_lines = [line.strip() for line in static_build['run'].splitlines()]
+    index = static_lines.index('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"' + ffmpeg_guard)
+    assert static_lines[index + 1].startswith('timeout --signal=KILL 600s curl ')
+    arguments.remove(ffmpeg_guard)
     assert len(arguments) == 179
     assert raylib_guards == [' --path "$GITHUB_WORKSPACE" --growth-mib 2048'] * 5
     native_calls = [index for index, line in enumerate(lines) if '--bin stage-startup-ui-raylib' in line]
@@ -116,7 +133,17 @@ def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
         assert 'cargo +1.94.0 run' in lines[index]
         assert '"$GITHUB_WORKSPACE/rust/tools/check-disk-space"' in lines[index - 1]
     assert 'stage_startup_ui_raylib.py' not in text
-    assert hashlib.sha256('\n'.join(arguments).encode()).hexdigest() == '952f3b9fc8820e701aae55f88368236acddd3da2af55465448aa00eddaf9fe55'
+    # Recovery moved before workspace, so order changes intentionally. Freeze
+    # the old ordered list independently, then require the identical multiset.
+    baseline = subprocess.check_output(['git', 'show',
+        '44fbc7a34526950063713fd8255b96b0e543f554:.github/workflows/rust.yml'], cwd=ROOT, text=True).splitlines()
+    previous = []
+    for index, line in enumerate(baseline):
+        match = re.search(r'"\$GITHUB_WORKSPACE/rust/tools/check-disk-space"([^\n]*)', line)
+        if match and not (index+1 < len(baseline) and '--bin stage-startup-ui-raylib' in baseline[index+1]):
+            previous.append(match.group(1))
+    assert hashlib.sha256('\n'.join(previous).encode()).hexdigest() == '952f3b9fc8820e701aae55f88368236acddd3da2af55465448aa00eddaf9fe55'
+    assert Counter(arguments) == Counter(previous)
     template = (ROOT / 'rust/crates/carrot-man/ci-jobs.yml').read_text()
     assert 'card_ci_space.py' not in template
     assert template.count('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"') == 9
@@ -152,10 +179,10 @@ def test_requested_operation_filesystem_is_checked_before_toolchain_work(tmp_pat
     operation = tmp_path / 'operation space'
     operation.mkdir()
     environment['GUARD_OPERATION_PATH'] = str(operation / 'new output')
-    environment['GUARD_OPERATION_FREE'] = str(25 * 1024**3 + 128 * 1024**2 - 1)
+    environment['GUARD_OPERATION_FREE'] = str(128 * 1024**2 - 1)
     result = invoke(environment)
     assert result.returncode != 0
-    assert 'recover at least 35 GiB' in result.stderr
+    assert 'below estimated operation growth' in result.stderr
     assert not log.exists()
 
 

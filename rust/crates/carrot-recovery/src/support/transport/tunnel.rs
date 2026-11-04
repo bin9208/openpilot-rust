@@ -201,7 +201,7 @@ mod tests {
             ));
         fs::create_dir_all(&root).unwrap();
         let binary = root.join("cloudflared");
-        fs::write(&binary, "#!/bin/bash\nset -m\nprintf '%s' $$ > leader.pid\n(trap '' TERM HUP; printf '%s' \"$BASHPID\" > descendant.pid; exec sleep 600) &\nprintf '%s\\n' 'https://owned-regression.trycloudflare.com'\nwait\n").unwrap();
+        fs::write(&binary, "#!/bin/bash\nset -m\nprintf '%s' $$ > leader.pid\n(trap '' TERM HUP; printf '%s' \"$BASHPID\" > descendant.pid.tmp && mv -- descendant.pid.tmp descendant.pid; exec sleep 600) &\nprintf '%s\\n' 'https://owned-regression.trycloudflare.com'\nwait\n").unwrap();
         fs::set_permissions(&binary, fs::Permissions::from_mode(0o700)).unwrap();
         let stdout = fs::File::create(root.join("stdout.txt")).unwrap();
         let stderr = fs::File::create(root.join("stderr.txt")).unwrap();

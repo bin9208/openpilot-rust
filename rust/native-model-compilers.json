@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "factory_image_sha256": "375c5d22335770ac08750660bb5b29a3331c550d6a9875b35f36b88af792ea44",
+  "cpu_llvm": {
+    "path": "/usr/lib/aarch64-linux-gnu/libLLVM.so.20.1",
+    "bytes": 138943216,
+    "sha256": "daee21a3b1abf220864bc2da60817c4800f121099a6b5cd42694975abbeab9d7"
+  },
+  "qcom": {
+    "path": "/usr/lib/aarch64-linux-gnu/libllvm-qcom.so",
+    "bytes": 36961040,
+    "sha256": "fb7e6390cc25700d6935b2eef3acad85a43f247206bdf84cb4d37bd48a60b093"
+  }
+}

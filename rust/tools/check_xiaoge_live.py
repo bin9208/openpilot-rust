@@ -81,7 +81,7 @@ def main() -> None:
   if args.peer:
     peer(args)
     return
-  assert shutil.disk_usage(args.output.parent).free > 25 * 2**30 + 128 * 2**20
+  assert shutil.disk_usage(args.output.parent).free > 128 * 2**20
   args.output.mkdir(parents=True, exist_ok=False)
   for kind in ["source", "native"]:
     output = args.output / kind
@@ -90,7 +90,7 @@ def main() -> None:
     queue = Path("/dev/shm") / ("msgq_" + prefix)
     queue.mkdir()
     environment = dict(os.environ, OPENPILOT_PREFIX=prefix, PARAMS_ROOT=str(output / "params"),
-                       LD_LIBRARY_PATH=str(args.opencv / "install/lib"), PWD=str(output))
+                       LD_LIBRARY_PATH=os.pathsep.join(filter(None, (str(args.opencv / "install/lib"), os.environ.get("LD_LIBRARY_PATH", "")))), PWD=str(output))
     command = [sys.executable, "-u", "-P", str(Path(__file__).resolve()), "--peer", kind]
     for name in ["binary", "binding", "assets", "opencv"]:
       command.extend(["--" + name, str(getattr(args, name))])

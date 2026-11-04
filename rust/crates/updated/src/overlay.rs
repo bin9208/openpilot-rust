@@ -133,6 +133,14 @@ impl Updater<'_> {
             "creating finalized version of the overlay",
         )?;
         let paths = self.context.paths;
+        if let Some(native) = crate::native::context()? {
+            native.stage(paths, self.context.commands)?;
+            report::info(
+                self.context.logger,
+                "verified source-built generation staged for next boot; current runtime retained",
+            )?;
+            return Ok(());
+        }
         if paths.base.join("rust/runtime-manifest.json").is_file() {
             let target = self.context.commands.run(
                 &args(&["git", "rev-parse", "--verify", "HEAD^{commit}"]),

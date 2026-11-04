@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import deque
 import hashlib
 import json
 import os
@@ -18,6 +19,32 @@ import time
 import uuid
 
 from joystickd_source import SourceRun, load_binding
+
+
+class PublicationPairs:
+  def __init__(self) -> None:
+    self.control, self.state = deque(), deque()
+    self.started = False
+    self.startup_unpaired = []
+
+  def pop(self):
+    # joystickd sends carControl, then controlsState, before the next frame.
+    # A publisher resets msgq subscribers on startup. Each reader reconnects
+    # at its own current write pointer, so their first received frame may differ.
+    while self.control and self.state:
+      if len(self.control) > 1 and self.control[1].logMonoTime < self.state[0].logMonoTime:
+        assert not self.started, 'controlsState missing during publication'
+        self.startup_unpaired.append(('carControl', self.control.popleft().logMonoTime))
+      elif self.state[0].logMonoTime < self.control[0].logMonoTime:
+        assert not self.started, 'carControl missing during publication'
+        self.startup_unpaired.append(('controlsState', self.state.popleft().logMonoTime))
+      else:
+        self.started = True
+        return self.control.popleft(), self.state.popleft()
+    return None
+
+  def finish(self) -> None:
+    assert not self.control and not self.state, 'unpaired publication at daemon exit'
 
 
 def bits(value: float) -> int:
@@ -89,6 +116,7 @@ def main() -> None:
   stderr = (args.output / 'daemon.stderr.log').open('w')
   process = subprocess.Popen([binary, '--frames', '240'], stdout=stdout, stderr=stderr)
   records, matches = [], []
+  pairs = PublicationPairs()
 
   def publish(row: dict) -> None:
     car_event = messaging.new_message('carState')
@@ -109,20 +137,23 @@ def main() -> None:
       publisher.send(name, event)
 
   def receive() -> dict | None:
-    cc, cs = None, None
     deadline = time.monotonic() + 2
-    while cc is None or cs is None:
-      if cc is None:
-        cc = messaging.recv_one_or_none(cc_socket)
-      if cs is None:
-        cs = messaging.recv_one_or_none(cs_socket)
-      if cc is None and cs is None and process.poll() is not None:
+    while True:
+      exited = process.poll() is not None
+      # Read states first: every state already observed has its preceding
+      # control available. Preserve later controls until their state arrives.
+      pairs.state.extend(messaging.drain_sock(cs_socket))
+      pairs.control.extend(messaging.drain_sock(cc_socket))
+      pair = pairs.pop()
+      if pair is not None:
+        cc, cs = pair
+        records.append({'carControl': cc.to_dict(), 'controlsState': cs.to_dict()})
+        return snapshot(cc, cs)
+      if exited:
+        pairs.finish()
         return None
       assert time.monotonic() < deadline, 'publication timeout'
-      if cc is None or cs is None:
-        time.sleep(0.001)
-    records.append({'carControl': cc.to_dict(), 'controlsState': cs.to_dict()})
-    return snapshot(cc, cs)
+      time.sleep(0.001)
 
   def match_phase(name: str) -> None:
     consecutive = 0
@@ -159,6 +190,7 @@ def main() -> None:
     stderr.close()
     (args.output / 'publications.json').write_text(json.dumps(records) + '\n')
     (args.output / 'matches.json').write_text(json.dumps(matches, indent=2) + '\n')
+    (args.output / 'startup-unpaired.json').write_text(json.dumps(pairs.startup_unpaired) + '\n')
 
   checks = {}
   cp_path.unlink()
@@ -209,6 +241,7 @@ def main() -> None:
   elapsed = (last - first) / 1e9
   assert 2.0 <= elapsed <= 4.0, elapsed
   receipt = {'phases': len(matches), 'publications_per_service': len(records),
+    'startup_unpaired': pairs.startup_unpaired,
     'duration_seconds': elapsed, 'rate_hz': (len(records) - 1) / elapsed, 'startup_read_error_recovered': True,
     'exit_codes': checks, 'invalid_cli_cases': 3, 'binary_sha256': hashlib.sha256(args.binary.read_bytes()).hexdigest(),
     'command': [binary, '--frames', '240'], 'prefix': os.environ['OPENPILOT_PREFIX']}

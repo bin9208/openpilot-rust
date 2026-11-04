@@ -31,9 +31,9 @@ if [[ ! $growth_mib =~ ^[0-9]+$ ]]; then
   printf 'disk space: invalid growth\n' >&2; exit 1
 fi
 growth_bytes=$(expr "$growth_mib" '*' 1048576) || test "$growth_bytes" = 0
-required=$(expr 26843545600 + "$growth_bytes")
+required=$growth_bytes
 if [[ $(expr "$required" '<=' 18446744073709551615) != 1 ]]; then
-  printf 'disk space: disk reserve plus growth exceeds u64\n' >&2; exit 1
+  printf 'disk space: growth exceeds u64\n' >&2; exit 1
 fi
 case $(uname -m) in
   x86_64) host=x86_64-unknown-linux-gnu ;;
@@ -74,10 +74,10 @@ reserve() {
   free=$(df -B1 --output=avail -- "$ancestor" | tail -n 1)
   free=${free//[[:space:]]/}
   [[ $free =~ ^[0-9]+$ ]] || { printf 'disk space: invalid df response\n' >&2; return 1; }
-  needed=$(expr 26843545600 + "$growth")
+  needed=$growth
   if [[ $(expr "$free" '>=' "$needed") != 1 ]]; then
     printf '{"free_bytes":%s,"required_bytes":%s,"growth_bytes":%s}\n' "$free" "$needed" "$growth"
-    printf 'disk space: insufficient disk: retain 25 GiB plus operation growth; recover at least 35 GiB before resuming (%s)\n' "$destination" >&2
+    printf 'disk space: insufficient disk: available space is below estimated operation growth (%s)\n' "$destination" >&2
     return 1
   fi
 }
@@ -107,7 +107,7 @@ if [[ ! -x $binary ]]; then
   rustup toolchain install 1.94.0 --profile minimal >&2
   mkdir -p -- "$cache"
   env -u RUSTFLAGS -u CARGO_ENCODED_RUSTFLAGS -u CARGO_BUILD_TARGET -u RUSTC_WRAPPER -u RUSTC_WORKSPACE_WRAPPER \
-    CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 build \
+    CARGO_INCREMENTAL=0 cargo +1.94.0 build \
     --manifest-path "$root/rust/Cargo.toml" -p openpilot-disk-space --bin disk-space-guard \
     --locked --target "$host" --target-dir "$cache/build" >&2
   temporary=$(mktemp "$cache/.publish.XXXXXXXX")

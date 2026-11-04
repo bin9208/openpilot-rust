@@ -1,0 +1,51 @@
+name: Job scoped native APT
+on:
+  push:
+    branches: ['codex/fix-610-*']
+    paths:
+      - 'tools/ci/native-apt-shell'
+      - 'tools/ci/check_native_apt.py'
+      - '.github/actions/job-temp/action.yml'
+      - '.github/workflows/native-apt-scope.yml'
+permissions:
+  contents: read
+concurrency:
+  group: native-apt-scope-${{ github.ref }}-parallel-v2
+  queue: max
+  cancel-in-progress: false
+jobs:
+  actual-apt:
+    name: Native APT and explicit cross source preservation
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    timeout-minutes: 20
+    env:
+      LOCAL_CI_ARCH: x86_64
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Preserve all original workflows and validate shell syntax
+        shell: bash
+        run: |
+          bash -n tools/ci/native-apt-shell
+          python -m pip install PyYAML==6.0.2
+          python -m unittest discover -s tools/ci/tests -p 'test_local_native_workflows.py' -v
+      - name: Execute the original native update and original explicit cross repositories
+        shell: bash
+        run: python tools/ci/check_native_apt.py
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: native-apt-scope-${{ github.sha }}
+          path: |
+            ${{ env.CI_JOB_TEMP }}/native-apt-evidence.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-apt/result.json
+            ${{ env.CI_JOB_TEMP }}/native-apt/*.log
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

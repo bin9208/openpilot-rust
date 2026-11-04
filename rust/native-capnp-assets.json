@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "reserve_bytes": 67108864,
+  "assets": {
+    "capnproto-1-0-1-4-arm64": {
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/universe/c/capnproto/capnproto_1.0.1-4_arm64.deb",
+      "sha256": "9d693ded6a718a142063ccf0bb3250fa4e15b846980362ec6c38cff2a711a81c",
+      "bytes": 240820
+    },
+    "libcapnp-1-0-1-1-0-1-4-arm64": {
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/universe/c/capnproto/libcapnp-1.0.1_1.0.1-4_arm64.deb",
+      "sha256": "09809a4118ac05804b8a28c08ebf6a3805fc8ec8bb67e696b14aa5ac812a22a1",
+      "bytes": 1332456
+    },
+    "libcapnp-dev-1-0-1-4-arm64": {
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/universe/c/capnproto/libcapnp-dev_1.0.1-4_arm64.deb",
+      "sha256": "4859f547de40975ea5e9847448701fa338bb2e5317667ea8bdc90bdb2837844c",
+      "bytes": 2096082
+    }
+  }
+}

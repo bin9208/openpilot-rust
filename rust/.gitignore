@@ -1,4 +1,5 @@
-/target/
+# CI preserves rust/target argv with a job-owned symlink as well as a directory.
+/target
 /bin/
 /runtime-manifest.json
 /.runtime-bootstrap/

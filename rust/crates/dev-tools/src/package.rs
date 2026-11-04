@@ -766,17 +766,21 @@ pub fn package(root: &Path, installer: &Path, receipt_path: &Path, output: &Path
 mod tests {
     use super::*;
     #[test]
-    fn disk_reserve_overflow_returns_an_error() {
-        assert!(check_space(u64::MAX, u64::MAX).is_err());
+    fn disk_growth_extremes_preserve_zero_and_maximum_boundaries() {
+        assert!(check_space(0, 0).is_ok());
+        assert!(check_space(u64::MAX, 0).is_ok());
+        assert!(check_space(u64::MAX, u64::MAX).is_ok());
+        assert!(check_space(u64::MAX - 1, u64::MAX).is_err());
+        assert!(check_space(0, u64::MAX).is_err());
     }
     #[test]
-    fn disk_reserve_includes_growth_and_keeps_recovery_instruction() {
-        let reserve = 25 * 1024 * 1024 * 1024;
-        assert!(check_space(reserve + 100, 100).is_ok());
-        assert!(check_space(reserve + 99, 100)
-            .unwrap_err()
-            .to_string()
-            .contains("recover at least 35 GiB"));
+    fn disk_growth_admission_preserves_exact_boundary_and_failure_message() {
+        assert!(check_space(101, 100).is_ok());
+        assert!(check_space(100, 100).is_ok());
+        assert_eq!(
+            check_space(99, 100).unwrap_err().to_string(),
+            "insufficient disk: available space is below estimated operation growth"
+        );
     }
     #[test]
     fn paths_and_nested_duplicate_json_fail_closed() {

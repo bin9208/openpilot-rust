@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "stores": {
+    "sources": "/data/openpilot-native/sources",
+    "objects": "/data/openpilot-native/objects",
+    "generations": "/data/openpilot-native/generations",
+    "params": "/data/params"
+  },
+  "cache": "/data/openpilot-native/cache",
+  "seed_cache": "/data/openpilot-native/seed-cache",
+  "updater_staging": "/data/openpilot-native/updater",
+  "expected_source_growth_bytes": 2147483648,
+  "expected_compile_growth_bytes": 2147483648,
+  "remaining_object_growth_bytes": 6643777536,
+  "compiler_growth_bytes": 1073741824,
+  "resources": {
+    "schema": 1,
+    "memory_cgroup_parent": "/sys/fs/cgroup/openpilot-native-build-1000",
+    "maximum_memory_bytes": 3221225472,
+    "minimum_available_memory_bytes": 134217728,
+    "filesystems": {
+      "/data/openpilot-native": {
+        "maximum_growth_bytes": 25769803776,
+        "minimum_free_bytes": 536870912
+      }
+    }
+  },
+  "budgets": {
+    "schema": 1,
+    "group_growth_bytes": {
+      "00": 4563402752,
+      "01": 4227858432,
+      "02": 4227858432,
+      "03": 4294967296,
+      "04": 4294967296,
+      "05": 4429185024,
+      "06": 4294967296,
+      "07": 4160749568,
+      "08": 4160749568,
+      "09": 4160749568,
+      "10": 4496293888,
+      "11": 1073741824,
+      "12": 671088640
+    },
+    "expected_source_growth_bytes": 2147483648,
+    "remaining_object_growth_bytes": 6643777536,
+    "estimate_basis": "시험 후보의 작업별 보수적 추정: 그룹별 package당 512 MiB와 binary당 64 MiB, 소스 2 GiB, 저장 binary당 64 MiB. 실제 기기 측정값이 아니며 최초/변경 후 빌드에서 관측한다."
+  }
+}

@@ -58,7 +58,7 @@ def test_both_host_architectures_and_native_memory_are_required_gates() -> None:
   jobs = yaml.safe_load((ROOT / ".github/workflows/rust.yml").read_text())["jobs"]
   assert jobs["xiaoge-runtime"]["strategy"]["matrix"]["runner"] == ["ubuntu-24.04", "ubuntu-24.04-arm"]
   assert {"xiaoge-runtime", "xiaoge-memory"} <= set(jobs["fast"]["needs"])
-  gate = jobs["fast"]["steps"][0]
+  gate, = [step for step in jobs["fast"]["steps"] if "XIAOGE_MEMORY" in step.get("env", {})]
   environment = dict(os.environ, **dict.fromkeys(gate["env"], "success"))
   assert subprocess.run(["bash", "-e", "-c", gate["run"]], env=environment, check=False).returncode == 0
   for name in ["XIAOGE", "XIAOGE_MEMORY"]:

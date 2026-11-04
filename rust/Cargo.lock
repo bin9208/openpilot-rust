@@ -2710,6 +2710,7 @@ dependencies = [
  "base64 0.22.1",
  "flate2",
  "openpilot-disk-space",
+ "openpilot-runtime-build",
  "openpilot-usbgpu",
  "regex",
  "rsa",
@@ -3542,11 +3543,18 @@ dependencies = [
 name = "openpilot-runtime-build"
 version = "0.1.0"
 dependencies = [
+ "flate2",
+ "openpilot-runtime-installer",
  "rustix",
  "serde",
  "serde_json",
  "sha2",
+ "signal-hook",
+ "tar",
  "tempfile",
+ "toml",
+ "xz2",
+ "zstd",
 ]
 
 [[package]]
@@ -3576,6 +3584,7 @@ name = "openpilot-runtime-launcher"
 version = "0.1.0"
 dependencies = [
  "openpilot-process-supervision",
+ "openpilot-runtime-build",
  "openpilot-runtime-installer",
  "openpilot-runtime-version",
  "rustix",
@@ -3897,6 +3906,7 @@ dependencies = [
  "openpilot-params",
  "openpilot-params-typed",
  "openpilot-process-supervision",
+ "openpilot-runtime-build",
  "openpilot-runtime-core",
  "openpilot-runtime-version",
  "openpilot-timed",

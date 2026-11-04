@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "role": "openpilot-foreign-provider",
+  "profile": "raylib600-shared",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "provider_source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "tree_sha256": "652139c421392b8b9c2a156a4476031ad5882599a0a2e2983cd11735bd7c9ce7",
+  "asset": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-raylib600-32618bf97a1e247fb3652f1b1acbbe5d95c95d3df6d689bb4093133bb6562c86/raylib600-shared.tar.gz",
+    "sha256": "32618bf97a1e247fb3652f1b1acbbe5d95c95d3df6d689bb4093133bb6562c86",
+    "bytes": 880997
+  }
+}

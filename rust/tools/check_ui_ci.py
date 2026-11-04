@@ -14,6 +14,13 @@ import subprocess
 import sys
 
 from card_qa.ci import ROOT, TOOLS, hashes, require_space, run
+from ci_cases import readonly_inputs, run_cases
+
+GROUPS = {
+  'policy-geometry': ('state', 'scheduler', 'qr', 'calibration', 'torque'),
+  'pixels': ('root', 'augmented', 'camera', 'hud-eight-modes', 'hud-traffic'),
+  'lifecycle-safety': ('runtime', 'pages', 'native-safety'),
+}
 
 EXAMPLES = ('product_render', 'product_runtime', 'state_trace', 'scheduler_trace', 'qr_trace',
   'calibration_geometry', 'torque_geometry')
@@ -46,8 +53,13 @@ def display_server(output: Path) -> Iterator[str]:
         if not number.isdecimal() or server.poll() is not None:
           raise RuntimeError(f'Xvfb display failed: {number!r}')
         display = ':' + number
-        (output / 'display.json').write_text(json.dumps({'argv': command, 'pid': server.pid, 'display': display}) + '\n')
-        yield display
+        from Xlib.display import Display
+        # Retain a group-owned client between transient application windows.
+        # Closing the last client resets Xvfb, even while its process is alive.
+        with closing(Display(display)):
+          (output / 'display.json').write_text(json.dumps({'argv': command, 'pid': server.pid, 'display': display,
+              'controller_pid': os.getpid(), 'controller_retained': True}) + '\n')
+          yield display
       finally:
         if server.poll() is None:
           server.terminate()
@@ -59,15 +71,20 @@ def display_server(output: Path) -> Iterator[str]:
 
 
 class UiCheck:
-  def __init__(self, output: Path, binaries: Path, peer: Path) -> None:
+  def __init__(self, output: Path, binaries: Path, peer: Path, group: str) -> None:
+    self.group = group
+    self.completed = []
     self.output = output
     self.binaries = binaries
     self.peer = peer
     self.commands = output / 'commands'
 
   def check(self, name: str, script: str, arguments: list[str]) -> None:
+    if name not in GROUPS[self.group]:
+      return
     require_space(self.output, 3 * 1024**3)
     run([sys.executable, str(TOOLS / script), *arguments], self.commands, name)
+    self.completed.append(name)
 
   def execute(self, display: str) -> None:
     examples = self.binaries / 'examples'
@@ -96,6 +113,7 @@ def main() -> None:
   parser.add_argument('--binaries', type=Path, required=True)
   parser.add_argument('--build-messages', type=Path, required=True)
   parser.add_argument('--output', type=Path, required=True)
+  parser.add_argument('--group', choices=tuple(GROUPS))
   args = parser.parse_args()
   output = args.output.resolve()
   require_space(output, 4 * 1024**3)
@@ -114,7 +132,7 @@ def main() -> None:
   from openpilot.cereal import CEREAL_PATH, log
   log.Event.new_message()
   imports['cereal'] = str(CEREAL_PATH)
-  source_paths = [Path(__file__), ROOT / 'rust/Cargo.lock', ROOT / 'uv.lock']
+  source_paths = [Path(__file__), TOOLS/'ci_cases.py', ROOT / 'rust/Cargo.lock', ROOT / 'uv.lock']
   source_paths += list(TOOLS.glob('check_ui_*.py')) + list((TOOLS / 'ui_application_qa').glob('*.py'))
   for name in ('ui-application', 'ui-framework', 'startup-ui', 'msgq', 'params', 'hardware-info'):
     source_paths += [path for path in (ROOT / 'rust/crates' / name).rglob('*')
@@ -128,7 +146,27 @@ def main() -> None:
     'environment': {key: os.environ.get(key) for key in ('PYTHONPATH', 'UI_MSGQ_PYTHON', 'STARTUP_UI_RAYLIB_ROOT',
       'STARTUP_UI_RAYLIB_LIBRARY', 'LIBGL_ALWAYS_SOFTWARE', 'CARGO_INCREMENTAL', 'CARGO_BUILD_JOBS')}}
   (output / 'invocation.json').write_text(json.dumps(receipt, indent=2) + '\n')
-  check = UiCheck(output, binaries, peer)
+  if args.group is None:
+    cases = [dict(name=name, argv=[sys.executable, str(Path(__file__).resolve()),
+        '--binaries', str(binaries), '--build-messages', str(args.build_messages.resolve()),
+        '--output', str(output/name), '--group', name],
+        growth_bytes=3*1024**3, memory_bytes=(2 if name == 'lifecycle-safety' else 1)*1024**3)
+        for name in GROUPS]
+    with readonly_inputs([binaries, peer, Path(os.environ['STARTUP_UI_RAYLIB_ROOT']),
+                          Path(os.environ['STARTUP_UI_RAYLIB_LIBRARY']), python]):
+      run_cases(cases, output/'groups', ROOT)
+    completed = []
+    for name, expected in GROUPS.items():
+      result = json.loads((output/name/'result.json').read_text())
+      assert result['status'] == 'PASS' and set(result['cases']) == set(expected)
+      completed.extend(result['cases'])
+    assert len(completed) == len(set(completed)) == sum(map(len, GROUPS.values()))
+    assert receipt['source_sha256'] == hashes(source_paths)
+    assert receipt['binary_sha256'] == {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in executables}
+    (output/'result.json').write_text(json.dumps(dict(status='PASS', groups=list(GROUPS), cases=completed,
+        scope='all original host comparisons; target acceptance unchanged'))+'\n')
+    return
+  check = UiCheck(output, binaries, peer, args.group)
   run(['git', 'rev-parse', 'HEAD'], check.commands, 'source-commit')
   with display_server(output) as display:
     os.environ['DISPLAY'] = display
@@ -139,7 +177,8 @@ def main() -> None:
       if not connection.has_extension('XTEST'):
         raise RuntimeError(f'XTest unavailable on owned display {display}')
     check.execute(display)
-  (output / 'result.json').write_text(json.dumps({'status': 'PASS',
+  assert set(check.completed) == set(GROUPS[args.group]) and len(check.completed) == len(GROUPS[args.group])
+  (output / 'result.json').write_text(json.dumps({'status': 'PASS', 'cases': check.completed,
     'scope': 'host original/native pixels, IPC, input, recording and cleanup; no target graphics or complete runtime acceptance'}) + '\n')
 
 

@@ -4,7 +4,18 @@ use openpilot_dev_tools::{
 };
 use std::path::PathBuf;
 fn run() -> Result<()> {
-    let mut args = std::env::args_os().skip(1);
+    let arguments: Vec<_> = std::env::args_os().skip(1).collect();
+    if arguments.iter().any(|arg| arg == "--prepare-native-inputs") {
+        let arguments = arguments
+            .into_iter()
+            .map(|arg| {
+                arg.into_string()
+                    .map_err(|_| "non-UTF8 native raylib argument")
+            })
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        return openpilot_dev_tools::native_raylib_inputs::cli(&arguments);
+    }
+    let mut args = arguments.into_iter();
     let mut arch = None;
     let mut output = None;
     let mut cxx = "g++".to_owned();
@@ -14,7 +25,7 @@ fn run() -> Result<()> {
     while let Some(argument) = args.next() {
         match argument.to_str().ok_or("invalid argument")? {
             "--help" | "-h" => {
-                println!("Usage: stage-startup-ui-raylib --arch x86_64|aarch64 --output PATH [--shared] [--cxx GNU_COMPILER] [--wheel-file PATH] [--library-directory PATH]...");
+                println!("Usage: stage-startup-ui-raylib --arch x86_64|aarch64 --output PATH [--shared] [--cxx GNU_COMPILER] [--wheel-file PATH] [--library-directory PATH]...\n       stage-startup-ui-raylib --prepare-native-inputs --cache ASSET_CACHE --store PREFIX_STORE [--root SOURCE]\nPrepare only the original ARM headers/static archive and distribution metadata. No Python, compiler or runtime activation.");
                 return Ok(());
             }
             "--arch" => {

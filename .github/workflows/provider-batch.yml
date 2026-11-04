@@ -1,0 +1,406 @@
+name: CI bottleneck validation
+on:
+  push:
+    branches: ['codex/fix-649-*']
+    paths:
+      - 'rust/crates/dev-tools/src/native_provider.rs'
+      - 'rust/crates/dev-tools/src/native_provider/**'
+      - 'rust/Cargo.toml'
+      - 'rust/crates/dev-tools/src/ffmpeg_build.rs'
+      - 'tools/ci/verify_provider_batch.py'
+      - 'tools/ci/native_provider_batch.py'
+      - '.github/workflows/provider-batch.yml'
+      - '.github/workflows/rust.yml'
+      - 'tools/native/publish_inputs.py'
+      - 'tools/ci/tests/**'
+      - 'rust/crates/logging/build.rs'
+      - 'rust/crates/loggerd/build.rs'
+      - 'rust/crates/logging/tests/git_source_stamp.rs'
+      - 'tools/ci/agnos_phases.py'
+      - 'tools/ci/companion_elf_scope.py'
+      - 'tools/ci/reproduce_companion_elf.py'
+      - 'tools/ci/runner_policy.py'
+      - 'tools/ci/fixtures/native-dbc-inputs.py'
+      - 'tools/ci/probe_native_agnos.py'
+      - 'rust/tools/ci_cases.py'
+      - 'rust/tools/check_card_*.py'
+      - 'rust/tools/check_ui_*.py'
+      - 'rust/tools/card_prepare_assets.py'
+      - 'rust/tools/recovery_exit_status.py'
+      - 'rust/tools/carrot_recovery_source.py'
+      - 'rust/tools/check_joystickd_runtime.py'
+      - 'rust/tools/check_cweb_address.py'
+      - 'rust/tools/model_export/offline_onnx.py'
+      - 'rust/tools/model_export/offline_pipeline.py'
+      - 'rust/tools/tests/test_offline_qcom_onnx.py'
+      - 'tinygrad_repo/tinygrad/nn/onnx.py'
+      - 'tools/ci/verify_model_initializers.py'
+  workflow_dispatch:
+    inputs:
+      benchmark:
+        description: Run the original pinned ARM archive equivalence and timing
+        type: boolean
+        default: false
+      numerics_repro:
+        description: Reproduce pinned ARM numerics and companion ELF load scopes
+        type: boolean
+        default: false
+      transport_repro:
+        description: Reproduce parallel native input transport fixture failures
+        type: boolean
+        default: false
+
+env:
+  RUSTUP_TOOLCHAIN: '1.94.0'
+
+permissions:
+  contents: read
+
+jobs:
+  transport-repro:
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'workflow_dispatch' && inputs.transport_repro }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+      - name: Prepare the pinned native ARM transport test
+        run: |
+          python3 -c 'import runpy;runpy.run_path("tools/ci/runner_policy.py")["require_github_native_arm"]()'
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$CI_JOB_TEMP" --growth-mib 3072
+          rustup toolchain install 1.94.0 --profile minimal
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --lib --no-run
+      - name: Require every parallel transport fixture iteration to succeed
+        run: |
+          set -o pipefail
+          for iteration in $(seq 1 200); do
+            printf 'transport iteration %s\n' "$iteration" >> "$CI_JOB_TEMP/transport-stress.log"
+            cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --lib -- --nocapture >> "$CI_JOB_TEMP/transport-stress.log" 2>&1 || { tail -100 "$CI_JOB_TEMP/transport-stress.log"; exit 1; }
+          done
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: transport-arm-repro-${{ github.sha }}
+          path: ${{ env.CI_JOB_TEMP }}/transport-stress.log
+          if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with:
+          cleanup: 'true'
+  numerics-repro:
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'workflow_dispatch' && inputs.numerics_repro }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+      - name: Prepare the pinned ARM provider verifier
+        run: |
+          python3 -c 'import runpy;runpy.run_path("tools/ci/runner_policy.py")["require_github_native_arm"]()'
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$CI_JOB_TEMP" --growth-mib 5120
+          sudo apt-get update
+          sudo apt-get install -y capnproto libcapnp-dev clang libclang-dev pkg-config liblzma-dev libssl-dev
+          rustup toolchain install 1.94.0 --profile minimal
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg --bin runtime-elf-audit
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-plannerd --example plannerd_solver_trace
+      - uses: ./.github/actions/native-cache
+        id: numerics-provider-cache
+        with:
+          mode: restore
+          name: native-provider-batch-cache
+          key: native-provider-batch-v1-${{ hashFiles('rust/native-*-provider.json', 'rust/native-*-source-contract.json', 'rust/crates/dev-tools/src/native_provider.rs', 'rust/crates/dev-tools/src/native_provider/**', 'rust/Cargo.lock') }}
+      - name: Verify immutable components against the current plans
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_provider_batch.py --preparer "$native_target/debug/build-runtime-ffmpeg" --root "$GITHUB_WORKSPACE" --work "$CI_JOB_TEMP"
+      - uses: ./.github/actions/native-cache
+        if: steps.numerics-provider-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-provider-batch-cache
+          key: native-provider-batch-v1-${{ hashFiles('rust/native-*-provider.json', 'rust/native-*-source-contract.json', 'rust/crates/dev-tools/src/native_provider.rs', 'rust/crates/dev-tools/src/native_provider/**', 'rust/Cargo.lock') }}
+      - name: Reproduce the original SVD comparison with exact hexadecimal values
+        run: |
+          g++ -std=c++17 -O2 -Wall -Wextra -Werror tools/ci/fixtures/native-companion-probe.cc -ldl -o "$CI_JOB_TEMP/numerics-probe"
+          "$CI_JOB_TEMP/numerics-probe" --svd-check-self-test
+          numerics_root=$(python3 -c 'import json,os;print(json.load(open(os.environ["NATIVE_PROVIDER_BATCH"]))["exports"]["numpy253-openblas"]["origin"]["root"]+"/numerics")')
+          LD_LIBRARY_PATH="$numerics_root:/usr/lib/aarch64-linux-gnu:/lib/aarch64-linux-gnu" "$CI_JOB_TEMP/numerics-probe" --numerics "$numerics_root" "$CI_JOB_TEMP/numerics-maps.txt" > "$CI_JOB_TEMP/numerics.stdout" 2> "$CI_JOB_TEMP/numerics.stderr"
+      - name: Reproduce ownerless rejection and the exact acados load scope
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/reproduce_companion_elf.py --auditor "$native_target/debug/runtime-elf-audit" --probe "$CI_JOB_TEMP/numerics-probe" --mpc-binary "$native_target/debug/examples/plannerd_solver_trace" --batch "$NATIVE_PROVIDER_BATCH" --work "$CI_JOB_TEMP/companion-elf-repro"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: numerics-arm-repro-${{ github.sha }}
+          path: |
+            ${{ env.CI_JOB_TEMP }}/native-provider-batch.json
+            ${{ env.CI_JOB_TEMP }}/numerics.stdout
+            ${{ env.CI_JOB_TEMP }}/numerics.stderr
+            ${{ env.CI_JOB_TEMP }}/numerics-maps.txt
+            ${{ env.CI_JOB_TEMP }}/companion-elf-repro/
+          if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with:
+          cleanup: 'true'
+  component-contract:
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'workflow_dispatch' || inputs.benchmark || (!inputs.numerics_repro && !inputs.transport_repro)) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+      - name: Admit the bounded provider test build
+        run: |
+          python3 - <<'PY'
+          import os, shutil
+          growth = 3 * 1024**3
+          free = shutil.disk_usage(os.environ['CI_JOB_TEMP']).free
+          assert free >= growth, (free, growth)
+          PY
+          sudo apt-get update
+          sudo apt-get install -y capnproto libcapnp-dev clang libclang-dev pkg-config liblzma-dev libssl-dev
+          rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
+      - name: Verify unchanged provider safety and new batch equivalence
+        run: |
+          set -o pipefail
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --lib json_read_tests:: -- --nocapture
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --lib file_lock::tests:: -- --nocapture
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --lib generation::tests:: -- --nocapture
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-usbgpu --lib local_artifact::admission::tests:: -- --nocapture
+          cargo +1.94.0 clippy --manifest-path rust/Cargo.toml --locked -p openpilot-usbgpu --all-targets -- -D warnings
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --test system_sdk --test inputs --test configuration -- --nocapture
+          cargo +1.94.0 clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --all-targets -- -D warnings
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_provider:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/provider-tests.log"
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-logging --test git_source_stamp
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test elf_audit
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test seal_runtime
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test ffmpeg_build
+          cargo +1.94.0 clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib -- -D warnings
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg
+      - name: Require unchanged address ABI and sanitizer checks with operation growth
+        run: |
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-cweb-push --example cweb_address
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 rust/tools/check_cweb_address.py --binary "$native_target/debug/examples/cweb_address" --output "$CI_JOB_TEMP/cweb-address"
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Prepare the bounded original model initializer check
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$CI_JOB_TEMP" --growth-mib 1024
+          sudo apt-get install -y libllvm18
+          python -m pip install numpy==2.5.3 onnx==1.20.1
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --bin openpilot-runtime-inputs
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          printf '%s\n' "$native_target/debug/openpilot-runtime-inputs" > "$CI_JOB_TEMP/native-capnp-inputs-cli.txt"
+      - uses: ./.github/actions/native-cache
+        id: model-input-cache
+        with:
+          mode: restore
+          name: native-model-assets
+          key: native-model-assets-${{ hashFiles('openpilot/selfdrive/modeld/models/*.onnx') }}-v1
+          restore-keys: native-model-assets-
+      - name: Read both exact source model initializers before deep AGNOS validation
+        env:
+          DEV: CPU:LLVM
+          LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
+        run: |
+          set -o pipefail
+          python -B tools/ci/prepare_native_model_assets.py
+          python -B -X pycache_prefix="$CI_JOB_TEMP/model-input-bytecode" tools/ci/verify_model_initializers.py \
+            --root "$GITHUB_WORKSPACE" --work "$CI_JOB_TEMP" 2>&1 | tee "$CI_JOB_TEMP/model-initializer-preflight.log"
+      - uses: ./.github/actions/native-cache
+        if: steps.model-input-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-model-assets
+          key: native-model-assets-${{ hashFiles('openpilot/selfdrive/modeld/models/*.onnx') }}-v1
+      - name: Require the original USB GPU status and admission controls
+        run: |
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-usbgpu --example model_status
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/opendbc_repo:$GITHUB_WORKSPACE/rust/tools" python3 rust/tools/check_usbgpu_status.py --binary "$native_target/debug/examples/model_status" --evidence "$CI_JOB_TEMP/usbgpu-status-parity.json"
+      - name: Preserve batch validation evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: provider-batch-contract-${{ github.sha }}
+          path: |
+            ${{ env.CI_JOB_TEMP }}/provider-tests.log
+            ${{ env.CI_JOB_TEMP }}/cweb-address/result.json
+            ${{ env.CI_JOB_TEMP }}/model-initializer-preflight.json
+            ${{ env.CI_JOB_TEMP }}/model-initializer-mismatch.json
+            ${{ env.CI_JOB_TEMP }}/model-initializer-preflight.log
+            ${{ env.CI_JOB_TEMP }}/native-model-assets-*.json
+            ${{ env.CI_JOB_TEMP }}/usbgpu-status-parity.json
+          if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with:
+          cleanup: 'true'
+  actual-arm-batch:
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'workflow_dispatch' && inputs.benchmark }}
+    needs: component-contract
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+      - name: Admit the real fixed provider comparison
+        run: |
+          python3 - <<'PY'
+          import os, shutil
+          growth = 5 * 1024**3
+          free = shutil.disk_usage(os.environ['CI_JOB_TEMP']).free
+          assert free >= growth, (free, growth)
+          PY
+          sudo apt-get update
+          sudo apt-get install -y capnproto libcapnp-dev clang libclang-dev pkg-config liblzma-dev libssl-dev
+          rustup toolchain install 1.94.0 --profile minimal
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg --message-format=json > "$CI_JOB_TEMP/provider-build.jsonl"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          wanted = {'flate2': '1.1.10', 'miniz_oxide': '0.9.1', 'crc32fast': '1.5.2'}
+          packages = {}
+          for line in (Path(os.environ['CI_JOB_TEMP'])/'provider-build.jsonl').read_text().splitlines():
+            row = json.loads(line)
+            if row.get('reason') != 'compiler-artifact': continue
+            name = row['target']['name']
+            if name not in wanted: continue
+            assert row['package_id'].endswith('#'+name+'@'+wanted[name]), row
+            assert row['profile']['opt_level'] == '3' and row['profile']['debug_assertions'] is True, row
+            packages[name] = dict(package_id=row['package_id'], profile=row['profile'])
+          assert set(packages) == set(wanted), packages
+          report = dict(source_commit=os.environ['GITHUB_SHA'], packages=packages)
+          (Path(os.environ['CI_JOB_TEMP'])/'provider-codec-build.json').write_text(json.dumps(report, indent=2)+'\n')
+          print(json.dumps(report), flush=True)
+          PY
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --bin openpilot-runtime-assets
+      - name: Compare every production profile and measure real cold and warm reuse
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/verify_provider_batch.py --preparer "$native_target/debug/build-runtime-ffmpeg" --assets "$native_target/debug/openpilot-runtime-assets" --root "$GITHUB_WORKSPACE" --work "$CI_JOB_TEMP/provider-benchmark"
+      - name: Preserve real provider comparison and timing evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: provider-batch-arm-${{ github.sha }}
+          path: |
+            ${{ env.CI_JOB_TEMP }}/provider-benchmark/*.json
+            ${{ env.CI_JOB_TEMP }}/provider-benchmark/*.stderr
+            ${{ env.CI_JOB_TEMP }}/provider-codec-build.json
+          if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with:
+          cleanup: 'true'
+
+  recovery-runtime:
+    name: rust recovery runtime
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'workflow_dispatch' || inputs.benchmark || (!inputs.numerics_repro && !inputs.transport_repro)) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}/rust/tools
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/job-temp
+        with: {validation-context: 'true'}
+      - uses: ./.github/actions/rust-path
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
+      - name: Prepare recovery comparison dependencies
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 3072
+          sudo apt-get update
+          sudo apt-get install -y capnproto libcapnp-dev clang libclang-dev pkg-config libssl-dev
+          python -m pip install anyio==4.12.1 aiohttp==3.13.3
+      - name: Reproduce PTY EOF before child exit without loosening exit checks
+        working-directory: .
+        run: python3 -m unittest discover -s tools/ci/tests -p test_recovery_pty_exit.py -v
+      - name: Build standalone recovery service
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build -p openpilot-carrot-recovery -p openpilot-process-supervision --bins --examples --locked
+          sudo apt-get install -y tmux
+      - name: Compare recovery HTTP, terminal, support, actions and upload paths
+        working-directory: .
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          python -P rust/tools/carrot_recovery_http_control.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/http" --standalone
+          python -P rust/tools/carrot_recovery_terminal_control.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/terminal"
+          python -P rust/tools/carrot_recovery_terminal_lifecycle.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/lifecycle"
+          python -P rust/tools/carrot_recovery_support_control.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/support"
+          python -P rust/tools/carrot_recovery_support_shutdown.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/shutdown"
+          python -P rust/tools/carrot_recovery_actions_control.py --binary rust/target/debug/examples/recovery_actions --tmux /usr/bin/tmux --output "$RUNNER_TEMP/recovery/actions"
+          python -P rust/tools/check_carrot_recovery_upload.py --binary rust/target/debug/examples/upload --http-binary rust/target/debug/examples/recovery_actions --output "$RUNNER_TEMP/recovery/upload"
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery --lib --no-run --locked --message-format=json > "$RUNNER_TEMP/recovery/tests.jsonl"
+          recovery_test=$(python -c 'import json,sys; print(next(x["executable"] for x in map(json.loads,open(sys.argv[1])) if x.get("reason")=="compiler-artifact" and x.get("profile",{}).get("test") and x["target"]["name"]=="openpilot_carrot_recovery"))' "$RUNNER_TEMP/recovery/tests.jsonl")
+          python -P rust/tools/carrot_recovery_cwp_check.py --test-binary "$recovery_test" --output "$RUNNER_TEMP/recovery/cwp"
+      - name: Preserve recovery source comparisons
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-recovery-evidence
+          path: ${{ env.CI_JOB_TEMP }}/recovery/
+          if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true', validation-context: 'true'}
+
+  execution-contracts:
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'workflow_dispatch' || inputs.benchmark || (!inputs.numerics_repro && !inputs.transport_repro)) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3 onnx==1.20.1 python-xlib==0.33
+      - run: sudo apt-get update && sudo apt-get install -y libllvm18 xvfb
+      - name: Reject writes to immutable ONNX inputs while retaining exact weights
+        env:
+          DEV: CPU:LLVM
+          LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
+          PYTHONPATH: ${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
+        run: python -m pytest -c /dev/null --noconftest -p no:cacheprovider rust/tools/tests/test_offline_qcom_onnx.py -q
+      - run: python3 -m unittest discover -s tools/ci/tests -p test_native_input_publication.py -v
+      - run: python3 -m unittest discover -s tools/ci/tests -p test_native_source_entry.py -v
+      - run: python3 -m unittest discover -s tools/ci/tests -p test_local_native_workflows.py -v
+      - run: python3 -m unittest discover -s tools/ci/tests -p test_parallel_cases.py -v
+      - run: python3 -m unittest discover -s tools/ci/tests -p test_joystick_publication_pairs.py -v
+      - run: python3 -m unittest discover -s tools/ci/tests -p test_cweb_address_admission.py -v
+      - run: python3 -m unittest discover -s tools/ci/tests -p test_agnos_phases.py -v
+      - run: python3 -m unittest discover -s tools/ci/tests -p test_companion_elf_scope.py -v
+      - run: python3 -m unittest discover -s tools/ci/tests -p test_provider_batch_adapter.py -v
+      - run: PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/opendbc_repo:$GITHUB_WORKSPACE/rust/tools" python -m pytest -c /dev/null --noconftest -p no:cacheprovider rust/tools/tests/test_card_ci.py rust/tools/tests/test_card_phase_fence.py rust/tools/tests/test_card_admission.py rust/tools/tests/test_ui_ci.py tools/ci/tests/test_native_disk_guard.py -q

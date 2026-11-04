@@ -112,17 +112,19 @@ impl Updater<'_> {
         } else {
             self.params.remove("LastUpdateException")?;
         }
+        let next = match crate::native::context()? {
+            Some(native) => native
+                .candidate_root()?
+                .unwrap_or_else(|| self.context.paths.finalized()),
+            None => self.context.paths.finalized(),
+        };
         for (path, description_key, notes_key) in [
             (
                 &self.context.paths.base.clone(),
                 "UpdaterCurrentDescription",
                 "UpdaterCurrentReleaseNotes",
             ),
-            (
-                &self.context.paths.finalized(),
-                "UpdaterNewDescription",
-                "UpdaterNewReleaseNotes",
-            ),
+            (&next, "UpdaterNewDescription", "UpdaterNewReleaseNotes"),
         ] {
             let description = self.get_description(path)?;
             self.params.put(description_key, description.as_bytes())?;

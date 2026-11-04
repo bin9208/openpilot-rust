@@ -1,0 +1,108 @@
+name: Actual runtime source-stamp reuse
+on:
+  push:
+    branches: ['codex/fix-608-*']
+    paths:
+      - 'rust/crates/logging/**'
+      - 'rust/crates/loggerd/**'
+      - 'rust/crates/runtime-build/**'
+      - 'tools/ci/native-apt-shell'
+      - '.github/actions/job-temp/action.yml'
+      - 'tools/ci/check_native_source_reuse.py'
+      - '.github/workflows/native-source-reuse.yml'
+permissions:
+  contents: read
+concurrency:
+  group: native-source-reuse-${{ github.ref }}-parallel-v2
+  queue: max
+  cancel-in-progress: false
+jobs:
+  real-runtime:
+    name: Actual logger source reuse (${{ matrix.arch }})
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ${{ matrix.arch == 'aarch64' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
+    timeout-minutes: ${{ matrix.arch == 'aarch64' && 360 || 45 }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, aarch64]
+    env:
+      LOCAL_CI_ARCH: ${{ matrix.arch }}
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      OPENPILOT_NATIVE_BUILD_TIMINGS: '1'
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Require the GitHub-hosted Linux ARM64 reuse runner
+        if: matrix.arch == 'aarch64'
+        shell: bash
+        run: |
+          test "$GITHUB_ACTIONS" = true
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_OS" = Linux
+          test "$RUNNER_ARCH" = ARM64
+          test "$(uname -m)" = aarch64
+          test "$(dpkg --print-architecture)" = arm64
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+      - name: Pin the native ARM oracle interpreter
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Expose native ARM Rust tools
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
+      - uses: ./.github/actions/local-arm
+      - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+        with:
+          python-version: '3.12.14'
+      - name: Admit the actual dependency and source fixture build
+        run: |
+          python3 - <<'PY'
+          import os, shutil
+          growth = 8 * 1024**3
+          for path in (os.environ['RUNNER_TEMP'], os.environ['GITHUB_WORKSPACE']):
+              free = shutil.disk_usage(path).free
+              print(f'path={path} available_bytes={free} expected_dependency_source_and_two_cache_growth_bytes={growth}')
+              if free < growth:
+                  raise SystemExit('insufficient space for this operation; all other sources/caches retained')
+          PY
+          rustup toolchain install 1.94.0 --profile minimal --component rustfmt --component clippy
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ pkg-config clang-18 libclang-18-dev libzmq3-dev time 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*'
+      - name: Compile the real build driver and preserve original logging/loggerd regressions
+        run: |
+          rustfmt --edition 2021 --check rust/crates/logging/{build.rs,src/context.rs,src/native/wire.rs,src/producer.rs} rust/crates/loggerd/{build.rs,src/metadata.rs} rust/crates/runtime-build/src/generation.rs
+          cargo build --manifest-path rust/Cargo.toml --locked --release -p openpilot-runtime-build --bin openpilot-runtime-build
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-logging -p openpilot-loggerd
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-logging -p openpilot-loggerd --all-targets -- -D warnings
+      - name: Prove docs-only and one-target reuse with actual runtime crates and legacy control
+        run: |
+          set -o pipefail
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          export NATIVE_REUSE_BUILD_DRIVER="$native_target/release/openpilot-runtime-build"
+          /usr/bin/time -v -o "$RUNNER_TEMP/native-source-reuse-resources.txt" python3 tools/ci/check_native_source_reuse.py 2>&1 | tee "$RUNNER_TEMP/native-source-reuse-tests.log"
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with: {cleanup: 'true'}
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: native-source-reuse-${{ matrix.arch }}-${{ github.sha }}
+          path: |
+            ${{ env.CI_JOB_TEMP }}/native-source-reuse-608/evidence/*.json
+            ${{ env.CI_JOB_TEMP }}/native-source-reuse-resources.txt
+            ${{ env.CI_JOB_TEMP }}/native-source-reuse-tests.log
+            ${{ env.CI_JOB_TEMP }}/local-arm/*.json
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

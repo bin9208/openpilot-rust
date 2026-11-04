@@ -1,0 +1,225 @@
+{
+  "schema": 1,
+  "profile": "opencv413-shared",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "source_archive": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/runtime-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31/openpilot-rust-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31-aarch64.tar.gz",
+    "sha256": "9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291",
+    "bytes": 1155969168
+  },
+  "runtime_manifest_sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+  "members": {
+    "install/lib/libopencv_core.so": {
+      "source": "rust/bin/lib/libopencv_core.so",
+      "sha256": "5d04fe4002d97cb71e3dd4b5b41d4c6375759be72cdda4b44a37003a8cf6f870",
+      "bytes": 0,
+      "mode": 0,
+      "link": "libopencv_core.so.4.13.0"
+    },
+    "install/lib/libopencv_core.so.4.13.0": {
+      "source": "rust/bin/lib/libopencv_core.so.4.13.0",
+      "sha256": "5d04fe4002d97cb71e3dd4b5b41d4c6375759be72cdda4b44a37003a8cf6f870",
+      "bytes": 4974024,
+      "mode": 292,
+      "link": null
+    },
+    "install/lib/libopencv_core.so.413": {
+      "source": "rust/bin/lib/libopencv_core.so.413",
+      "sha256": "5d04fe4002d97cb71e3dd4b5b41d4c6375759be72cdda4b44a37003a8cf6f870",
+      "bytes": 0,
+      "mode": 0,
+      "link": "libopencv_core.so.4.13.0"
+    },
+    "install/lib/libopencv_dnn.so": {
+      "source": "rust/bin/lib/libopencv_dnn.so",
+      "sha256": "8efc1a5b8564c67bd5d7615a6ef54a22b4834dadeb4712e0f6e33b291dfd967e",
+      "bytes": 0,
+      "mode": 0,
+      "link": "libopencv_dnn.so.4.13.0"
+    },
+    "install/lib/libopencv_dnn.so.4.13.0": {
+      "source": "rust/bin/lib/libopencv_dnn.so.4.13.0",
+      "sha256": "8efc1a5b8564c67bd5d7615a6ef54a22b4834dadeb4712e0f6e33b291dfd967e",
+      "bytes": 8591384,
+      "mode": 292,
+      "link": null
+    },
+    "install/lib/libopencv_dnn.so.413": {
+      "source": "rust/bin/lib/libopencv_dnn.so.413",
+      "sha256": "8efc1a5b8564c67bd5d7615a6ef54a22b4834dadeb4712e0f6e33b291dfd967e",
+      "bytes": 0,
+      "mode": 0,
+      "link": "libopencv_dnn.so.4.13.0"
+    },
+    "install/lib/libopencv_imgcodecs.so": {
+      "source": "rust/bin/lib/libopencv_imgcodecs.so",
+      "sha256": "dced5a2b6faf6dcb31fcb6210f6eda7d88e0b6a66b8c31bf02122c4d6cfc1d75",
+      "bytes": 0,
+      "mode": 0,
+      "link": "libopencv_imgcodecs.so.4.13.0"
+    },
+    "install/lib/libopencv_imgcodecs.so.4.13.0": {
+      "source": "rust/bin/lib/libopencv_imgcodecs.so.4.13.0",
+      "sha256": "dced5a2b6faf6dcb31fcb6210f6eda7d88e0b6a66b8c31bf02122c4d6cfc1d75",
+      "bytes": 1584592,
+      "mode": 292,
+      "link": null
+    },
+    "install/lib/libopencv_imgcodecs.so.413": {
+      "source": "rust/bin/lib/libopencv_imgcodecs.so.413",
+      "sha256": "dced5a2b6faf6dcb31fcb6210f6eda7d88e0b6a66b8c31bf02122c4d6cfc1d75",
+      "bytes": 0,
+      "mode": 0,
+      "link": "libopencv_imgcodecs.so.4.13.0"
+    },
+    "install/lib/libopencv_imgproc.so": {
+      "source": "rust/bin/lib/libopencv_imgproc.so",
+      "sha256": "b8964efe7434337b60ece086c76eb5e002d5409d9605994c467ce4f5e3e5e54b",
+      "bytes": 0,
+      "mode": 0,
+      "link": "libopencv_imgproc.so.4.13.0"
+    },
+    "install/lib/libopencv_imgproc.so.4.13.0": {
+      "source": "rust/bin/lib/libopencv_imgproc.so.4.13.0",
+      "sha256": "b8964efe7434337b60ece086c76eb5e002d5409d9605994c467ce4f5e3e5e54b",
+      "bytes": 5468480,
+      "mode": 292,
+      "link": null
+    },
+    "install/lib/libopencv_imgproc.so.413": {
+      "source": "rust/bin/lib/libopencv_imgproc.so.413",
+      "sha256": "b8964efe7434337b60ece086c76eb5e002d5409d9605994c467ce4f5e3e5e54b",
+      "bytes": 0,
+      "mode": 0,
+      "link": "libopencv_imgproc.so.4.13.0"
+    },
+    "install/lib/libopencv_videoio.so": {
+      "source": "rust/bin/lib/libopencv_videoio.so",
+      "sha256": "c332e4b79febaf4bed3c45d98da9ae8649a7b5c621a19f989174b83f029f3b42",
+      "bytes": 0,
+      "mode": 0,
+      "link": "libopencv_videoio.so.4.13.0"
+    },
+    "install/lib/libopencv_videoio.so.4.13.0": {
+      "source": "rust/bin/lib/libopencv_videoio.so.4.13.0",
+      "sha256": "c332e4b79febaf4bed3c45d98da9ae8649a7b5c621a19f989174b83f029f3b42",
+      "bytes": 561064,
+      "mode": 292,
+      "link": null
+    },
+    "install/lib/libopencv_videoio.so.413": {
+      "source": "rust/bin/lib/libopencv_videoio.so.413",
+      "sha256": "c332e4b79febaf4bed3c45d98da9ae8649a7b5c621a19f989174b83f029f3b42",
+      "bytes": 0,
+      "mode": 0,
+      "link": "libopencv_videoio.so.4.13.0"
+    },
+    "provenance/original-runtime-manifest.json": {
+      "source": "rust/runtime-manifest.json",
+      "sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+      "bytes": 241671,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/opencv/KleidiCV-Apache-2.0.txt": {
+      "source": "rust/bin/licenses/opencv/KleidiCV-Apache-2.0.txt",
+      "sha256": "074e6e32c86a4c0ef8b3ed25b721ca23aca83df277cd88106ef7177c354615ff",
+      "bytes": 10280,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/opencv/OpenCV-Apache-2.0.txt": {
+      "source": "rust/bin/licenses/opencv/OpenCV-Apache-2.0.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "bytes": 11358,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/opencv/OpenCV-COPYRIGHT.txt": {
+      "source": "rust/bin/licenses/opencv/OpenCV-COPYRIGHT.txt",
+      "sha256": "854538f426422b0f989a5e5b7641e5943753d10ef29ea54901dcd36039e43f58",
+      "bytes": 790,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/opencv/carotene-BSD-3-Clause.txt": {
+      "source": "rust/bin/licenses/opencv/carotene-BSD-3-Clause.txt",
+      "sha256": "fb86be28d90bfef2fffcb86469f7c19962b7a367da9676a521cc1fc33f2996fc",
+      "bytes": 2010,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/opencv/external-hal-provenance.json": {
+      "source": "rust/bin/licenses/opencv/external-hal-provenance.json",
+      "sha256": "bc2ea19633e4ce3cc36163cd9bdd544c841a71729b98b3ac0defd248dd03b31b",
+      "bytes": 500,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/opencv/flatbuffers-Apache-2.0.txt": {
+      "source": "rust/bin/licenses/opencv/flatbuffers-Apache-2.0.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "bytes": 11358,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/opencv/libjpeg-turbo-README.ijg": {
+      "source": "rust/bin/licenses/opencv/libjpeg-turbo-README.ijg",
+      "sha256": "75815e3bf6484201a3c3d17a1bbf10f2e8e3237f84df10a2357ea896db2a81d6",
+      "bytes": 12799,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/opencv/libjpeg-turbo-licenses.md": {
+      "source": "rust/bin/licenses/opencv/libjpeg-turbo-licenses.md",
+      "sha256": "96f5b328adbb78eeaaec6980d73fd558cb1e4d62560ed615646bc3cf5e532430",
+      "bytes": 5620,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/opencv/native-libraries.sha256": {
+      "source": "rust/bin/licenses/opencv/native-libraries.sha256",
+      "sha256": "d34c38a3ae14a51624759d526a825e596297ff203ad3ad6861cd08a32798934d",
+      "bytes": 23682,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/opencv/opencv-defined-access.patch": {
+      "source": "rust/bin/licenses/opencv/opencv-defined-access.patch",
+      "sha256": "7d17439697d9786b43b2a44dc9eecea34381adb6d2f14c6892266b6699a49aec",
+      "bytes": 6658,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/opencv/protobuf-BSD-3-Clause.txt": {
+      "source": "rust/bin/licenses/opencv/protobuf-BSD-3-Clause.txt",
+      "sha256": "6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d",
+      "bytes": 1732,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/opencv/provenance.json": {
+      "source": "rust/bin/licenses/opencv/provenance.json",
+      "sha256": "2ac71746a0adc17e66a8be6abd602c4b4a33dfb36063e1a68030061480306b5f",
+      "bytes": 10853,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/opencv/source.json": {
+      "source": "rust/bin/licenses/opencv/source.json",
+      "sha256": "454456bbc7de2ceef612adea9425ed43b51b63bc6a4e56bb55cc89391bd20f19",
+      "bytes": 565,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/opencv/zlib-License.txt": {
+      "source": "rust/bin/licenses/opencv/zlib-License.txt",
+      "sha256": "845efc77857d485d91fb3e0b884aaa929368c717ae8186b66fe1ed2495753243",
+      "bytes": 1002,
+      "mode": 292,
+      "link": null
+    }
+  }
+}

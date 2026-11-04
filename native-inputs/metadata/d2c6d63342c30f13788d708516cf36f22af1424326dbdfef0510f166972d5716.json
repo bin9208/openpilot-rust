@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "role": "openpilot-source-bound-provider",
+  "profile": "usbgpu-generic-hcq-data",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "provider_source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "tree_sha256": "868f62b7ff585e938c66f55aa9892b16d5518b24d326c6042c7617d9b1dbf663",
+  "asset": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-provider-usbgpu-hcq-data-4cd301106d2b446d3f854ee15a1a91f117a9d86dde6dd1fcc69a34a30472190f/usbgpu-hcq-data.tar.gz",
+    "sha256": "4cd301106d2b446d3f854ee15a1a91f117a9d86dde6dd1fcc69a34a30472190f",
+    "bytes": 812980
+  }
+}

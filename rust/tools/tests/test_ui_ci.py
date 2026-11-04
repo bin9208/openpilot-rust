@@ -1,13 +1,42 @@
+from contextlib import closing
 import json
+import os
 from pathlib import Path
 import shlex
+import time
 import tomllib
 
 import pytest
 import yaml
 
-from check_ui_ci import vision_peer
+from check_ui_ci import display_server, vision_peer
 from card_qa.ci import ROOT
+
+
+def test_owned_display_survives_twenty_transient_client_disconnects(tmp_path: Path) -> None:
+  from Xlib import Xatom
+  from Xlib.display import Display
+
+  with display_server(tmp_path) as display:
+    with closing(Display(display)) as client:
+      marker = client.intern_atom('_OPENPILOT_CI_DISPLAY_OWNER')
+      client.screen().root.change_property(marker, Xatom.CARDINAL, 32, [os.getpid()])
+      client.sync()
+    for _ in range(20):
+      # This is a client-free gap in the old helper, not a retry on failure.
+      time.sleep(0.05)
+      with closing(Display(display)) as client:
+        value = client.screen().root.get_full_property(marker, Xatom.CARDINAL)
+        assert value is not None and list(value.value) == [os.getpid()]
+
+
+def test_owned_display_reaps_xvfb_after_a_failed_check(tmp_path: Path) -> None:
+  with pytest.raises(RuntimeError, match='check failed'):
+    with display_server(tmp_path):
+      pid = json.loads((tmp_path / 'display.json').read_text())['pid']
+      raise RuntimeError('check failed')
+  with pytest.raises(ChildProcessError):
+    os.waitpid(pid, os.WNOHANG)
 
 
 def test_vision_peer_uses_current_build_receipt_with_stale_cache_present(tmp_path: Path) -> None:

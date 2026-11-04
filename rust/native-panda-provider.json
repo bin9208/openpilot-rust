@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "profile": "panda-firmware-runtime",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "source_archive": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/runtime-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31/openpilot-rust-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31-aarch64.tar.gz",
+    "sha256": "9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291",
+    "bytes": 1155969168
+  },
+  "runtime_manifest_sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+  "members": {
+    "panda/board/obj/bootstub.panda.bin": {
+      "source": "panda/board/obj/bootstub.panda.bin",
+      "sha256": "52ac7ba40cb123fe52ef1ba609417eb602ad924c9bff2cdc6d1009a464908670",
+      "bytes": 13796,
+      "mode": 292,
+      "link": null
+    },
+    "panda/board/obj/bootstub.panda_h7.bin": {
+      "source": "panda/board/obj/bootstub.panda_h7.bin",
+      "sha256": "0c77563bec36e9836706d7dd18b1fcd1e4f74651bdc5b2d17950daf588cac7ed",
+      "bytes": 18608,
+      "mode": 292,
+      "link": null
+    },
+    "panda/board/obj/panda.bin.signed": {
+      "source": "panda/board/obj/panda.bin.signed",
+      "sha256": "9af58e47888c3d445536ce151218bdec7dec4b9fe4e56d9f5fb5ded3e3470a88",
+      "bytes": 58160,
+      "mode": 292,
+      "link": null
+    },
+    "panda/board/obj/panda_h7.bin.signed": {
+      "source": "panda/board/obj/panda_h7.bin.signed",
+      "sha256": "db99218a885a7438ed4a8923fd146f2af961abbc533ab937d8c5ee310080ffeb",
+      "bytes": 85928,
+      "mode": 292,
+      "link": null
+    },
+    "provenance/original-runtime-manifest.json": {
+      "source": "rust/runtime-manifest.json",
+      "sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+      "bytes": 241671,
+      "mode": 292,
+      "link": null
+    },
+    "rust/bin/licenses/panda/LICENSE": {
+      "source": "rust/bin/licenses/panda/LICENSE",
+      "sha256": "0f8f541ee42cf97353a043105a3108c2d599fe381d4b90ff0e82e328ffc5d8f5",
+      "bytes": 1059,
+      "mode": 292,
+      "link": null
+    },
+    "rust/bin/licenses/panda/provenance.json": {
+      "source": "rust/bin/licenses/panda/provenance.json",
+      "sha256": "6e3eeae819ad4c6eacaad619cfc020ef0edc9a774fc4c639bc7efd96be825b2e",
+      "bytes": 28643,
+      "mode": 292,
+      "link": null
+    }
+  },
+  "source_contract_sha256": "206916e6a5722e7159e0607b2dcef1dd93f31124a2d9462ef875c235d3e1ae58"
+}

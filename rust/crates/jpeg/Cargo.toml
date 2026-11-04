@@ -21,3 +21,7 @@ cc = "1.2"
 [[example]]
 name = "jpeg_options"
 required-features = ["native-skip-miri"]
+
+[[example]]
+name = "native_turbojpeg"
+required-features = ["native-skip-miri"]

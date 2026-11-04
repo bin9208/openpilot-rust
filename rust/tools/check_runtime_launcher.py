@@ -37,7 +37,7 @@ def records(path: Path) -> list[dict]:
 
 def run(binary: Path, provider: Path, output: Path, entry: Path | None = None) -> None:
   output.mkdir(parents=True, exist_ok=False)
-  if shutil.disk_usage(output).free < (25 * 1024**3 + 512 * 1024**2):
+  if shutil.disk_usage(output).free < 512 * 1024**2:
     raise RuntimeError('insufficient space for owned bootstrap package')
   rows = []
   for scenario in ('ready', 'package-corrupt', 'metadata-mismatch', 'installer-unlisted', 'installer-missing',
@@ -87,6 +87,17 @@ def run(binary: Path, provider: Path, output: Path, entry: Path | None = None) -
     environment.update(
       {'OWNED_BOOTSTRAP_RECORD': str(event_file), 'OWNED_VERIFY': 'ready' if scenario == 'agnos-activate' else 'missing', 'CARROT_WEB_EXTERNAL': '1'}
     )
+    if scenario == 'ready':
+      started = time.monotonic()
+      verification = subprocess.run([str(binary), '--verify-package', '--paths', str(paths_file)],
+                                    env=environment, capture_output=True, text=True, check=False, timeout=60)
+      (root / 'package-verification.json').write_text(json.dumps({
+        'elapsed_seconds': time.monotonic() - started, 'returncode': verification.returncode,
+        'manifest_files': len(manifest['files']),
+        'manifest_bytes': sum((repo / row['path']).stat().st_size for row in manifest['files']),
+        'stdout': verification.stdout, 'stderr': verification.stderr,
+      }, indent=2) + '\n')
+      verification.check_returncode()
     if entry is not None:
       installed_entry = repo / 'launch_openpilot.sh'
       shutil.copy2(entry, installed_entry)

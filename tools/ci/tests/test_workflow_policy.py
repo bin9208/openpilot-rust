@@ -1,4 +1,9 @@
 """Regression guard for required-check routing and fail-closed aggregation."""
+import ast
+import os
+import shlex
+import subprocess
+import tempfile
 from pathlib import Path
 import unittest
 
@@ -20,8 +25,10 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertEqual(spec['jobs']['build']['with']['run_number'], '1')
     gate = spec['jobs']['gate']
     self.assertEqual(set(gate['needs']), {'build', 'navigation', 'apk', 'jetlink'})
-    self.assertEqual(gate['if'], '${{ always() }}')
-    step = gate['steps'][0]
+    self.assertEqual(gate['if'], "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()) }}")
+    self.assertEqual(len(gate['steps']), 2)
+    self.assertEqual(gate['steps'][0]['run'], 'test "$GITHUB_ACTIONS" = true\nif [[ $RUNNER_ENVIRONMENT == self-hosted ]]; then\n  [[ $RUNNER_NAME == bin-actions || $RUNNER_NAME == bin-actions2 || $RUNNER_NAME == bin-actions3 ]]\nelse\n  [[ $RUNNER_ENVIRONMENT == github-hosted && $RUNNER_OS == Linux &&\n     ( $RUNNER_ARCH == X64 || $RUNNER_ARCH == ARM64 ) ]]\nfi\n')
+    step = gate['steps'][1]
     for name in ('BUILD', 'NAVIGATION', 'APK', 'JETLINK'):
       self.assertIn(f'test "${name}" = success', step['run'])
     for job in ('build', 'navigation', 'apk', 'jetlink'):
@@ -35,6 +42,77 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertTrue({'main', 'dev'}.issubset(events['push']['branches']))
     self.assertIn('pull_request', events)
 
+  def test_original_event_receipts_are_limited_to_the_four_actual_validation_jobs(self):
+    expected = {('rust.yml', 'workspace'), ('tests.yaml', 'build_release'),
+                ('user-docs.yaml', 'check_user_docs')}
+    found = set()
+    for name in ('rust.yml', 'tests.yaml', 'user-docs.yaml'):
+      for key, job in workflow(name)['jobs'].items():
+        steps = [step for step in job.get('steps', []) if step.get('uses') == './.github/actions/job-temp']
+        starts = [step for step in steps if step.get('with', {}).get('cleanup') != 'true']
+        ends = [step for step in steps if step.get('with', {}).get('cleanup') == 'true']
+        if any(step.get('with', {}).get('validation-context') == 'true' for step in starts):
+          found.add((name, key))
+          self.assertEqual(len(starts), 1)
+          self.assertEqual(len(ends), 1)
+          self.assertEqual(ends[0]['with']['validation-context'], 'true')
+          self.assertEqual(ends[0]['if'], 'always()')
+    self.assertEqual(found, expected)
+    action = yaml.load((ROOT/'.github/actions/job-temp/action.yml').read_text(), Loader=yaml.BaseLoader)
+    uploads = [step for step in action['runs']['steps'] if step.get('uses', '').startswith('actions/upload-artifact@')]
+    self.assertEqual(len(uploads), 1)
+    self.assertIn("steps.verify_validation_context.outcome == 'success'", uploads[0]['if'])
+
+
+
+
+class NativeAptSourceViewTests(unittest.TestCase):
+  @classmethod
+  def setUpClass(cls):
+    cls.text = (ROOT/'tools/ci/native-apt-shell').read_text()
+    code = cls.text.split("<<'PY_APT_SOURCES'\n", 1)[1].split('\nPY_APT_SOURCES', 1)[0]
+    tree = ast.parse(code)
+    pure = [n for n in tree.body if isinstance(n, (ast.Import, ast.ImportFrom, ast.FunctionDef))]
+    cls.functions = {}
+    exec(compile(ast.Module(body=pure, type_ignores=[]), '<actual-APT-source-parsers>', 'exec'), cls.functions)
+
+  def test_canonical_deb822_and_multiarch_ports_keep_signature_and_architecture_fields(self):
+    archive = ('Types: deb\nURIs: https://archive.ubuntu.com/ubuntu/\n'
+               'Suites: noble noble-updates\nComponents: main universe\n'
+               'Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\nArchitectures: amd64\n')
+    ports = archive.replace('archive.ubuntu.com/ubuntu', 'ports.ubuntu.com/ubuntu-ports').replace('amd64', 'arm64')
+    self.assertTrue(self.functions['official_deb822'](archive))
+    self.assertTrue(self.functions['official_deb822'](ports))
+    ppa = archive.replace('archive.ubuntu.com/ubuntu', 'ppa.launchpadcontent.net/appimagelauncher-team/stable/ubuntu')
+    self.assertFalse(self.functions['official_deb822'](ppa))
+    with self.assertRaises(ValueError):
+      self.functions['official_deb822'](archive+'Trusted: yes\n')
+    with self.assertRaises(ValueError):
+      self.functions['official_deb822'](archive.replace('https://archive.ubuntu.com/ubuntu/',
+        'https://archive.ubuntu.com/ubuntu/ https://ppa.launchpadcontent.net/example/stable/ubuntu/'))
+
+  def test_legacy_sources_and_ports_are_selected_without_accepting_private_or_untrusted_sources(self):
+    source = 'deb [arch=arm64 signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] https://ports.ubuntu.com/ubuntu-ports noble main'
+    self.assertTrue(self.functions['official_legacy'](source))
+    self.assertTrue(self.functions['official_legacy']('deb https://security.ubuntu.com/ubuntu noble-security main'))
+    self.assertFalse(self.functions['official_legacy']('deb https://ppa.launchpadcontent.net/example/stable/ubuntu noble main'))
+    self.assertFalse(self.functions['official_legacy']('deb https://archive.ubuntu.com.example/ubuntu noble main'))
+    with self.assertRaises(ValueError):
+      self.functions['official_legacy'](source.replace('arch=arm64', 'trusted=yes arch=arm64'))
+
+  def test_native_host_detection_does_not_reenter_path_uname_from_bash_env(self):
+    with tempfile.TemporaryDirectory() as temporary:
+      root = Path(temporary)
+      called = root/'unexpected-uname'
+      fake = root/'uname'
+      fake.write_text('#!/usr/bin/env bash\nprintf called > '+shlex.quote(str(called))+'\nexit 99\n')
+      fake.chmod(0o755)
+      environment = dict(os.environ, BASH_ENV=str(ROOT/'tools/ci/native-apt-shell'),
+                         PATH=str(root)+':'+os.environ['PATH'])
+      result = subprocess.run(['/usr/bin/bash', '-eu', '-c', ':'], env=environment,
+                              capture_output=True, text=True, timeout=10)
+      self.assertEqual(result.returncode, 0, result.stderr)
+      self.assertFalse(called.exists())
 
 if __name__ == '__main__':
   unittest.main()

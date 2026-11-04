@@ -2,6 +2,7 @@
 pub mod agnos;
 pub mod common;
 pub mod markdown;
+pub mod native;
 mod overlay;
 mod params;
 pub mod paths;
@@ -14,6 +15,8 @@ mod report;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("native generation update: {0}")]
+    Native(String),
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]

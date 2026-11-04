@@ -97,6 +97,9 @@ impl<'a> Updater<'a> {
             .into())
     }
     pub fn update_ready(&mut self) -> Result<bool, Error> {
+        if let Some(native) = crate::native::context()? {
+            return native.ready();
+        }
         let finalized = self.context.paths.finalized();
         if !crate::common::get_consistent_flag(&finalized) {
             return Ok(false);
@@ -183,6 +186,13 @@ impl<'a> Updater<'a> {
         Ok(())
     }
     pub fn fetch_update(&mut self) -> Result<(), Error> {
+        if crate::native::context()?.is_some() && !self.update_available()? {
+            report::info(
+                self.context.logger,
+                "native source is current; no build or runtime download needed",
+            )?;
+            return Ok(());
+        }
         report::info(
             self.context.logger,
             "attempting git fetch inside staging overlay",
