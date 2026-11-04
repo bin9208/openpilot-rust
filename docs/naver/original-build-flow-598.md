@@ -511,3 +511,24 @@ helper는3,686,368바이트/SHA256
 [현재 시험 안내](native-build-test-guide-598.md)의 첫 절을 따른다.
 최종 코드/입력을 PR에 한 번 반영해 정상 필수 검사를 시간 측정과 병행하며,
 기본 확인 결과 전에는 PR을 ready나 기기 시험 완료로 표시하지 않는다.
+
+
+## 2026-11-04 병행 PR의 고정 비교·공간 admission 후속 — #677
+
+최종 코드 head `4299d59e150565aaf01c378af73438369d73ceb6`를 반영해 시간 측정과
+정상 PR 검사를 병행했다. [foundation41745907809](https://github.com/bin9208/openpilot-rust/actions/runs/41745907809)의
+ARM job126298706231은 고정 원본 비교18개 중17개 성공/1개 실패였다. 실제 index로
+factory를 선택하도록 바꾼 workflow에 대해 두 번째 job-condition 기대값만 과거
+`inputs.input_producer_run == ''`로 남아 있었다. 이를 `inputs.index_sha256 == ''`로
+맞추며 원래 명령·의존성·matrix·도구/소스 pin 비교는 유지한다.
+
+별도 [Rust41745925354 / encoder126298770162](https://github.com/bin9208/openpilot-rust/actions/runs/41745925354/job/126298770162)는
+원본 encoder host 빌더의 고정25GiB floor가 남아 거부했다. 실제 free10,515,775,488바이트,
+작업 growth536,870,912바이트이며 해당 원본 비교는 실행 전이다.
+[#677](https://github.com/bin9208/openpilot-rust/issues/677)에서 이 한 빌더의 floor를64MiB
+여유분으로 바꾸고512MiB 증가량과 부족 공간 거부를 유지한다. C++ source 목록·컴파일
+argv·3분 timeout·receipt 및 codec/V4L/실제 runtime 비교는 그대로다.
+이 helper는 고정 ARM provider 소스가 아니며 기기 runtime 경로에서도 호출하지 않는다.
+로컬 AST와 수정 전 파일 전체의 정확한 두 문자열 diff만 확인한다. 기능 결과는 새 Actions로
+판단한다. 이 CI 후속은 source27의 기기 코드/입력에 영향을 주지 않으므로 진행 중인
+최초/무변경/작은 수정 측정을 다시 시작하지 않는다.

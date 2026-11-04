@@ -738,7 +738,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     if 'runs-on' in before:
                         expected_condition = condition(before.get('if', ''))
                         if relative == '.github/workflows/runtime-source-build.yml':
-                            expected_condition = expected_condition[:-3] + " && inputs.input_producer_run == '' }}"
+                            expected_condition = expected_condition[:-3] + " && inputs.index_sha256 == '' }}"
                         self.assertEqual(after['if'], expected_condition)
                     for event, config in original.get('on', {}).items():
                         if relative == '.github/workflows/fast-checks.yml' and event == 'push':
