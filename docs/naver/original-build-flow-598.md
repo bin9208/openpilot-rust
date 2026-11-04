@@ -532,3 +532,24 @@ argv·3분 timeout·receipt 및 codec/V4L/실제 runtime 비교는 그대로다.
 로컬 AST와 수정 전 파일 전체의 정확한 두 문자열 diff만 확인한다. 기능 결과는 새 Actions로
 판단한다. 이 CI 후속은 source27의 기기 코드/입력에 영향을 주지 않으므로 진행 중인
 최초/무변경/작은 수정 측정을 다시 시작하지 않는다.
+
+## 2026-11-04 정상 dev 병합과 post 정책 fixture 후속 — #679
+
+PR611의 source `a95a9cff6ef6a8caf6d44065a82ca4f8095e39cf`는 필수 네 context와
+실제 ARM/X64 입력·캐시 검사를 통과했다. 변경 없는 lagd cadence의 첫 실패는
+[#678](https://github.com/bin9208/openpilot-rust/issues/678)에 증거를 보존했으며,
+같은 SHA의 해당 job만 한 번 재실행한 attempt2도 원래 수치·valid·deadline 그대로
+성공했다. 이를 원인 해결로 표현하거나 #678을 닫지 않는다.
+
+정상 dev 병합 SHA는 `bb310b26c7c39a4d1136d15f5274ef8633f94cc0`이며 보호 규칙을
+우회하지 않았다. 고정 시험 후보27과의 차이는 두 문서 및 host encoder 공간 여유/
+고정 workflow 기대값뿐이다. 확정 실측·artifact pin은 #676에 있다. 기기 수용은 #528이다.
+
+[post cache41763870410](https://github.com/bin9208/openpilot-rust/actions/runs/41763870410)의
+정책 검사6개 중1개가 실패했다. 네 job을 의도한 expected 집합에 workspace에서 분리한
+`rust.yml/recovery-runtime` 한 pair가 빠져 있었다. 실제 영수증은 publisher의 추가 proof
+job에도 명시돼 있다. [#679](https://github.com/bin9208/openpilot-rust/issues/679)에서 이
+한 pair만 추가하고 시작/정리1회·always 정리·검증 성공 뒤 업로드를 그대로 비교한다.
+같은6개 정책 검사를 PR/source foundation의 기존 짧은 전처리 단계에도 추가한다.
+원래 명령·runner·matrix·필수 context·ARM/AGNOS 기준이나 기기 runtime/입력은 바꾸지 않는다.
+이 후속의 실제 통과와 정상 supporting PR/병합 후 결과는 Actions에서 확인한다.
