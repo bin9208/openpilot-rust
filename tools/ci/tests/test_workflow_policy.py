@@ -43,7 +43,7 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertIn('pull_request', events)
 
   def test_original_event_receipts_are_limited_to_the_four_actual_validation_jobs(self):
-    expected = {('rust.yml', 'workspace'), ('tests.yaml', 'build_release'),
+    expected = {('rust.yml', 'workspace'), ('rust.yml', 'recovery-runtime'), ('tests.yaml', 'build_release'),
                 ('user-docs.yaml', 'check_user_docs')}
     found = set()
     for name in ('rust.yml', 'tests.yaml', 'user-docs.yaml'):
