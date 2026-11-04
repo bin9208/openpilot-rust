@@ -502,5 +502,12 @@ helper는3,686,368바이트/SHA256
 프로토콜1/2/1과 라이선스를 유지하고 이전 독립 boot_seed 설정용 파일도 남긴다.
 바뀐 기본 index는 `bc2c62693b57842d99a3f42469239296002f3b7b61f95f1000204f3409929d61`다.
 모델·SDK·원본 archive 및 나머지16개 descriptor pin은 그대로이며 release는 발행하지 않는다.
-다음 최초/무변경/작은 수정 측정은 이 실제 Git index와 metadata를 직접 사용한다.
-이전 producer를 다시 반입해 새 seed index를 옛 것으로 덮어쓰지 않는다.
+최초/무변경/작은 수정의 고정 측정 source는 `27e735027ea24375c2f5db9c6012f06dd5e42d26`,
+실행은 [factory41743411210](https://github.com/bin9208/openpilot-rust/actions/runs/41743411210)다.
+이 실제 Git index와 metadata를 직접 사용하며 이전 producer로 새 seed를 덮어쓰지 않는다.
+확정 시간과 실제 Cargo/준비/봉인 비용, 성공·실패 및 artifact pin은
+[#676](https://github.com/bin9208/openpilot-rust/issues/676)에 기록한다.
+입력은540파일/1,270,598,981바이트다. 설치·시험 절차는
+[현재 시험 안내](native-build-test-guide-598.md)의 첫 절을 따른다.
+최종 코드/입력을 PR에 한 번 반영해 정상 필수 검사를 시간 측정과 병행하며,
+기본 확인 결과 전에는 PR을 ready나 기기 시험 완료로 표시하지 않는다.
