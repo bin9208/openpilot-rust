@@ -39,7 +39,7 @@ fn resolve(value: &str, toolchain: &Path) -> Result<PathBuf> {
     Err(format!("native tool is missing: {value}").into())
 }
 
-pub(crate) fn inspect(recipe: &Recipe, toolchain: &Path) -> Result<Tools> {
+pub(crate) fn for_build(recipe: &Recipe, toolchain: &Path) -> Result<Tools> {
     let linker = Path::new("/usr/bin/cc").canonicalize()?;
     let mut tools = Tools {
         linker: linker.clone(),
@@ -78,6 +78,11 @@ pub(crate) fn inspect(recipe: &Recipe, toolchain: &Path) -> Result<Tools> {
         tools.environment.insert(key.into(), path.clone());
         tools.environment.insert(host, path);
     }
+    Ok(tools)
+}
+
+pub(crate) fn inspect(recipe: &Recipe, toolchain: &Path) -> Result<Tools> {
+    let mut tools = for_build(recipe, toolchain)?;
     let path = std::env::join_paths([toolchain, Path::new("/usr/bin"), Path::new("/bin")])?;
     for driver in [
         &tools.linker,

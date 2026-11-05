@@ -41,7 +41,9 @@ fn run() -> Result<()> {
                         .map_err(|_| "invalid configuration pin")?,
                 );
             }
-            Some(value @ ("--build" | "--stage-update" | "--verify")) if mode.is_none() => {
+            Some(value @ ("--compile-user" | "--build" | "--stage-update" | "--verify"))
+                if mode.is_none() =>
+            {
                 mode = Some(value.to_owned())
             }
             _ => return Err("unknown or duplicate native scope argument".into()),

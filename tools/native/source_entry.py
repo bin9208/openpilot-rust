@@ -420,7 +420,7 @@ def installed_checkout(machine, source, request_owner=None):
     os.close(fd)
 
 
-def build_requested(args, machine, source, pin, observe_source=None):
+def build_requested(args, machine, source, pin, observe_source=None, prepare_only=False, prepared_inputs=None):
   started = time.monotonic()
   before = runtime.source_identity(source)
   owner = seed.owner_chain(args.request_owner)
@@ -448,7 +448,8 @@ def build_requested(args, machine, source, pin, observe_source=None):
     build_space.prepare(machine, args.source.resolve(strict=True), observe)
   result = runtime.build_runtime(prepared, plan, Path(resolved['configuration']), resolved['configuration_sha256'],
       source, owner, args.running_config, args.running_configuration_sha256, args.previous,
-      expected_source=before, observe=observe, reclaim=reclaim)
+      expected_source=before, observe=observe, reclaim=reclaim,
+      **(dict(prepare_only=True, prepared_inputs=prepared_inputs) if prepare_only else {}))
   result.update(input_index_sha256=resolved['index_sha256'], metadata=resolved['receipts'],
       machine_configuration_sha256=pin, resolver_evidence=str(attempt), local_input_copied_bytes=local_input_bytes,
       input_resolution_and_seed_ms=prepared_ms, source_entry_elapsed_ms=int((time.monotonic()-started)*1000))
@@ -565,6 +566,11 @@ def main():
   parser.add_argument('--running-configuration-sha256')
   parser.add_argument('--previous')
   args = parser.parse_args()
+  if args.launch and not args.verify_package:
+    spec = importlib.util.spec_from_file_location('openpilot_user_startup', Path(__file__).with_name('user_startup.py'))
+    user = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(user)
+    return user.launch(args, globals())
   seed.native()
   if os.geteuid() == 0:
     raise ValueError('native source entry requires the original non-root user')

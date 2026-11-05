@@ -41,6 +41,8 @@ _MEMORY_SPEC = importlib.util.spec_from_file_location('openpilot_native_build_me
 memory = importlib.util.module_from_spec(_MEMORY_SPEC)
 _MEMORY_SPEC.loader.exec_module(memory)
 
+PROGRESS = lambda *args, **kwargs: None
+
 TOOLS_FIELDS = {'schema', 'stores', 'cache', 'system_sdk_receipt', 'system_sdk_sha256',
                 'expected_source_growth_bytes', 'expected_compile_growth_bytes',
                 'remaining_object_growth_bytes', 'resources'}
@@ -105,6 +107,13 @@ class OwnedCommands:
           self.observe()
           if any(os.fstat(s.fileno()).st_size > 4*1024**2 for s in (out, err)):
             raise ValueError('native source command output exceeded 4 MiB; worker evidence retained')
+          detail = None
+          if hasattr(err, 'fileno'):
+            size = os.fstat(err.fileno()).st_size
+            tail = os.pread(err.fileno(), min(size, 2048), max(0, size - 2048))
+            lines = tail.decode('utf-8', 'replace').splitlines()
+            if lines: detail = lines[-1]
+          PROGRESS(detail=detail)
           time.sleep(0.1)
         self.observe()
         captured = []
@@ -280,7 +289,8 @@ def preserve_configuration(generations, configuration, pin):
 
 
 def build_runtime(prepared, plan, config_path, config_pin, source, request_owner=None,
-                  running_config=None, running_pin=None, previous=None, expected_source=None, observe=None, reclaim=None):
+                  running_config=None, running_pin=None, previous=None, expected_source=None, observe=None, reclaim=None,
+                  prepare_only=False, prepared_inputs=None):
   started = time.monotonic()
   phases = {}
   marked = started
@@ -337,6 +347,7 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
       return path
 
     def execute(name, command, pins):
+      PROGRESS({'prepared-inputs': 'Preparing build inputs', 'built-generation': 'Building runtime'}.get(name, name))
       check(pins)
       if reclaim is not None and name in ('prepared-inputs', 'built-generation'):
         reclaim()
@@ -372,11 +383,23 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
     timing('admission')
     small = {k: configuration[k] for k in TOOLS_FIELDS}
     first_config = save('tools-config.json', small)
+    PROGRESS('Preparing build tools')
     first = seed.current_tools(prepared, plan, first_config, source, request_owner=owner, run=commands.run)
     save('seed-current-tools.json', first)
     check()
     tools, tool_pins = tools_from_report(first['current_tools'], before, configuration)
     timing('current_tools')
+    if prepare_only and prepared_inputs is not None:
+      native = prepared_inputs(configuration, source)
+      if native is not None:
+        native_config = save('user-native-config.json', native)
+        native_pin = seed.digest(native_config)
+        retained = preserve_configuration(Path(configuration['stores']['generations']), native_config, native_pin)
+        result = dict(schema=1, source=before, configuration=str(retained), configuration_sha256=native_pin,
+            tools=str(tools), prepared_only=True, inputs_reused=True, full_runtime_build=False,
+            runtime_activated=False, runtime_started=False)
+        save('result.json', result)
+        return result
     input_report = execute('prepared-inputs', ['/usr/bin/sudo', '-n', tools/'openpilot-runtime-inputs',
         '--bootstrap-tools-scope', '--config', config_path, '--configuration-sha256', config_pin,
         '--root', source, '--request-owner', owner], tool_pins)
@@ -407,6 +430,15 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
         or native['toolchain'] != str(Path(input_report['preparations']['rust']['root'])/'bin')):
       raise ValueError('full build configuration changed its stores or resource policy')
     timing('runtime_inputs')
+    if prepare_only:
+      # Normal use needs compiler paths and prepared dependencies, not a sealed
+      # generation. Do not run the generation builder, sealer or ABI audits.
+      retained_config = preserve_configuration(Path(configuration['stores']['generations']), native_config, native_pin)
+      result = dict(schema=1, source=before, configuration=str(retained_config),
+          configuration_sha256=native_pin, tools=str(tools), prepared_only=True,
+          full_runtime_build=False, runtime_activated=False, runtime_started=False)
+      save('result.json', result)
+      return result
     built = execute('built-generation', ['/usr/bin/sudo', '-n', tools/'openpilot-native-build-scope',
         '--config', native_config, '--configuration-sha256', native_pin, '--build', '--root', source,
         '--request-owner', owner], tool_pins)

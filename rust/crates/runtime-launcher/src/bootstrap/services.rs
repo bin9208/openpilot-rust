@@ -43,6 +43,16 @@ pub(super) fn background(
 }
 
 pub(super) fn recovery(paths: &Paths) {
+    // The original standalone recovery starts before source compilation and
+    // survives failure. Reuse its listening port at the normal runtime handoff.
+    if std::net::TcpStream::connect_timeout(
+        &std::net::SocketAddr::from(([127, 0, 0, 1], 6999)),
+        std::time::Duration::from_millis(100),
+    )
+    .is_ok()
+    {
+        return;
+    }
     if let Err(error) = background(
         paths,
         "openpilot-carrot-recovery",

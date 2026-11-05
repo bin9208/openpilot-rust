@@ -12,12 +12,15 @@ fn run() -> Result<()> {
     while let Some(arg) = args.next() {
         match arg.to_str() {
             Some("--help" | "-h") => {
+                println!("       openpilot-runtime-native --compile-user --config CONFIG_JSON --configuration-sha256 SHA256 --root CHECKOUT\nNormal incremental device build. No SDK/output audit, package sealing or generation capture. Compile and install changed outputs only.");
                 println!("Usage: openpilot-runtime-native --config CONFIG_JSON [--configuration-sha256 SHA256] (--build --root CHECKOUT | --stage-update --root CHECKOUT --previous ID | --activate ID | --resolve | --launch --root CHECKOUT)\nBuild/seal a full native AGNOS runtime with source-built manager and ABI tools. Stage-update preserves the active runtime until a locked native boot. Activation requires verified offroad state. Launch resolves an actual preserved source generation and reports fallback explicitly. Requires prepared, pinned toolchain/dependencies/provider inputs. No exact-commit runtime release is fetched.");
                 println!("       openpilot-runtime-native --config RUNNING_CONFIG --configuration-sha256 RUNNING_SHA --stage-candidate ID --candidate-config PREPARED_CONFIG --candidate-configuration-sha256 PREPARED_SHA --root CHECKOUT --previous ID --request-owner PID:START_TICKS[,PID:START_TICKS]\nStage an independently prepared, fully sealed generation under the preserved running boot configuration. No activation or compilation.");
                 return Ok(());
             }
             Some(
-                value @ ("--build"
+                value @ ("--compile-user"
+                | "--compile-user-worker"
+                | "--build"
                 | "--build-worker"
                 | "--stage-update"
                 | "--stage-update-worker"
@@ -78,7 +81,11 @@ fn run() -> Result<()> {
     let config_path = config.ok_or("--config is required")?.canonicalize()?;
     let (config, configuration_sha256) = Config::read_pinned(&config_path)?;
     let mode = mode.as_deref().ok_or("native runtime mode is required")?;
-    if matches!(mode, "--build-worker" | "--stage-update-worker") && pin.is_none() {
+    if matches!(
+        mode,
+        "--compile-user-worker" | "--build-worker" | "--stage-update-worker"
+    ) && pin.is_none()
+    {
         return Err("native worker requires its frontend configuration pin".into());
     }
     if pin.is_some_and(|pin| pin != configuration_sha256) {
@@ -98,6 +105,49 @@ fn run() -> Result<()> {
         );
     }
     match mode {
+        "--compile-user" => {
+            memory_cgroup::verify_control(&config.resources.memory_cgroup_parent)?;
+            let root = root
+                .ok_or("--root required for user compilation")?
+                .canonicalize()?;
+            let group = memory_cgroup::Group::create(
+                &config.resources.memory_cgroup_parent,
+                config.resources.maximum_memory_bytes,
+            )?;
+            let mut child = Command::new(std::env::current_exe()?);
+            child
+                .arg("--compile-user-worker")
+                .arg("--config")
+                .arg(&config_path)
+                .arg("--configuration-sha256")
+                .arg(&configuration_sha256)
+                .arg("--root")
+                .arg(&root)
+                .env(memory_cgroup::ENV, &group.path);
+            let initial = group.memory()?.oom_events;
+            let status = supervision::run_observed(child, || {
+                openpilot_runtime_build::generation::offroad(&config.stores.params)?;
+                if group.memory()?.oom_events > initial {
+                    return Err("device compile exceeded its memory limit".into());
+                }
+                Ok(())
+            })?;
+            if !status.success() {
+                return Err(format!("user Cargo build failed: {status}").into());
+            }
+        }
+        "--compile-user-worker" => {
+            let _guard = supervision::WorkerGuard::start(&config.stores.params)?;
+            memory_cgroup::enter(
+                &config.resources.memory_cgroup_parent,
+                config.resources.maximum_memory_bytes,
+            )?;
+            let result = openpilot_runtime_build::user_build::compile(
+                &config,
+                &root.ok_or("--root required for user compilation")?,
+            )?;
+            println!("{}", serde_json::to_string(&result)?);
+        }
         "--stage-candidate" => {
             std::env::set_var(
                 supervision::REQUEST_OWNER,

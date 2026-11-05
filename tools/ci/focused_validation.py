@@ -22,6 +22,8 @@ HOST_PREFIXES = ('.github/', 'docs/', 'tools/ci/tests/')
 RUST_PACKAGES = {
     'runtime-core': 'openpilot-runtime-core',
     'runtime-build': 'openpilot-runtime-build',
+    'runtime-launcher': 'openpilot-runtime-launcher',
+    'updated': 'openpilot-updated',
     'runtime-installer': 'openpilot-runtime-installer',
     'disk-space': 'openpilot-disk-space',
 }
@@ -68,6 +70,8 @@ def selected_tests(paths):
     if path.startswith('tools/ci/tests/test_') and path.endswith('.py'):
       suites.add(Path(path).name)
     if path.startswith('tools/native/'):
+      if name in ('user_startup', 'early_startup'):
+        suites.add('test_user_startup.py')
       if name in ('source_entry', 'source_runtime', 'build_memory', 'build_space'):
         suites.update(('test_native_source_entry.py', 'test_native_source_runtime.py'))
       elif name == 'bootstrap_seed':

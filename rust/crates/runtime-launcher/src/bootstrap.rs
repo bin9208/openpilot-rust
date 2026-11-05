@@ -79,7 +79,9 @@ fn ready(
     if stopped.load(Ordering::Relaxed) {
         return Ok(());
     }
-    verify_package(&paths.repository)?;
+    if env::var_os("OPENPILOT_USER_SOURCE_BUILD").as_deref() != Some(std::ffi::OsStr::new("1")) {
+        verify_package(&paths.repository)?;
+    }
     if env::var("CARROT_WEB_EXTERNAL").is_ok_and(|value| value == "1") {
         background(
             paths,
@@ -238,12 +240,29 @@ pub fn main() -> Result<(), Error> {
     {
         let temporary = tempfile::NamedTempFile::new_in(&paths.temporary)?;
         serde_json::to_writer(temporary.as_file(), &paths)?;
-        let mut command = Command::new(paths.binary("openpilot-launch"));
+        let mut command = if env::var_os("OPENPILOT_USER_SOURCE_BUILD").as_deref()
+            == Some(std::ffi::OsStr::new("1"))
+        {
+            // A Git update must enter ordinary source compilation before the
+            // new checkout's launcher/manager, just like first installation.
+            Command::new(paths.repository.join("launch_openpilot.sh"))
+        } else {
+            Command::new(paths.binary("openpilot-launch"))
+        };
         command
             .arg("--paths")
             .arg(temporary.path())
             .env_remove("AGNOS_VERSION")
             .current_dir(&paths.repository);
+        if env::var_os("OPENPILOT_USER_SOURCE_BUILD").as_deref() == Some(std::ffi::OsStr::new("1"))
+        {
+            // Source compilation can outlive the boot-lock handshake deadline.
+            // The new launcher acquires its own lock after compilation.
+            lock.unlock()?;
+            command.env_remove("CARROT_BOOT_LOCK_SOCKET");
+            Server(command.spawn()?).finish(&stopped)?;
+            return Ok(());
+        }
         handoff::run_locked_with_signals(command, &lock, &stopped, &mut signals)?;
         return Ok(());
     }

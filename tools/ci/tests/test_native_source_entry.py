@@ -206,7 +206,7 @@ class SourceEntryTests(unittest.TestCase):
         self.assertFalse(logs[0].exists())
         self.assertFalse(logs[1].exists())
         self.assertTrue(logs[2].exists())
-      argv = ['source_entry.py', '--source', str(f.source), '--machine-config', str(path), '--launch']
+      argv = ['source_entry.py', '--source', str(f.source), '--machine-config', str(path), '--launch', '--verify-package']
       with mock.patch.object(seed, 'native'), mock.patch.object(os, 'geteuid', return_value=1000), \
            mock.patch.object(entry.sys, 'argv', argv), mock.patch.object(entry, 'launch', side_effect=launched) as launch, \
            mock.patch.object(entry.build_space.shutil, 'disk_usage', side_effect=f.available):
@@ -256,7 +256,7 @@ class SourceEntryTests(unittest.TestCase):
           observe()
         seen.append(source)
 
-      argv = ['source_entry.py', '--source', str(f.source), '--machine-config', str(path), '--launch']
+      argv = ['source_entry.py', '--source', str(f.source), '--machine-config', str(path), '--launch', '--verify-package']
       with mock.patch.object(entry, 'DEFAULT_MACHINE', path), mock.patch.object(seed, 'native'), \
            mock.patch.object(os, 'geteuid', return_value=1000), mock.patch.object(entry.sys, 'argv', argv), \
            mock.patch.object(entry, 'launch', side_effect=launched):
