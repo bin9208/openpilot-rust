@@ -21,7 +21,7 @@ SUPPORT_BASE = '3fd7fd051b0af237fb8f75a4260e48707e3ae7c8'
 MESSAGING_BASE = 'abea63adf5140cb670a1880fa2c350727a0feda9'
 NATIVE_ARM_BASE = '27547f08c6daf7deac99e35b0f6e1d0c8ffb0298'
 LABELS = ['self-hosted', 'Linux', 'X64', 'dev-md-local']
-HOSTED_WORKFLOWS = {'integration.yml', 'jetlink.yml', 'native-cache-reuse.yml',
+HOSTED_WORKFLOWS = {'focused-validation.yml', 'integration.yml', 'jetlink.yml', 'native-cache-reuse.yml',
     'naver-apk-tools.yml', 'naver-ci.yml', 'tests.yaml', 'user-docs.yaml',
     'carrot-peer-readiness.yml', 'rust.yml', 'provider-batch.yml'}
 OWNED_WORKFLOWS = {'native-apt-scope.yml', 'native-input-publication.yml', 'native-resource-guard.yml',
@@ -364,9 +364,8 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     Loader=yaml.BaseLoader)
                 after = load(ROOT/relative)
                 if filename == 'native-source-transport.yml':
-                    branches = before['on']['push']['branches']
-                    self.assertEqual(after['on']['push']['branches'], ['codex/feat-599-*', *branches])
-                    after['on']['push']['branches'] = branches
+                    self.assertNotIn('push', after['on'])
+                    after['on']['push'] = copy.deepcopy(before['on']['push'])
                 old, new = before['jobs'][name], after['jobs'][name]
                 if filename == 'native-source-entry.yml':
                     export = after['on']['workflow_dispatch']['inputs'].pop('export_seed')
@@ -497,6 +496,12 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     self.assertEqual(paths.count(worker_log), 1)
                     paths.remove(worker_log)
                     artifact['with']['path'] = '\n'.join(paths)+'\n'
+                # #685 removes automatic triggers; compare the retained manual
+                # inputs separately and preserve every original job command.
+                self.assertNotIn('push', load(ROOT/relative)['on'])
+                after['on'].pop('push', None)
+                before['on'].pop('push', None)
+                before['on'].setdefault('workflow_dispatch', '')
                 self.assertEqual(after, before, 'unreviewed workflow, command, pin, gate or deadline change')
 
     def test_provider_submodule_changes_keep_original_foundation_push_boundary(self):
@@ -513,11 +518,8 @@ class LocalNativeWorkflowTests(unittest.TestCase):
         self.assertTrue(all(value['required'] == 'false' and value['default'] == ''
                             and value['type'] == 'string' for value in inputs.values()))
         after['workflow_dispatch'] = before['workflow_dispatch']
-        paths = after['push']['paths']
-        addition = 'rust/crates/dev-tools/src/native_provider/**'
-        self.assertEqual(paths.count(addition), 1)
-        paths.remove(addition)
-        self.assertEqual(after, before, 'original trigger boundary changed beyond the batch dependency')
+        self.assertEqual(set(after), {'workflow_dispatch'})
+        self.assertEqual(after['workflow_dispatch'], before['workflow_dispatch'])
 
     def test_factory_timing_calls_the_same_production_workflow_without_fixture_jobs(self):
         document = load(ROOT/'.github/workflows/runtime-source-build.yml')
@@ -614,6 +616,8 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                 original = yaml.load(subprocess.check_output(
                     ['git', 'show', MESSAGING_BASE+':.github/workflows/'+path.name],
                     cwd=ROOT, text=True), Loader=yaml.BaseLoader)
+                self.assertEqual(set(document['on']), {'workflow_dispatch'})
+                original['on'] = {'workflow_dispatch': ''}
                 original['concurrency'] = dict(original['concurrency'], queue='max', **{'cancel-in-progress': 'false'})
                 for job in original['jobs'].values():
                     for step in job['steps']:
@@ -741,6 +745,15 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                             expected_condition = expected_condition[:-3] + " && inputs.index_sha256 == '' }}"
                         self.assertEqual(after['if'], expected_condition)
                     for event, config in original.get('on', {}).items():
+                        if relative == '.github/workflows/user-docs.yaml':
+                            if event == 'workflow_dispatch':
+                                self.assertNotIn(event, current['on'])
+                            else:
+                                self.assertEqual(set(current['on'][event]['branches']), {'dev', 'dev-md', 'main'})
+                            continue  # #685 keeps only current protected documentation events.
+                        if event in ('push', 'pull_request') and relative != '.github/workflows/user-docs.yaml':
+                            self.assertNotIn(event, current['on'])
+                            continue  # #685: costly diagnostics are opt-in.
                         if relative == '.github/workflows/fast-checks.yml' and event == 'push':
                             self.assertNotIn('push', current['on'])
                             continue  # 2026-10-30: remove only the separately scheduled push run.

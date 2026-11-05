@@ -1,18 +1,5 @@
 name: Native input cache across private jobs
 on:
-  push:
-    branches: ['codex/feat-599-*', dev, main]
-    paths:
-      - '.github/actions/native-cache/**'
-      - '.github/actions/job-temp/action.yml'
-      - 'tools/ci/native_cache.py'
-      - 'tools/ci/runner_download_cache.py'
-      - 'tools/ci/runner_action_cache.py'
-      - 'tools/ci/action-archives.json'
-      - 'tools/ci/native-apt-shell'
-      - 'tools/ci/tests/test_native_cache.py'
-      - 'tools/ci/tests/test_runner_download_cache.py'
-      - '.github/workflows/native-cache-reuse.yml'
   workflow_dispatch:
 permissions:
   contents: read

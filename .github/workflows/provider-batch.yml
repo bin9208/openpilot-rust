@@ -1,40 +1,5 @@
 name: CI bottleneck validation
 on:
-  push:
-    branches: ['codex/fix-649-*']
-    paths:
-      - 'rust/crates/dev-tools/src/native_provider.rs'
-      - 'rust/crates/dev-tools/src/native_provider/**'
-      - 'rust/Cargo.toml'
-      - 'rust/crates/dev-tools/src/ffmpeg_build.rs'
-      - 'tools/ci/verify_provider_batch.py'
-      - 'tools/ci/native_provider_batch.py'
-      - '.github/workflows/provider-batch.yml'
-      - '.github/workflows/rust.yml'
-      - 'tools/native/publish_inputs.py'
-      - 'tools/ci/tests/**'
-      - 'rust/crates/logging/build.rs'
-      - 'rust/crates/loggerd/build.rs'
-      - 'rust/crates/logging/tests/git_source_stamp.rs'
-      - 'tools/ci/agnos_phases.py'
-      - 'tools/ci/companion_elf_scope.py'
-      - 'tools/ci/reproduce_companion_elf.py'
-      - 'tools/ci/runner_policy.py'
-      - 'tools/ci/fixtures/native-dbc-inputs.py'
-      - 'tools/ci/probe_native_agnos.py'
-      - 'rust/tools/ci_cases.py'
-      - 'rust/tools/check_card_*.py'
-      - 'rust/tools/check_ui_*.py'
-      - 'rust/tools/card_prepare_assets.py'
-      - 'rust/tools/recovery_exit_status.py'
-      - 'rust/tools/carrot_recovery_source.py'
-      - 'rust/tools/check_joystickd_runtime.py'
-      - 'rust/tools/check_cweb_address.py'
-      - 'rust/tools/model_export/offline_onnx.py'
-      - 'rust/tools/model_export/offline_pipeline.py'
-      - 'rust/tools/tests/test_offline_qcom_onnx.py'
-      - 'tinygrad_repo/tinygrad/nn/onnx.py'
-      - 'tools/ci/verify_model_initializers.py'
   workflow_dispatch:
     inputs:
       benchmark:

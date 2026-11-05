@@ -1,30 +1,6 @@
 name: Messaging allocation
 
 on:
-  pull_request:
-    branches: [dev]
-    paths:
-      - 'rust/crates/messaging/**'
-      - 'rust/crates/msgq/**'
-      - 'rust/crates/cereal/**'
-      - 'rust/Cargo.toml'
-      - 'rust/Cargo.lock'
-      - 'rust/tools/messaging_update_allocation_probe.rs'
-      - 'rust/tools/check_message_state.py'
-      - 'tools/ci/messaging-allocation-431.sh'
-      - '.github/workflows/messaging-allocation-431.yml'
-  push:
-    branches: [dev]
-    paths:
-      - 'rust/crates/messaging/**'
-      - 'rust/crates/msgq/**'
-      - 'rust/crates/cereal/**'
-      - 'rust/Cargo.toml'
-      - 'rust/Cargo.lock'
-      - 'rust/tools/messaging_update_allocation_probe.rs'
-      - 'rust/tools/check_message_state.py'
-      - 'tools/ci/messaging-allocation-431.sh'
-      - '.github/workflows/messaging-allocation-431.yml'
   workflow_dispatch:
 
 permissions:

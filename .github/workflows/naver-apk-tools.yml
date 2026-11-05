@@ -1,10 +1,5 @@
 name: Naver APK source tests
 on:
-  push:
-    branches: ['codex/naver-*']
-    paths: ['tools/naver_map_patch/**', '.github/workflows/naver-apk-tools.yml']
-  pull_request:
-    branches: ['codex/naver-support-20260924']
   workflow_dispatch:
   workflow_call:
 permissions:

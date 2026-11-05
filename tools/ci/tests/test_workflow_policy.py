@@ -18,10 +18,9 @@ def workflow(name):
 
 class WorkflowPolicyTests(unittest.TestCase):
 
-  def test_integration_runs_before_and_after_merge_without_path_skips(self):
+  def test_integration_is_manual_and_keeps_fail_closed_suite_aggregation(self):
     spec = workflow('integration.yml')
-    for event in ('push', 'pull_request'):
-      self.assertEqual(spec['on'][event], {'branches': ['dev', 'main']})
+    self.assertEqual(set(spec['on']), {'workflow_dispatch'})
     self.assertEqual(spec['jobs']['build']['with']['run_number'], '1')
     gate = spec['jobs']['gate']
     self.assertEqual(set(gate['needs']), {'build', 'navigation', 'apk', 'jetlink'})
@@ -42,11 +41,11 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertTrue({'main', 'dev'}.issubset(events['push']['branches']))
     self.assertIn('pull_request', events)
 
-  def test_original_event_receipts_are_limited_to_the_four_actual_validation_jobs(self):
+  def test_original_event_receipts_cover_focused_checks_and_manual_diagnostics(self):
     expected = {('rust.yml', 'workspace'), ('rust.yml', 'recovery-runtime'), ('tests.yaml', 'build_release'),
-                ('user-docs.yaml', 'check_user_docs')}
+                ('user-docs.yaml', 'check_user_docs'), ('focused-validation.yml', 'focused')}
     found = set()
-    for name in ('rust.yml', 'tests.yaml', 'user-docs.yaml'):
+    for name in ('rust.yml', 'tests.yaml', 'user-docs.yaml', 'focused-validation.yml'):
       for key, job in workflow(name)['jobs'].items():
         steps = [step for step in job.get('steps', []) if step.get('uses') == './.github/actions/job-temp']
         starts = [step for step in steps if step.get('with', {}).get('cleanup') != 'true']

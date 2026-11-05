@@ -1,10 +1,5 @@
 name: Naver CI
 on:
-  push:
-    branches: ['codex/naver-support-20260924', 'codex/naver-*']
-    paths: ['.github/workflows/naver-*.yml', 'tools/naver_ci/**', 'tools/naver_map_patch/**', 'openpilot/selfdrive/carrot/**', 'openpilot/selfdrive/ui/**', 'openpilot/cereal/**', 'docs/naver/**']
-  pull_request:
-    branches: ['codex/naver-support-20260924']
   workflow_dispatch:
   workflow_call:
 permissions:

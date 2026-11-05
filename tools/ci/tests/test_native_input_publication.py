@@ -756,21 +756,29 @@ class GateTests(unittest.TestCase):
     client.pr_context.side_effect = pr_context
     return client, producer, runs, jobs, proofs
 
-  def test_recovery_job_and_bound_receipt_are_required(self):
-    for fault in ('missing-job', 'failure', 'cancelled', 'base', 'source', 'attempt', 'runner'):
+  def test_focused_job_and_bound_receipt_are_required(self):
+    for fault in ('missing-job', 'failure', 'cancelled', 'source', 'attempt', 'runner'):
       with self.subTest(fault=fault):
         client, _, _, jobs, proofs = self.fixture()
-        actual = next(row for row in jobs[103] if row['name'] == 'rust recovery runtime')
+        actual = next(row for row in jobs[103] if row['name'] == 'focused x86 checks')
         if fault == 'missing-job': jobs[103].remove(actual)
         elif fault in ('failure', 'cancelled'): actual['conclusion'] = fault
-        elif fault == 'base': proofs[103, 'recovery-runtime'] = context_fixture(103, 'recovery-runtime', 'e'*40)
         else:
           key = dict(source='head_sha', attempt='run_attempt', runner='runner_name')[fault]
-          proofs[103, 'recovery-runtime'][key] = dict(source='f'*40, attempt=99, runner='unknown')[fault]
+          proofs[103][key] = dict(source='f'*40, attempt=99, runner='unknown')[fault]
         if fault in ('source', 'attempt', 'runner'):
           with self.assertRaises(ValueError): publication.gates(client, SOURCE, 42, 611)
         else:
           self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][3]['ready'])
+
+  def test_verified_inputs_can_precede_device_acceptance_but_never_skip_focused_checks(self):
+    client, _, runs, jobs, _ = self.fixture()
+    focused = next(run for run in runs if run['path'].endswith('/focused-validation.yml'))
+    focused['conclusion'] = 'failure'
+    jobs[focused['id']].append(dict(job_fixture('device acceptance'), conclusion='failure'))
+    self.assertTrue(all(state['ready'] for state in publication.gates(client, SOURCE, 42, 611)[1]))
+    jobs[focused['id']][0]['conclusion'] = 'failure'
+    self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][3]['ready'])
 
   def test_fast_checks_are_retired_from_publication_gates(self):
     self.assertNotIn('fast-checks.yml', {name for name, _, _ in publication.GATES})
@@ -856,7 +864,7 @@ class GateTests(unittest.TestCase):
         if actual['name'] not in (publication.FOUNDATION_ARM_JOB, publication.PRODUCER_ARM_JOB):
           actual['runner_name'] = 'bin-actions2'
     # Keep unchanged original PR receipts attached to their actual runner.
-    for number in (103, 104, 106):
+    for number in (103, 106):
       for actual in jobs[number]:
         actual['runner_name'] = 'bin-actions'
     self.assertTrue(all(state['ready'] for state in publication.gates(client, SOURCE, 42, 611)[1]))
@@ -904,7 +912,7 @@ class GateTests(unittest.TestCase):
                          ('GitHub Actions owned', ['self-hosted', 'ubuntu-24.04'])]:
       with self.subTest(name=name, labels=labels):
         client, _, _, jobs, _ = self.fixture()
-        jobs[104][0].update(runner_name=name, labels=labels)
+        jobs[103][0].update(runner_name=name, labels=labels)
         self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][4]['ready'])
 
   def test_publication_rejects_receipt_runner_name_and_environment_spoofing(self):
@@ -912,7 +920,7 @@ class GateTests(unittest.TestCase):
       with self.subTest(fault=fault):
         client, _, _, jobs, proofs = self.fixture()
         if fault == 'name':
-          next(row for row in jobs[103] if row['name'] == 'rust workspace checks')['runner_name'] = 'bin-actions2'
+          next(row for row in jobs[103] if row['name'] == 'focused x86 checks')['runner_name'] = 'bin-actions2'
         else:
           proofs[103]['runner_environment'] = 'github-hosted'
         with self.assertRaisesRegex(ValueError, 'runner'):
