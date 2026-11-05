@@ -368,6 +368,9 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     after['on']['push'] = copy.deepcopy(before['on']['push'])
                 old, new = before['jobs'][name], after['jobs'][name]
                 if filename == 'native-source-entry.yml':
+                    memory_step = next(s for s in new['steps'] if s.get('name') == 'Check legacy and current kernel memory interfaces on native ARM')
+                    self.assertEqual(memory_step['run'], 'cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --lib memory_cgroup::tests')
+                    new['steps'].remove(memory_step)
                     export = after['on']['workflow_dispatch']['inputs'].pop('export_seed')
                     self.assertEqual(export, dict(description='Export only the source-built release bootstrap seed, without building the full runtime',
                                                  required='false', default='false', type='boolean'))
@@ -514,6 +517,9 @@ class LocalNativeWorkflowTests(unittest.TestCase):
         self.assertEqual(inputs.pop('export_seed'), dict(
             description='Export only the source-built release bootstrap seed, without building the full runtime',
             required='false', default='false', type='boolean'))
+        self.assertEqual(inputs.pop('installed_checkout_only'), dict(
+            description='Check existing Git-pull startup and legacy-file preservation without rebuilding the runtime',
+            required='false', default='false', type='boolean'))
         self.assertEqual(set(inputs), {'input_producer_run', 'index_sha256', 'operation_estimates_json'})
         self.assertTrue(all(value['required'] == 'false' and value['default'] == ''
                             and value['type'] == 'string' for value in inputs.values()))
@@ -526,13 +532,13 @@ class LocalNativeWorkflowTests(unittest.TestCase):
         self.assertEqual(document['permissions'], dict(contents='read', actions='read'))
         job = document['jobs']['source-entry']
         self.assertEqual(job, {
-            'if': "${{ github.event_name == 'workflow_dispatch' && inputs.index_sha256 != '' }}",
+            'if': "${{ github.event_name == 'workflow_dispatch' && !inputs.installed_checkout_only && inputs.index_sha256 != '' }}",
             'uses': './.github/workflows/native-source-entry.yml',
             'with': {**{name: '${{ inputs.'+name+' }}' for name in
                      ('input_producer_run', 'index_sha256', 'operation_estimates_json')},
                      'export_seed': '${{ inputs.export_seed || false }}'}})
         self.assertEqual(document['jobs']['offline-cargo-reuse']['if'],
-                         "${{ ("+SAFETY+") && inputs.index_sha256 == '' }}")
+                         "${{ ("+SAFETY+") && !inputs.installed_checkout_only && inputs.index_sha256 == '' }}")
 
     def test_native_arm_probe_preserves_original_acceptance_and_deadlines(self):
         path = 'rust/tools/check_aarch64.py'
@@ -638,6 +644,10 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                             expected = 'ubuntu-24.04-arm' if name in {'actual-arm-batch', 'numerics-repro', 'transport-repro'} else 'ubuntu-24.04'
                         elif path.name == 'native-cache-reuse.yml':
                             expected = LABELS  # #644 cache proof uses only registered bin-actions.
+                        elif path.name == 'native-input-publication.yml' and name == 'seed':
+                            expected = 'ubuntu-24.04'
+                        elif path.name == 'runtime-source-build.yml' and name == 'installed-checkout':
+                            expected = '${{ matrix.runner }}'
                         elif path.name == 'runtime-source-build.yml' and name == 'offline-cargo-reuse':
                             expected = '${{ matrix.runner == \'ubuntu-24.04-arm\' && \'ubuntu-24.04-arm\' || fromJSON(\'["self-hosted","Linux","X64","openpilot-rust"]\') }}'
                         elif (path.name, name) in NATIVE_ARM_ROUTES:
@@ -712,7 +722,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             current = load(ROOT / relative)
             extras = {'recovery-runtime'} if relative == '.github/workflows/rust.yml' else set()
             if relative == '.github/workflows/runtime-source-build.yml':
-                extras = {'source-entry'}
+                extras = {'source-entry', 'installed-checkout'}
             self.assertEqual(set(current['jobs']), set(original['jobs']) | extras)
             for name, before in original['jobs'].items():
                 with self.subTest(path=relative, job=name):
@@ -742,7 +752,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     if 'runs-on' in before:
                         expected_condition = condition(before.get('if', ''))
                         if relative == '.github/workflows/runtime-source-build.yml':
-                            expected_condition = expected_condition[:-3] + " && inputs.index_sha256 == '' }}"
+                            expected_condition = expected_condition[:-3] + " && !inputs.installed_checkout_only && inputs.index_sha256 == '' }}"
                         self.assertEqual(after['if'], expected_condition)
                     for event, config in original.get('on', {}).items():
                         if relative == '.github/workflows/user-docs.yaml':
