@@ -722,7 +722,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             current = load(ROOT / relative)
             extras = {'recovery-runtime'} if relative == '.github/workflows/rust.yml' else set()
             if relative == '.github/workflows/runtime-source-build.yml':
-                extras = {'source-entry'}
+                extras = {'source-entry', 'installed-checkout'}
             self.assertEqual(set(current['jobs']), set(original['jobs']) | extras)
             for name, before in original['jobs'].items():
                 with self.subTest(path=relative, job=name):
