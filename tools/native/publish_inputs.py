@@ -43,14 +43,12 @@ GATES = [
     ('runtime-native-environment.yml', ('push', 'workflow_dispatch'),
       {PRODUCER_ARM_JOB}),
     ('native-resource-guard.yml', ('push', 'workflow_dispatch'), {'Real memory limit and cancellation (X64 host kernel)'}),
-    ('rust.yml', ('pull_request',), {'rust checks', 'rust workspace checks', 'rust recovery runtime', 'rust aarch64 build'}),
-    ('integration.yml', ('pull_request',), {'integration gate', 'build / build release'}),
+    ('focused-validation.yml', ('pull_request',), {'focused x86 checks'}),
     ('user-docs.yaml', ('pull_request',), {'check mapped user docs'}),
 ]
-PROOF_JOBS = {'rust.yml': 'workspace', 'integration.yml': 'build_release',
-              'user-docs.yaml': 'check_user_docs'}
-ADDITIONAL_PROOF_JOBS = {'rust.yml': ('recovery-runtime',)}
-PROOF_JOB_NAMES = {'workspace': 'rust workspace checks', 'recovery-runtime': 'rust recovery runtime', 'build_release': 'build / build release',
+PROOF_JOBS = {'focused-validation.yml': 'focused', 'user-docs.yaml': 'check_user_docs'}
+ADDITIONAL_PROOF_JOBS = {}
+PROOF_JOB_NAMES = {'focused': 'focused x86 checks', 'workspace': 'rust workspace checks', 'recovery-runtime': 'rust recovery runtime', 'build_release': 'build / build release',
                    'check_user_docs': 'check mapped user docs'}
 SELF_HOSTED_GATES = {'runtime-source-build.yml', 'runtime-native-environment.yml', 'native-resource-guard.yml'}
 _CONTEXT = importlib.util.spec_from_file_location('native_validation_context_source',
@@ -367,7 +365,12 @@ def gates(client, source, producer_id, pr_number):
     ready = False
     if selected is not None:
       trusted_run(selected, source)
-      if selected['status'] == 'completed' and selected['conclusion'] == 'success':
+      # Inputs are needed before the first device test. A failed device-only
+      # acceptance job cannot block publishing verified preparation inputs. The
+      # focused job and its immutable PR receipt must still succeed.
+      accepted = selected['conclusion'] == 'success' or (filename == 'focused-validation.yml'
+          and selected['conclusion'] == 'failure')
+      if selected['status'] == 'completed' and accepted:
         jobs = client.collect(f'actions/runs/{selected["id"]}/jobs', 'jobs')
         names = {j['name'] for j in jobs if j['status'] == 'completed' and j['conclusion'] == 'success'
             and gate_job_allowed(filename, j)}

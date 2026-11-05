@@ -1,12 +1,6 @@
 name: Job scoped native APT
 on:
-  push:
-    branches: ['codex/fix-610-*']
-    paths:
-      - 'tools/ci/native-apt-shell'
-      - 'tools/ci/check_native_apt.py'
-      - '.github/actions/job-temp/action.yml'
-      - '.github/workflows/native-apt-scope.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:

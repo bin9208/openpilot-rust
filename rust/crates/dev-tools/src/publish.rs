@@ -14,8 +14,10 @@ use std::{
 pub const REPOSITORY: &str = "bin9208/openpilot-rust";
 const BASE: &str = "repos/bin9208/openpilot-rust";
 const GATES: &[(&str, &[&str])] = &[
-    ("rust.yml", &["rust checks", "rust aarch64 build"]),
-    ("integration.yml", &["integration gate"]),
+    (
+        "focused-validation.yml",
+        &["focused x86 checks", "device acceptance"],
+    ),
     ("user-docs.yaml", &["check mapped user docs"]),
 ];
 fn require(ok: bool, message: impl Into<String>) -> Result<()> {

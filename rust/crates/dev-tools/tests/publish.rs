@@ -9,8 +9,10 @@ use serde_json::{json, Value};
 use std::{collections::BTreeMap, fs, path::Path};
 const REPO: &str = "bin9208/openpilot-rust";
 const GATES: &[(&str, &[&str])] = &[
-    ("rust.yml", &["rust checks", "rust aarch64 build"]),
-    ("integration.yml", &["integration gate"]),
+    (
+        "focused-validation.yml",
+        &["focused x86 checks", "device acceptance"],
+    ),
     ("user-docs.yaml", &["check mapped user docs"]),
 ];
 struct OwnedGithub {

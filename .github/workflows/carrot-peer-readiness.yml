@@ -1,10 +1,6 @@
 name: CarrotMan peer startup boundary
 on:
-  push:
-    branches: ['codex/fix-609-*']
-    paths:
-      - 'rust/tools/carrot_man_owned_compare.py'
-      - '.github/workflows/carrot-peer-readiness.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
