@@ -15,6 +15,10 @@ def module(name):
 
 
 early = module('early_startup')
+# Local dependencies of the bootstrap tools; application .rs edits are handled
+# by Cargo and do not require preparing SDKs/models or rebuilding these helpers.
+HELPER_CRATES = ('runtime-build', 'runtime-installer', 'dev-tools', 'disk-space',
+                 'usbgpu', 'params', 'http-transport')
 
 
 def git(source, *args):
@@ -33,7 +37,8 @@ def inputs_key(source):
     if not row: continue
     name = os.fsdecode(row.split(b'\t', 1)[1])
     path = Path(name)
-    if (name.startswith(('tools/native/', 'rust/crates/runtime-build/', 'rust/crates/runtime-installer/',
+    if (any(name.startswith('rust/crates/' + crate + '/') for crate in HELPER_CRATES)
+        or name.startswith(('rust/tools/',
                          'openpilot/cereal/', 'opendbc/', 'opendbc_repo/', 'panda/', 'tinygrad_repo/',
                          'openpilot/selfdrive/modeld/models/'))
         or path.suffix in ('.json', '.lock', '.capnp', '.h', '.hpp', '.c', '.cc', '.cpp', '.S')

@@ -35,14 +35,17 @@ class StartupTests(unittest.TestCase):
       ui = user.early.Startup(root, log=root/'launch_log')
       native_recovery, recovery = Child(127), Child()
       native_spinner, spinner = Child(127), Child()
-      with mock.patch.object(ui, 'command', side_effect=[(['old-recovery'], True), (['old-spinner'], True)]), \
+      with mock.patch.object(ui, 'command', side_effect=[(['old-recovery'], True),
+                                                       (['old-spinner'], True), (['old-text'], True)]), \
            mock.patch.object(user.early, 'listening', side_effect=[False, False, True]), \
            mock.patch.object(user.early.subprocess, 'Popen',
-               side_effect=[native_recovery, recovery, native_spinner, spinner]) as start:
+               side_effect=[native_recovery, recovery, native_spinner, spinner, Child(127), Child(0)]) as start:
         ui.start()
         self.assertIn('openpilot.selfdrive.carrot.recovery.server', start.call_args_list[1].args[0])
         self.assertIn('openpilot.system.ui.spinner', start.call_args_list[3].args[0])
         self.assertIn(b'Preparing build', spinner.stdin.getvalue())
+        ui.failure('compile failed with old native UI')
+        self.assertIn('openpilot.system.ui.text', start.call_args_list[5].args[0])
         ui.handoff()
         self.assertEqual(recovery.terminated, 0)
 
@@ -159,6 +162,19 @@ class StartupTests(unittest.TestCase):
       runtime.read = lambda path, pin=None: json.loads(path.read_text())
       reused = user.reusable_preparation(configuration, source, runtime)
       self.assertEqual(reused, dict(native, resources=dict(current='cap')))
+      before = user.inputs_key(source)
+      def commit_file(name, text):
+        path = source/name; path.parent.mkdir(parents=True, exist_ok=True); path.write_text(text)
+        subprocess.run(['git', '-C', str(source), 'add', name], check=True)
+        subprocess.run(['git', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+            '-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null', '-C', str(source),
+            'commit', '-qm', 'changed source'], check=True)
+      commit_file('tools/native/early_startup.py', 'changed display code')
+      self.assertEqual(user.inputs_key(source), before, 'display changes must not restart helper/SDK preparation')
+      commit_file('rust/crates/planner/src/main.rs', 'changed application code')
+      self.assertEqual(user.inputs_key(source), before, 'Cargo handles application changes')
+      commit_file('rust/crates/runtime-build/src/lib.rs', 'changed helper code')
+      self.assertNotEqual(user.inputs_key(source), before, 'changed helpers must be rebuilt')
 
 
 if __name__ == '__main__':

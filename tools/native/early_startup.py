@@ -127,16 +127,21 @@ class Startup:
       argv += ['--source-root', str(self.source), '--text', message]
     else:
       argv += [message]
-    child = subprocess.Popen(argv, cwd=self.source, env=self.environment(), stdout=self.output,
-                             stderr=self.output, start_new_session=True)
     # Keep recovery available while the original error screen waits for the
     # user's action. Reboot/normal signals still end the startup process.
-    try:
-      while child.poll() is None:
-        time.sleep(0.2)
-    finally:
-      if child.poll() is None:
-        child.terminate()
+    for attempt in range(2 if native else 1):
+      if attempt:
+        argv = [interpreter(), '-B', '-m', 'openpilot.system.ui.text', message]
+      child = subprocess.Popen(argv, cwd=self.source, env=self.environment(), stdout=self.output,
+                               stderr=self.output, start_new_session=True)
+      try:
+        while child.poll() is None:
+          time.sleep(0.2)
+        if child.poll() == 0:
+          break
+      finally:
+        if child.poll() is None:
+          child.terminate()
 
   def handoff(self):
     self.update('Build complete · starting openpilot')
