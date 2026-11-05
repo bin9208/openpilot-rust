@@ -79,8 +79,8 @@
   "schema": 1,
   "seed": {
     "bytes": 3258,
-    "sha256": "0d43c39915c19ec80f9ba227add262fec5594fecb0c3189065673d33ed13fd99",
-    "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-bootstrap-af3dd546e718bb0410f9bf3c0bcaca1b49ee233a/manifest.json"
+    "sha256": "a30507c04272393c551007730d179186d9263a21904d0d60c2df4832ccc610eb",
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/native-bootstrap-0847cd18c3b4662b574a8fcf47123d5a447df67a/manifest.json"
   },
   "system_sdk": {
     "bytes": 4552019,

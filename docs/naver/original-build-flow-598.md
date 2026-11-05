@@ -17,7 +17,14 @@ set-id 파일로 거부해 도구 컴파일 전 종료됐다.
 
 집중 회귀는 setuid/setgid 비트만 다른 live SDK의 일치, 실제 파일 권한 불변,
 일반 input Tree의 계속된 거부, 일반 접근 권한·내용 변경의 계속된 실패를 확인한다.
-새 seed의 ARM 생성·pin 발행과 해당 HEAD의 실기 빌드·시작은 후속 증거가 필요하다.
+실기 SDK 19,775항목을 읽기 전용으로 대조한 결과 이 setgid 차이 외의 bytes/hash/일반
+권한·namespace 차이는 없었다. [집중 x86 검사42049448735](https://github.com/bin9208/openpilot-rust/actions/runs/42049448735)의
+`focused x86 checks`는 성공했으며 같은 workflow의 실기 수용은 아직 실패 상태다.
+[ARM seed export42048262420](https://github.com/bin9208/openpilot-rust/actions/runs/42048262420)와
+[pin 발행42049867566](https://github.com/bin9208/openpilot-rust/actions/runs/42049867566)이 성공했다.
+seed source는 `0847cd18c3b4662b574a8fcf47123d5a447df67a`, descriptor는
+`a30507c04272393c551007730d179186d9263a21904d0d60c2df4832ccc610eb`다.
+발행된 입력을 Git에 포함하고 실제 기기의 해당 HEAD 빌드·시작을 이어 확인한다.
 
 ## 2026-11-05 기존 설치의 미추적 파일로 시작이 막힌 회귀
 
