@@ -293,11 +293,12 @@ class RustIsolationTests(unittest.TestCase):
         self.assertIn('cargo build -p openpilot-navd --features native --bins --examples --release --locked --target aarch64-unknown-linux-gnu', arm)
         self.assertIn('release/openpilot-set-destination', arm)
 
-    def test_inherited_side_effects_are_source_repository_only(self):
-        for file, job in [('sync.yml', 'sync'), ('naver-upstream-sync.yml', 'sync'), ('wiki-settings-publish.yaml', 'synchronize'), ('carrot-route-vault-publish.yaml', 'publish')]:
-            with self.subTest(file=file):
-                data = yaml.load((ROOT / '.github/workflows' / file).read_text(), Loader=yaml.BaseLoader)
-                self.assertIn("github.repository == 'bin9208/openpilot'", data['jobs'][job].get('if', ''))
+    def test_retired_inherited_side_effect_workflows_remain_absent(self):
+        for name in ('sync.yml', 'naver-upstream-sync.yml',
+                     'wiki-settings-publish.yaml', 'carrot-route-vault-publish.yaml'):
+            with self.subTest(file=name):
+                path = ROOT / '.github/workflows' / name
+                self.assertFalse(path.exists() or path.is_symlink(), name)
 
     def test_full_rust_diagnostic_is_manual_and_retains_its_checks(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
