@@ -15,10 +15,10 @@ def module(name):
 
 
 early = module('early_startup')
-# Local dependencies of the bootstrap tools; application .rs edits are handled
-# by Cargo and do not require preparing SDKs/models or rebuilding these helpers.
+# Bootstrap-tool dependencies and the offline model compiler. Other application
+# .rs edits are handled by Cargo without preparing SDKs/models again.
 HELPER_CRATES = ('runtime-build', 'runtime-installer', 'dev-tools', 'disk-space',
-                 'usbgpu', 'params', 'http-transport')
+                 'usbgpu', 'params', 'http-transport', 'model-runtime')
 
 
 def git(source, *args):

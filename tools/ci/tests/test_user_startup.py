@@ -175,6 +175,9 @@ class StartupTests(unittest.TestCase):
       self.assertEqual(user.inputs_key(source), before, 'Cargo handles application changes')
       commit_file('rust/crates/runtime-build/src/lib.rs', 'changed helper code')
       self.assertNotEqual(user.inputs_key(source), before, 'changed helpers must be rebuilt')
+      before = user.inputs_key(source)
+      commit_file('rust/crates/model-runtime/src/lib.rs', 'changed model compiler code')
+      self.assertNotEqual(user.inputs_key(source), before, 'changed model compiler must refresh generated inputs')
 
 
 if __name__ == '__main__':
