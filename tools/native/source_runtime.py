@@ -44,6 +44,8 @@ _MEMORY_SPEC.loader.exec_module(memory)
 TOOLS_FIELDS = {'schema', 'stores', 'cache', 'system_sdk_receipt', 'system_sdk_sha256',
                 'expected_source_growth_bytes', 'expected_compile_growth_bytes',
                 'remaining_object_growth_bytes', 'resources'}
+AGNOS = Path('/AGNOS')
+POWER_WATCHDOG = Path('/var/tmp/power_watchdog')
 
 
 def owned_child(owner, parent, command):
@@ -71,11 +73,24 @@ class OwnedCommands:
   def __init__(self, owner, params=None):
     self.owner = owner
     self.params = params
+    self.watchdog = POWER_WATCHDOG if params is not None and AGNOS.is_file() else None
+    self.watchdog_at = None
 
   def observe(self):
     seed.verify_owners(self.owner)
     if self.params is not None:
       offroad(self.params)
+    # AGNOS powers off after an hour without a manager heartbeat, including
+    # while a first build is still running. Renew its existing monotonic lease
+    # only while the request owner is alive and offroad remains verified.
+    if self.watchdog is not None:
+      now = time.monotonic()
+      if self.watchdog_at is None or now-self.watchdog_at >= 30:
+        with tempfile.TemporaryDirectory(prefix='.native-power-', dir=self.watchdog.parent) as temp:
+          pending = Path(temp)/'watchdog'
+          pending.write_text(str(now))
+          pending.replace(self.watchdog)
+        self.watchdog_at = now
 
   def run(self, argv, *, env, stdout, stderr, check):
     self.observe()

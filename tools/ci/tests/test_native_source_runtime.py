@@ -175,6 +175,60 @@ print('actual_build_affinity_inherited_and_restored=true')
           runner.run(['/usr/bin/true'], env=seed.ENV, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
         spawn.assert_not_called()
 
+  def test_agnos_build_renews_power_lease_only_with_live_offroad_owner(self):
+    with tempfile.TemporaryDirectory() as temp:
+      root = Path(temp)
+      agnos, watchdog = root/'AGNOS', root/'power_watchdog'
+      agnos.touch()
+      params = root/'params'
+      (params/'d').mkdir(parents=True)
+      state = params/'d/IsOnroad'
+      state.write_bytes(b'0')
+      with mock.patch.object(driver, 'AGNOS', agnos), mock.patch.object(driver, 'POWER_WATCHDOG', watchdog), \
+           mock.patch.object(seed, 'verify_owners') as owners, mock.patch.object(driver.time, 'monotonic') as clock:
+        runner = driver.OwnedCommands('owned-build', params)
+        clock.return_value = 3601.0
+        runner.observe()
+        self.assertEqual(float(watchdog.read_text()), 3601.0)
+        clock.return_value = 3620.0
+        runner.observe()
+        self.assertEqual(float(watchdog.read_text()), 3601.0)
+        clock.return_value = 3631.0
+        runner.observe()
+        self.assertEqual(float(watchdog.read_text()), 3631.0)
+        # Neither a stale/onroad state nor owner death keeps the device awake.
+        clock.return_value = 7202.0
+        state.write_bytes(b'1')
+        with self.assertRaisesRegex(ValueError, 'offroad'):
+          runner.observe()
+        self.assertEqual(float(watchdog.read_text()), 3631.0)
+        state.write_bytes(b'0')
+        owners.side_effect = ValueError('owner exited')
+        with self.assertRaisesRegex(ValueError, 'owner exited'):
+          runner.observe()
+        self.assertEqual(float(watchdog.read_text()), 3631.0)
+        owners.side_effect = None
+        self.assertIsNone(driver.OwnedCommands('copy-without-offroad-check').watchdog)
+        agnos.unlink()
+        self.assertIsNone(driver.OwnedCommands('host-build', params).watchdog)
+
+  def test_power_lease_publication_replaces_links_without_writing_their_target(self):
+    with tempfile.TemporaryDirectory() as temp:
+      root = Path(temp)
+      params = root/'params'
+      (params/'d').mkdir(parents=True)
+      (params/'d/IsOnroad').write_bytes(b'0')
+      agnos, watchdog, target = root/'AGNOS', root/'power_watchdog', root/'untouched'
+      agnos.touch()
+      target.write_bytes(b'preserved')
+      watchdog.symlink_to(target)
+      with mock.patch.object(driver, 'AGNOS', agnos), mock.patch.object(driver, 'POWER_WATCHDOG', watchdog):
+        driver.OwnedCommands(seed.owner_chain(), params).observe()
+      self.assertFalse(watchdog.is_symlink())
+      self.assertGreater(float(watchdog.read_text()), 0)
+      self.assertEqual(target.read_bytes(), b'preserved')
+      self.assertFalse(list(root.glob('.native-power-*')))
+
   def test_retained_launch_configuration_is_immutable_and_interrupted_publication_preserves_selection(self):
     with tempfile.TemporaryDirectory() as temp:
       root = Path(temp)

@@ -1,5 +1,22 @@
 # 당근파일럿 원본 설치·빌드 흐름으로 정리 — #598 / #675
 
+## 2026-11-06 실기 최초 빌드 중 AGNOS 자동 전원 종료
+
+`8d5281bfded7367497e7223d9d95abca155481e7`의 실제 tizi 빌드는 SDK 검사를
+통과했고 도구13개 release 컴파일은8분29초, 캐시 재사용은1.31초,
+모델 컴파일러는58.65초에 끝났다. 주행 모델 생성 뒤 운전자 모델 준비 중
+기기가 종료됐다. 사용자는 전원을 조작하지 않았다고 확인했다.
+`LastAgnosPowerMonitorShutdown`에는 uptime3622.209초에 startup17.772초,
+watchdog0으로 종료한 기록이 있고 pstore도 `reboot: Power down`으로 끝난다.
+worker의 마지막 기록은 owner 종료이며 OOM/limit event는 모두0이었다.
+
+AGNOS의1시간 유휴 전원 보호는 그대로 둔다. 기존 request owner와 offroad 검사를
+통과하는 native driver만 기존 `/var/tmp/power_watchdog`에 monotonic timestamp를
+30초마다 원자적으로 발행한다. 별도 daemon이나 영구 설정 변경은 없고 driver 종료·
+owner 상실·onroad 전환 뒤에는 갱신하지 않는다. 로컬 복사와 비AGNOS host도 갱신하지
+않는다. 회귀는 갱신 간격,1시간 이후 갱신, owner/offroad 실패 시 중단, symlink 대상
+보존을 확인한다. 수정 HEAD의 실제 재빌드·정상 부팅 확인은 이어서 수행한다.
+
 ## 2026-11-05 USB 연결 실기 SDK 권한 회귀
 
 사용자가 이 PC에서 연결된 기기의 자체 빌드 실패를 직접 수정·검증하도록 승인했다.
