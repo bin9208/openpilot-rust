@@ -16,6 +16,19 @@ SPEC.loader.exec_module(publisher)
 
 
 class SeedPublicationTests(unittest.TestCase):
+  def test_authenticated_draft_is_found_when_the_tag_endpoint_omits_it(self):
+    client = publisher.publication.GitHub()
+    draft = dict(id=7, tag_name='native-bootstrap-owned', draft=True)
+    def collect(route):
+      return [draft] if route == 'releases' else [dict(name='owned-asset')]
+    with mock.patch.object(client, 'json', return_value=None), mock.patch.object(client, 'collect', side_effect=collect):
+      result = client.release(draft['tag_name'])
+    self.assertEqual(result['id'], 7)
+    self.assertEqual(result['assets'], [dict(name='owned-asset')])
+    with mock.patch.object(client, 'json', return_value=None), mock.patch.object(client, 'collect', return_value=[draft, draft]):
+      with self.assertRaisesRegex(ValueError, 'duplicate'):
+        client.release(draft['tag_name'])
+
   def test_release_creation_requires_the_existing_exact_source_tag(self):
     source = 'a'*40
     payload = dict(tag_name='native-bootstrap-'+source, target_commitish=source, draft=True)
