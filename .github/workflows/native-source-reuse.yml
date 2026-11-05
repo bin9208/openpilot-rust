@@ -1,15 +1,6 @@
 name: Actual runtime source-stamp reuse
 on:
-  push:
-    branches: ['codex/fix-608-*']
-    paths:
-      - 'rust/crates/logging/**'
-      - 'rust/crates/loggerd/**'
-      - 'rust/crates/runtime-build/**'
-      - 'tools/ci/native-apt-shell'
-      - '.github/actions/job-temp/action.yml'
-      - 'tools/ci/check_native_source_reuse.py'
-      - '.github/workflows/native-source-reuse.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:

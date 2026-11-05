@@ -1,10 +1,5 @@
 name: Factory ARM sudo transport admission
 on:
-  push:
-    branches: ['codex/feat-599-*', 'codex/feat-613-*', 'codex/fix-613-*', dev, main]
-    paths:
-      - 'tools/ci/probe_native_source_transport.py'
-      - '.github/workflows/native-source-transport.yml'
   workflow_dispatch:
 permissions:
   contents: read

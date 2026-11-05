@@ -299,24 +299,20 @@ class RustIsolationTests(unittest.TestCase):
                 data = yaml.load((ROOT / '.github/workflows' / file).read_text(), Loader=yaml.BaseLoader)
                 self.assertIn("github.repository == 'bin9208/openpilot'", data['jobs'][job].get('if', ''))
 
-    def test_rust_checks_cover_protected_pushes_and_prs(self):
+    def test_full_rust_diagnostic_is_manual_and_retains_its_checks(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
-        self.assertEqual(set(data['on']['push']['branches']), {'dev', 'main'})
-        self.assertEqual(set(data['on']['pull_request']['branches']), {'dev', 'main'})
-        for event in ['push', 'pull_request']:
-            self.assertNotIn('paths', data['on'][event])
-            self.assertNotIn('paths-ignore', data['on'][event])
+        self.assertEqual(set(data['on']), {'workflow_dispatch'})
         gate = data['jobs']['fast']
         self.assertEqual(gate['if'], "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()) }}")
         self.assertEqual(set(gate['needs']), {
-            'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime',
+            'workspace', 'recovery-runtime', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime',
             'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
             'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts', 'joystickd-runtime',
             'planner-runtime', 'planner-memory', 'webcam-runtime', 'webrtc-runtime',
             'card-runtime', 'radar-runtime', 'radar-arm', 'radar-memory', 'navd-runtime', 'radard-runtime', 'carrot-navi-runtime', 'carrot-navi-arm', 'selfdrive-runtime', 'panda-runtime', 'camera-runtime', 'encoder-runtime', 'xiaoge-runtime', 'xiaoge-memory', 'ui-runtime', 'carrot-man-runtime',
         })
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
-        self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}',
+        self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'RECOVERY': '${{ needs.recovery-runtime.result }}', 'MEMORY': '${{ needs.model-memory.result }}',
                                             'PIPELINES': '${{ needs.model-pipelines.result }}',
                                             'LOGGER': '${{ needs.logger-runtime.result }}',
                                             'SUPPORT': '${{ needs.support-runtime.result }}',

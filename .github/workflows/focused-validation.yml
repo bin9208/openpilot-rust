@@ -1,0 +1,67 @@
+name: Focused validation
+on:
+  pull_request:
+    branches: [dev, dev-md, main]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+  push:
+    branches: [dev, dev-md, main]
+permissions:
+  contents: read
+concurrency:
+  group: focused-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+env:
+  GIT_LFS_SKIP_SMUDGE: '1'
+  RUSTUP_TOOLCHAIN: '1.94.0'
+  CARGO_INCREMENTAL: '0'
+  CARGO_BUILD_JOBS: '2'
+  VALIDATION_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+jobs:
+  focused:
+    name: focused x86 checks
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          sparse-checkout: |
+            /*
+            !/native-inputs/
+          sparse-checkout-cone-mode: false
+      - uses: ./.github/actions/job-temp
+        with: {validation-context: 'true'}
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
+      - run: python -m pip install pytest==9.0.2 PyYAML==6.0.2
+      - name: Prepare the pinned small host toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ${{ env.CI_JOB_TEMP }}/cargo-target
+          key: focused-x86-${{ hashFiles('rust/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: focused-x86-${{ hashFiles('rust/Cargo.lock') }}-
+      - name: Check changed syntax and run focused x86 regressions
+        run: python tools/ci/focused_validation.py host --base "$VALIDATION_BASE"
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true', validation-context: 'true'}
+  device:
+    name: device acceptance
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          sparse-checkout: |
+            /*
+            !/native-inputs/
+          sparse-checkout-cone-mode: false
+      - name: Require current-commit user device evidence or a host-only reason
+        run: python3 tools/ci/focused_validation.py device --base "$VALIDATION_BASE"

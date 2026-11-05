@@ -756,17 +756,16 @@ class GateTests(unittest.TestCase):
     client.pr_context.side_effect = pr_context
     return client, producer, runs, jobs, proofs
 
-  def test_recovery_job_and_bound_receipt_are_required(self):
-    for fault in ('missing-job', 'failure', 'cancelled', 'base', 'source', 'attempt', 'runner'):
+  def test_focused_job_and_bound_receipt_are_required(self):
+    for fault in ('missing-job', 'failure', 'cancelled', 'source', 'attempt', 'runner'):
       with self.subTest(fault=fault):
         client, _, _, jobs, proofs = self.fixture()
-        actual = next(row for row in jobs[103] if row['name'] == 'rust recovery runtime')
+        actual = next(row for row in jobs[103] if row['name'] == 'focused x86 checks')
         if fault == 'missing-job': jobs[103].remove(actual)
         elif fault in ('failure', 'cancelled'): actual['conclusion'] = fault
-        elif fault == 'base': proofs[103, 'recovery-runtime'] = context_fixture(103, 'recovery-runtime', 'e'*40)
         else:
           key = dict(source='head_sha', attempt='run_attempt', runner='runner_name')[fault]
-          proofs[103, 'recovery-runtime'][key] = dict(source='f'*40, attempt=99, runner='unknown')[fault]
+          proofs[103][key] = dict(source='f'*40, attempt=99, runner='unknown')[fault]
         if fault in ('source', 'attempt', 'runner'):
           with self.assertRaises(ValueError): publication.gates(client, SOURCE, 42, 611)
         else:
@@ -904,7 +903,7 @@ class GateTests(unittest.TestCase):
                          ('GitHub Actions owned', ['self-hosted', 'ubuntu-24.04'])]:
       with self.subTest(name=name, labels=labels):
         client, _, _, jobs, _ = self.fixture()
-        jobs[104][0].update(runner_name=name, labels=labels)
+        jobs[103][0].update(runner_name=name, labels=labels)
         self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][4]['ready'])
 
   def test_publication_rejects_receipt_runner_name_and_environment_spoofing(self):
@@ -912,7 +911,7 @@ class GateTests(unittest.TestCase):
       with self.subTest(fault=fault):
         client, _, _, jobs, proofs = self.fixture()
         if fault == 'name':
-          next(row for row in jobs[103] if row['name'] == 'rust workspace checks')['runner_name'] = 'bin-actions2'
+          next(row for row in jobs[103] if row['name'] == 'focused x86 checks')['runner_name'] = 'bin-actions2'
         else:
           proofs[103]['runner_environment'] = 'github-hosted'
         with self.assertRaisesRegex(ValueError, 'runner'):
