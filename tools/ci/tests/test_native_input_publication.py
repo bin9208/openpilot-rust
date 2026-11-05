@@ -771,6 +771,15 @@ class GateTests(unittest.TestCase):
         else:
           self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][3]['ready'])
 
+  def test_verified_inputs_can_precede_device_acceptance_but_never_skip_focused_checks(self):
+    client, _, runs, jobs, _ = self.fixture()
+    focused = next(run for run in runs if run['path'].endswith('/focused-validation.yml'))
+    focused['conclusion'] = 'failure'
+    jobs[focused['id']].append(dict(job_fixture('device acceptance'), conclusion='failure'))
+    self.assertTrue(all(state['ready'] for state in publication.gates(client, SOURCE, 42, 611)[1]))
+    jobs[focused['id']][0]['conclusion'] = 'failure'
+    self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][3]['ready'])
+
   def test_fast_checks_are_retired_from_publication_gates(self):
     self.assertNotIn('fast-checks.yml', {name for name, _, _ in publication.GATES})
 

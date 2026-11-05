@@ -27,7 +27,8 @@
 
 ## 적용 및 검증
 
-현재는 구현 중이다. 각 트랙의 독립 PR과 정확 SHA/Actions 결과, 원격 보호 규칙 readback을
-아래에 기록한다. dev-md runtime 소스를 dev에 가져오지 않는다. 로컬은 구문·서식·diff만
+dev 적용은 [PR #686](https://github.com/bin9208/openpilot-rust/pull/686), dev-md 적용은
+[PR #687](https://github.com/bin9208/openpilot-rust/pull/687)로 분리한다. 정확 SHA/Actions 결과와
+원격 보호 규칙 readback은 [#685의 최신 기록](https://github.com/bin9208/openpilot-rust/issues/685)에 남긴다. dev-md runtime 소스를 dev에 가져오지 않는다. 로컬은 구문·서식·diff만
 검사하며 기능 검사는 Actions에서 수행한다. 이 정책/CI 변경은 기기 실행 코드를 바꾸지 않아
 기기 반복 시험을 생략한다. #598/#528의 실제 기기 빌드·부팅 수용은 별도이며 미완료다.

@@ -358,7 +358,12 @@ def gates(client, source, producer_id, pr_number):
     ready = False
     if selected is not None:
       trusted_run(selected, source)
-      if selected['status'] == 'completed' and selected['conclusion'] == 'success':
+      # Inputs are needed before the first device test. A failed device-only
+      # acceptance job cannot block publishing verified preparation inputs. The
+      # focused job and its immutable PR receipt must still succeed.
+      accepted = selected['conclusion'] == 'success' or (filename == 'focused-validation.yml'
+          and selected['conclusion'] == 'failure')
+      if selected['status'] == 'completed' and accepted:
         jobs = client.collect(f'actions/runs/{selected["id"]}/jobs', 'jobs')
         names = {j['name'] for j in jobs if j['status'] == 'completed' and j['conclusion'] == 'success'
             and gate_job_allowed(filename, j)}
