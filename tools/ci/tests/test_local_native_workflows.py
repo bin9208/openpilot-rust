@@ -369,6 +369,9 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     after['on']['push']['branches'] = branches
                 old, new = before['jobs'][name], after['jobs'][name]
                 if filename == 'native-source-entry.yml':
+                    memory_step = next(s for s in new['steps'] if s.get('name') == 'Check legacy and current kernel memory interfaces on native ARM')
+                    self.assertEqual(memory_step['run'], 'cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --lib memory_cgroup::tests')
+                    new['steps'].remove(memory_step)
                     export = after['on']['workflow_dispatch']['inputs'].pop('export_seed')
                     self.assertEqual(export, dict(description='Export only the source-built release bootstrap seed, without building the full runtime',
                                                  required='false', default='false', type='boolean'))

@@ -184,6 +184,7 @@ jobs:
           python3 -m unittest discover -s tools/ci/tests -p test_native_source_entry.py -v 2>&1 | tee "$CI_JOB_TEMP/installed-checkout.log"
           python3 -m unittest discover -s tools/ci/tests -p test_native_source_runtime.py -v 2>&1 | tee -a "$CI_JOB_TEMP/installed-checkout.log"
           PYTHONPATH="$GITHUB_WORKSPACE/tools/ci/tests" python3 -m unittest \
+            test_local_native_workflows.LocalNativeWorkflowTests.test_owned_native_arm_jobs_change_only_reviewed_host_preparation \
             test_local_native_workflows.LocalNativeWorkflowTests.test_provider_submodule_changes_keep_original_foundation_push_boundary \
             test_local_native_workflows.LocalNativeWorkflowTests.test_factory_timing_calls_the_same_production_workflow_without_fixture_jobs \
             -v 2>&1 | tee -a "$CI_JOB_TEMP/installed-checkout.log"

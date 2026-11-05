@@ -638,3 +638,29 @@ inactive-file 회수분, 잘못된/부족한 메모리, 실제 source driver의 
 멈추며 실제2.69GiB bootstrap/전체 컴파일 성공을 주장하지 않는다. 정확 SHA의 ARM/X64
 결과는 [#683](https://github.com/bin9208/openpilot-rust/issues/683)과 PR #681에 기록한다.
 실제 기기의 후속 빌드·정상 시작은 계속 사용자 확인 전이다.
+
+## 2026-11-05 실제 AGNOS4.9의 v2 메모리 인터페이스 — #684
+
+사용자가 제공한 마지막 strace는 private build cgroup 생성과 memory.max 설정 성공 뒤
+memory.oom.group 조회가ENOENT로 실패하고 helper가exit1하는 것을 확인했다. 같은 기기의
+기존kernelVersion은4.9.103이다. 해당파일과memory.peak를 최신v2와 동일하게 필수로 가정한
+실제 시작 호환성 결함이다. 현대host kernel에서 AGNOS userspace를 실행한 CI는 이를 잡지
+못했다. 메모리 한도2752MiB 조정은 적용됐고, 이번 중단은 설정 파일이 없어서가 아니다.
+
+v2는 feature가 있을 때 group OOM1을 계속 설정·검증하고, 없는 kernel은 cumulative
+memory.events OOM 감시와 기존 supervisor/private-group 전체 정리로 실패를 처리한다.
+memory.max hard cap·swap0·host/ancestor 여유와 owner/offroad 검사는 유지한다. 필수
+current/events/limit 또는 존재하던 control이 사라지는 경우는 계속 실패한다. optional
+interface도 symlink나권한오류를 없는기능으로 취급하지 않는다.
+
+memory.peak가 없으면 kernel_peak_bytes=null로 기록한다. observed_peak_bytes는 실제
+current 표본의 최대값이며 관측 사이의 peak를 측정했다고 주장하지 않는다. 최신kernel은
+실제kernelpeak를 계속 사용한다.3개 합성Rust사례로 legacy/modern/redirected interfaces와
+limits/swap/events/실제통계구분을 확인하고, 기존 v1 OOM 누적 사례도 유지한다. 이 합성
+파일은 kernel cgroup으로 실행하지 않는다. native ARM의 기존 export_seed job에서 해당
+lib 사례를 실행하고 최초 고정 seed용 release helper를 빌드한다. 실제99개 전체runtime을
+다시 빌드하는 작업이 아니다.
+
+[#684](https://github.com/bin9208/openpilot-rust/issues/684)에 정확 소스/Actions/새 seed
+SHA·descriptor/index와 설치 후보를 기록한다. 소스만 고치고 기존seed를 계속 받는 상태는
+완료가 아니다. 기기 직접 접속·제어·재부팅은 하지 않고, 실제빌드·정상시작은사용자확인전이다.

@@ -333,7 +333,7 @@ impl Monitor {
     }
 
     pub fn finish(&mut self, success: bool, reason: Option<String>) -> Result<()> {
-        // Kernel peak remains available after all compiler processes exit.
+        // Preserve sampled charge even when an old v2 kernel has no peak file.
         let sample = self.sample();
         self.group.stop()?;
         self.memory = self.group.memory()?;
@@ -364,7 +364,7 @@ impl Monitor {
             "policy":self.policy,"memory_group":self.group.path,"memory":self.memory,"samples":self.samples,
             "minimum_available_system_memory_bytes":self.minimum_available_memory,"filesystems":self.disks,"context":self.context,
             "frontend_kernel_peak_rss_bytes":frontend_peak_rss,
-            "memory_scope":"kernel private cgroup charge peak after worker entry, including descendants/file cache; not single-process RSS",
+            "memory_scope":"private cgroup charge including descendants/file cache; kernel_peak_bytes is null when unavailable; observed_peak_bytes is the maximum sampled current charge; not single-process RSS",
             "disk_scope":"observed filesystem free-space decrease including concurrent writers; not a hard filesystem quota",
             "execution_mode":std::env::var("OPENPILOT_CI_EXECUTION_MODE").unwrap_or_else(|_|"native".into()),
             "host_architecture":std::env::var("OPENPILOT_CI_HOST_ARCH").ok(),"process_architecture":std::env::consts::ARCH});
