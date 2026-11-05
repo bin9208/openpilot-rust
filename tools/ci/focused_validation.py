@@ -68,7 +68,7 @@ def selected_tests(paths):
     if path.startswith('tools/ci/tests/test_') and path.endswith('.py'):
       suites.add(Path(path).name)
     if path.startswith('tools/native/'):
-      if name in ('source_entry', 'source_runtime', 'build_memory', 'build_storage'):
+      if name in ('source_entry', 'source_runtime', 'build_memory', 'build_space'):
         suites.update(('test_native_source_entry.py', 'test_native_source_runtime.py'))
       elif name == 'bootstrap_seed':
         suites.add('test_native_bootstrap_seed.py')
