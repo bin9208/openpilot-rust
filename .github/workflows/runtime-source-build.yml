@@ -164,7 +164,7 @@ permissions:
 jobs:
   installed-checkout:
     name: Installed Git checkout startup (${{ matrix.runner }})
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.installed_checkout_only }}
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'workflow_dispatch' && inputs.installed_checkout_only }}
     strategy:
       fail-fast: false
       matrix:

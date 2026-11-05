@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -15,6 +16,21 @@ SPEC.loader.exec_module(publisher)
 
 
 class SeedPublicationTests(unittest.TestCase):
+  def test_release_creation_requires_the_existing_exact_source_tag(self):
+    source = 'a'*40
+    payload = dict(tag_name='native-bootstrap-'+source, target_commitish=source, draft=True)
+    calls = []
+    def api(method, route, value=None, missing=False):
+      calls.append((method, route, value))
+      return dict(object=dict(type='commit', sha=source)) if method == 'GET' else {}
+    with mock.patch.object(publisher.publication.GitHub, 'json', side_effect=api):
+      publisher.SeedGitHub().json('POST', 'releases', payload)
+    self.assertNotIn('target_commitish', calls[-1][2])
+    self.assertEqual(payload['target_commitish'], source)
+    with mock.patch.object(publisher.publication.GitHub, 'json', return_value=dict(object=dict(type='commit', sha='b'*40))):
+      with self.assertRaisesRegex(ValueError, 'verified source'):
+        publisher.SeedGitHub().json('POST', 'releases', payload)
+
   def fixture(self, root, fault=None):
     index = json.loads((ROOT/'rust/native-bootstrap-inputs.json').read_text())
     descriptor = index['seed']['sha256']

@@ -21,6 +21,18 @@ PREFIX = 'source-entry-full/state/release-seed/'
 BUILD_STEP = 'Check legacy and current kernel memory interfaces on native ARM'
 
 
+class SeedGitHub(publication.GitHub):
+  def json(self, method, route, value=None, missing=False):
+    if method == 'POST' and route == 'releases':
+      # Source-control preparation pins the tested commit with a lightweight
+      # tag. Do not ask the Actions token to create a workflow-changing ref.
+      ref = super().json('GET', 'git/ref/tags/'+value['tag_name'])
+      if ref['object']['type'] != 'commit' or ref['object']['sha'] != value['target_commitish']:
+        raise ValueError('seed release tag is not the already verified source')
+      value = {key: item for key, item in value.items() if key != 'target_commitish'}
+    return super().json(method, route, value, missing)
+
+
 def validate(bundle, source, target):
   proof = bundle.json('source-entry-full/result.json')
   if (proof['kind'] != 'release-seed-export' or proof['source']['commit'] != source
@@ -86,7 +98,7 @@ def main():
     raise ValueError('seed publication work is not owned by this job')
   root = job/'seed-publication'
   root.mkdir()
-  client = publication.GitHub(root)
+  client = SeedGitHub(root)
   run = client.json('GET', f'actions/runs/{args.source_run_id}')
   publication.trusted_run(run, args.source_commit)
   if (run['path'] != '.github/workflows/native-source-entry.yml' or run['event'] != 'workflow_dispatch'
