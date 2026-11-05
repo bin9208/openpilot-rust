@@ -91,6 +91,199 @@ class Fixture:
 
 
 class SourceEntryTests(unittest.TestCase):
+  def space_fixture(self, root, free=600, required=1100):
+    f = Fixture(root)
+    f.machine['resources']['filesystems'][str(root)] = dict(maximum_growth_bytes=required-100, minimum_free_bytes=100)
+    f.proc = root/'proc'
+    f.proc.mkdir()
+    f.log_root = root/'media/0/realdata'
+    f.log_root.mkdir(parents=True)
+    f.payloads = []
+    def payload(path, size=300):
+      path.parent.mkdir(parents=True, exist_ok=True)
+      path.write_bytes(b'x'*size)
+      f.payloads.append((path, size))
+      return path.parent
+    f.payload = payload
+    f.available = lambda _: SimpleNamespace(free=free+sum(size for path, size in f.payloads if not path.exists()))
+    f.clean = lambda **kwargs: entry.build_space.prepare(f.machine, f.source,
+        lambda: runtime.offroad(root/'params'), proc=f.proc, **kwargs)
+    return f
+
+  def test_build_space_prunes_old_packages_before_touching_recorded_logs(self):
+    with tempfile.TemporaryDirectory() as temp:
+      f = self.space_fixture(Path(temp), free=18600, required=24500)
+      store = f.source/'rust/.runtime-packages'
+      packages = []
+      for index in range(12):
+        package = f.payload(store/f'gen-{"a"*40}-{"b"*64}-p{index}'/'rust/bin/manager', 2000)
+        package = package.parent.parent
+        os.utime(package, ns=(index+1, index+1))
+        packages.append(package)
+      (f.source/'rust/.runtime-active').symlink_to(Path('.runtime-packages')/packages[-1].name)
+      live = f.proc/'123'
+      live.mkdir()
+      (live/'exe').symlink_to(packages[0]/'rust/bin/manager')
+      log = f.payload(f.log_root/'00000001--aaaaaaaaaa--0'/'rlog.zst')
+      with mock.patch.object(entry.build_space.shutil, 'disk_usage', side_effect=f.available):
+        f.clean()
+        self.assertGreaterEqual(f.available(f.root).free, 24500)
+      self.assertEqual([p.exists() for p in packages], [True, False, False, False]+[True]*8)
+      self.assertTrue(log.exists())
+      self.assertTrue(packages[0].exists(), 'live owner needs all sibling helpers')
+      self.assertTrue(packages[-1].exists(), 'active package must survive')
+      self.assertTrue(packages[-2].exists(), 'newest previous package must survive')
+
+  def test_python_installation_cleans_only_old_unlocked_unbookmarked_segments(self):
+    with tempfile.TemporaryDirectory() as temp:
+      f = self.space_fixture(Path(temp))
+      segments = [f.payload(f.log_root/f'00000001--aaaaaaaaaa--{i}'/'rlog.zst') for i in range(9)]
+      (segments[0]/'rlog.lock').touch()
+      os.setxattr(segments[3], 'user.preserve', b'1')
+      outside = f.root/'separate-videos'
+      outside.mkdir()
+      (outside/'recording.ts').write_bytes(b'keep')
+      (f.log_root/'00000000--aaaaaaaaaa--0').symlink_to(outside, target_is_directory=True)
+      for name in ('boot', 'crash', 'unknown-data'):
+        f.payload(f.log_root/name/'keep')
+      cache = f.payload(Path(f.machine['cache'])/'cargo-target'/'keep')
+      with mock.patch.object(entry.build_space.shutil, 'disk_usage', side_effect=f.available):
+        f.clean()
+      self.assertEqual([p.exists() for p in segments], [True]*4+[False, False]+[True]*3)
+      self.assertEqual((outside/'recording.ts').read_bytes(), b'keep')
+      self.assertTrue(cache.exists())
+      self.assertTrue(all((f.log_root/name/'keep').exists() for name in ('boot', 'crash', 'unknown-data')))
+
+  def test_build_space_preserves_busy_installers_journals_and_uninspectable_owners(self):
+    with tempfile.TemporaryDirectory() as temp:
+      f = self.space_fixture(Path(temp))
+      store = f.source/'rust/.runtime-packages'
+      first = f.payload(store/f'gen-{"a"*40}-{"b"*64}-old'/'rust/bin/manager')
+      f.payload(store/f'gen-{"a"*40}-{"b"*64}-previous'/'rust/bin/manager')
+      with mock.patch.object(Path, 'iterdir', side_effect=PermissionError('uninspectable live owners')):
+        self.assertEqual(entry.build_space.unused_packages(f.source, f.proc), [])
+      journal = f.source/'rust/.runtime-install-journal.json'
+      journal.write_text('{interrupted installer}')
+      self.assertEqual(entry.build_space.unused_packages(f.source, f.proc), [])
+      journal.unlink()
+      with entry.build_space.installer_lock(f.source) as locked:
+        self.assertTrue(locked)
+        with mock.patch.object(entry.build_space.shutil, 'disk_usage', side_effect=f.available):
+          f.clean(allow_logs=False)
+      self.assertTrue(first.exists())
+
+  def test_build_space_reports_shortage_and_never_removes_protected_or_latest_logs(self):
+    with tempfile.TemporaryDirectory() as temp:
+      f = self.space_fixture(Path(temp))
+      old = f.payload(f.log_root/'00000001--aaaaaaaaaa--0'/'rlog.zst')
+      latest = f.payload(f.log_root/'00000001--aaaaaaaaaa--1'/'rlog.zst')
+      os.setxattr(old, 'user.preserve', b'1')
+      with mock.patch.object(entry.build_space.shutil, 'disk_usage', side_effect=f.available):
+        with self.assertRaisesRegex(ValueError, 'available.*GiB.*required.*GiB.*short.*GiB'):
+          f.clean()
+      self.assertTrue(old.exists())
+      self.assertTrue(latest.exists())
+
+  def test_existing_runtime_boot_and_sufficient_capacity_keep_logs(self):
+    with tempfile.TemporaryDirectory() as temp:
+      f = self.space_fixture(Path(temp))
+      logs = [f.payload(f.log_root/f'00000001--aaaaaaaaaa--{i}'/'rlog.zst') for i in range(3)]
+      with mock.patch.object(entry.build_space.shutil, 'disk_usage', side_effect=f.available):
+        f.clean(allow_logs=False)
+      self.assertTrue(all(p.exists() for p in logs))
+      with mock.patch.object(entry.build_space.shutil, 'disk_usage', return_value=SimpleNamespace(free=1100)), \
+           mock.patch.object(entry.build_space.shutil, 'rmtree', side_effect=AssertionError('capacity already sufficient')):
+        f.clean()
+
+  def test_initial_main_reclaims_space_before_copying_or_starting_the_builder(self):
+    with tempfile.TemporaryDirectory() as temp:
+      f = self.space_fixture(Path(temp))
+      logs = [f.payload(f.log_root/f'00000001--aaaaaaaaaa--{i}'/'rlog.zst') for i in range(3)]
+      path = f.root/'machine.json'
+      path.write_bytes(seed.json_bytes(f.machine))
+      def launched(*args, **kwargs):
+        self.assertGreaterEqual(f.available(f.root).free, 1100)
+        self.assertFalse(logs[0].exists())
+        self.assertFalse(logs[1].exists())
+        self.assertTrue(logs[2].exists())
+      argv = ['source_entry.py', '--source', str(f.source), '--machine-config', str(path), '--launch', '--verify-package']
+      with mock.patch.object(seed, 'native'), mock.patch.object(os, 'geteuid', return_value=1000), \
+           mock.patch.object(entry.sys, 'argv', argv), mock.patch.object(entry, 'launch', side_effect=launched) as launch, \
+           mock.patch.object(entry.build_space.shutil, 'disk_usage', side_effect=f.available):
+        entry.main()
+        launch.assert_called_once()
+
+  def test_installed_checkout_preserves_legacy_files_and_builds_only_committed_source(self):
+    with tempfile.TemporaryDirectory() as temp:
+      f = Fixture(Path(temp))
+      f.put('rust/native-machine.json', f.machine)
+      (f.source/'README').write_text('committed source')
+      f.commit()
+      original = runtime.source_identity(f.source)
+      # Device installers commonly leave a shallow checkout. Its existing
+      # objects must be sufficient; no source/model network fetch is needed.
+      (f.source/'.git/shallow').write_text(original['commit']+'\n')
+      legacy = f.source/'installed-generated'
+      legacy.mkdir()
+      for index in range(2200):
+        (legacy/f'object-{index}').write_bytes(b'existing installed output')
+      leftovers = ('build.json', 'installed-package.whl', 'previous-build.log', 'runtime-package.json',
+                   'old-model.bin', 'untracked.rs', 'installed-version.txt')
+      for name in leftovers:
+        (f.source/name).write_bytes(b'preserve existing installation')
+      self.assertEqual(len(f.git('ls-files', '--others', '--exclude-standard', '-z').split(b'\0'))-1, 2207)
+      untouched = (legacy/'object-0').stat()
+      path = f.root/'machine.json'
+      seen = []
+
+      def launched(args, machine, source, pin, **kwargs):
+        identity = runtime.source_identity(source)
+        self.assertEqual(identity, runtime.source_identity(f.source, allow_untracked=True))
+        self.assertNotEqual(source, f.source)
+        self.assertFalse((source/'installed-generated').exists())
+        self.assertTrue(all(not (source/name).exists() for name in leftovers))
+        observe = kwargs['observe_source']
+        observe()
+        if not seen:
+          readme = f.source/'README'
+          content = readme.read_bytes()
+          try:
+            readme.write_bytes(b'tracked source changed during the build')
+            with self.assertRaises(ValueError):
+              observe()
+          finally:
+            readme.write_bytes(content)
+          observe()
+        seen.append(source)
+
+      argv = ['source_entry.py', '--source', str(f.source), '--machine-config', str(path), '--launch', '--verify-package']
+      with mock.patch.object(entry, 'DEFAULT_MACHINE', path), mock.patch.object(seed, 'native'), \
+           mock.patch.object(os, 'geteuid', return_value=1000), mock.patch.object(entry.sys, 'argv', argv), \
+           mock.patch.object(entry, 'launch', side_effect=launched):
+        entry.main()
+        first = seen[-1]
+        unchanged = (first/'rust/native-runtime-catalog.json').stat()
+        entry.main()
+        self.assertEqual(seen[-1], first)
+        self.assertEqual((first/'rust/native-runtime-catalog.json').stat().st_mtime_ns, unchanged.st_mtime_ns)
+        (f.source/'README').write_text('next Git update')
+        f.git('add', 'README')
+        f.git('commit', '-qm', 'next committed update')
+        (f.root/'params/d/IsOnroad').write_bytes(b'1')
+        entry.main()
+        self.assertEqual(seen[-1], first)
+        self.assertNotEqual(runtime.source_identity(first), original)
+        self.assertEqual((first/'README').read_text(), 'next Git update')
+        self.assertEqual((first/'rust/native-runtime-catalog.json').stat().st_mtime_ns, unchanged.st_mtime_ns)
+        (f.source/'README').write_text('uncommitted tracked edit')
+        with self.assertRaisesRegex(ValueError, 'repository root|tracked source'):
+          entry.main()
+        self.assertEqual(len(seen), 3)
+      self.assertEqual((legacy/'object-0').read_bytes(), b'existing installed output')
+      self.assertEqual((legacy/'object-0').stat().st_ino, untouched.st_ino)
+      self.assertEqual((legacy/'object-0').stat().st_mtime_ns, untouched.st_mtime_ns)
+      self.assertTrue(all((f.source/name).read_bytes() == b'preserve existing installation' for name in leftovers))
+
   def test_installed_storage_preserves_the_fixed_seed_generator_namespace(self):
     root = Path(entry.__file__).resolve().parents[2]
     publication = full_entry.module(root/'tools/native/publish_inputs.py', 'owned_input_directory')

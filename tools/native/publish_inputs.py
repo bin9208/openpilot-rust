@@ -219,6 +219,13 @@ class GitHub:
 
   def release(self, tag):
     value = self.json('GET', 'releases/tags/'+quote(tag, safe=''), missing=True)
+    if value is None:
+      # The tag endpoint omits drafts. Resume only the uniquely named release;
+      # inspect_releases still checks its exact source/descriptor ownership.
+      drafts = [row for row in self.collect('releases') if row['tag_name'] == tag]
+      if len(drafts) > 1:
+        raise ValueError('duplicate native staging release tag; preserved')
+      value = drafts[0] if drafts else None
     if value is not None:
       value['assets'] = self.collect(f'releases/{value["id"]}/assets')
     return value

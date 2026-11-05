@@ -1,5 +1,137 @@
 # 당근파일럿 원본 설치·빌드 흐름으로 정리 — #598 / #675
 
+## 2026-11-06 기기 반복 빌드의 링크 최적화 비용
+
+실제 `openpilot-ui` rustc 명령에서 `opt-level=3`, `lto=thin`, `codegen-units=1`을
+확인했다. source entry의99개 실행 파일마다 전체 dependency graph 링크 최적화를
+반복했다. 명시된 `OPENPILOT_NATIVE_INCREMENTAL=1` 소스 빌드만 일반적인 Cargo
+release 설정인 crate 간 LTO false/codegen16을 사용한다. opt-level3, debug assertions,
+overflow/panic 정책과 기능 선택은 변경하지 않는다. 동시 compiler는 메모리 경계를
+위해2개로 제한한다. 별도 distribution release의 thin LTO/codegen1은 유지한다.
+
+실제 profile override를 compiler cache identity에 포함해 이전 profile의 결과와
+혼합하지 않는다. 실제 rustc 인자·Cargo profile·출력 실행·재사용·distribution 분리를
+회귀에서 확인한다. 실기 빌드 시간과 주행 성능이 같다고 가정하지 않으며 실제 결과를
+구분해 기록한다.
+
+## 2026-11-06 shallow 설치의 소스 전체 재전송
+
+실기 source store에는 서로 다른1.4GiB Git pack 세 개가 있었으나 `show-ref`는
+비어 있고 shallow 경계 파일도 없었다. 설치 원본은 `0f462ccc`를 경계로 한 shallow
+저장소였다. fetch에 `--update-shallow`가 없으면 Git가 객체를 받고도 요청 ref 갱신을
+거부할 수 있고, 기존 코드는 exit0만 확인해 다음 커밋에서 전체 객체를 다시 전송했다.
+
+소스 보관 fetch는 shallow 경계 갱신을 명시하고 정확한 commit ref가 저장됐는지
+확인한다. 구 seed가 만든 기존 receipt도 소스·소유권 검증 후 누락 ref만 정해진
+성장 예산 안에서 복구한다. 기존 tree와 runtime은 보존하고 다른 commit을 같은
+ref로 덮지 않는다. 실제 Git 회귀는 shallow 소스의 ref/fsck, 구 seed 상태 복구,
+다음 커밋과 원본 제거 이후 독립 보관을 확인한다. 기기의 진행 중 빌드는 유지한다.
+
+## 2026-11-06 실기 대기 시간과 분리된 공통 의존성 캐시
+
+사용자는 한 시간을 넘는 체감 대기가 원본 설치 경험에 맞지 않는다고 지적했다.
+`cb3c062afc773b1d3be65768ac5516c9c986ac35`의 실제 재시도는 전체 Cargo 진입 전
+약24분이 걸렸고 첫12개 Cargo 묶음은16분57초였다. 부팅 후1시간 이후에도 작업이
+살아 있는 것은 전원 종료 수정 확인이며, 설치 시간 수용이나 전체 빌드 성공이 아니다.
+AGNOS `magic.py`가 기본 쉼표 배경을 표시하고 이 첫 빌드 경로에는 진행 UI 연결도 없다.
+
+실제13개 recipe의 package/bin/features를 제외해 비교하니 compiler input·환경이
+8가지로 갈라졌다. provider 부분집합과 그룹별 rpath-link 플래그가 Cargo target 저장소를
+나눠 공통 Rust 의존성을 재컴파일하게 한다. production 입력 assembly는 전체 고정
+compiler context를 한 번 결합하고13개 feature/package/bin 선택은 그대로 유지한다.
+모든 실제 compiler/provider receipt·tree·환경은 결과 plan과 report에 기록하고 전후
+hash 검증·SDK·ABI·seal·자원 제한은 유지한다. 충돌하는 pin/환경이나 임의 Rust flag는
+결합하지 않는다. 모델/데이터는 compiler cache identity에 넣지 않는다.
+
+이 선택은 compiler provider 자체가 바뀌면 공통 context 전체를 다시 빌드하는 보수적
+무효화를 사용한다. 일반 Rust 수정은 기존 Cargo fingerprint를 재사용한다. 기존 입력
+배정 audit는 소비 관계를 유지하며 실행 plan은 검증된 compiler 입력의 합집합이다.
+실제 offline Cargo 회귀에 서로 다른 provider receipt·환경·검색 flag를 넣어 공통
+의존성 한 번 컴파일, 별도 feature 선택, 실제 소스 변경 시 재빌드를 확인한다.
+집중 검사와 수정 HEAD의 실기 시간 확인 전까지 단축 시간을 주장하지 않는다.
+
+## 2026-11-06 전체 빌드의 미예산 tmpfs 진입 오류
+
+`7aefe3e03df2f295d7561f84e4c7d1dbaa6b02b2`의 재시도에서 watchdog 갱신을
+AGNOS 전원 관리 로그로 확인했고 입력 준비가 완료됐다. 모델 준비는164.523초였다.
+전체 빌드 진입은 `a native build writable filesystem has no resource budget`로
+거부됐다. 실제 `/tmp`는150MiB tmpfs이고 기본 정책은 `/data/openpilot-native`만
+감시한다. sudo 뒤의 기본 임시 경로를 예산에 무조건 추가하거나 검사를 제거하지 않는다.
+
+full native frontend는 cache 아래의 실제 `tmp` 디렉터리를 예산 검사하고 worker에도
+같은 `TMPDIR`를 명시한다. 캐시 경로 redirect는 거부한다. 별도 tmpfs를 상속한 실제
+입장 경로 회귀는 예산 없는 tmpfs의 계속된 거부와, 관리 캐시를 사용한 입장이 디스크
+검사를 통과한 뒤 가짜 메모리 controller에서 계속 거부되는 것을 구분한다.
+수정 HEAD의 실기 전체 빌드·부팅은 이어서 확인한다.
+
+## 2026-11-06 실기 최초 빌드 중 AGNOS 자동 전원 종료
+
+`8d5281bfded7367497e7223d9d95abca155481e7`의 실제 tizi 빌드는 SDK 검사를
+통과했고 도구13개 release 컴파일은8분29초, 캐시 재사용은1.31초,
+모델 컴파일러는58.65초에 끝났다. 주행 모델 생성 뒤 운전자 모델 준비 중
+기기가 종료됐다. 사용자는 전원을 조작하지 않았다고 확인했다.
+`LastAgnosPowerMonitorShutdown`에는 uptime3622.209초에 startup17.772초,
+watchdog0으로 종료한 기록이 있고 pstore도 `reboot: Power down`으로 끝난다.
+worker의 마지막 기록은 owner 종료이며 OOM/limit event는 모두0이었다.
+
+AGNOS의1시간 유휴 전원 보호는 그대로 둔다. 기존 request owner와 offroad 검사를
+통과하는 native driver만 기존 `/var/tmp/power_watchdog`에 monotonic timestamp를
+30초마다 원자적으로 발행한다. 별도 daemon이나 영구 설정 변경은 없고 driver 종료·
+owner 상실·onroad 전환 뒤에는 갱신하지 않는다. 로컬 복사와 비AGNOS host도 갱신하지
+않는다. 회귀는 갱신 간격,1시간 이후 갱신, owner/offroad 실패 시 중단, symlink 대상
+보존을 확인한다. 수정 HEAD의 실제 재빌드·정상 부팅 확인은 이어서 수행한다.
+
+## 2026-11-05 USB 연결 실기 SDK 권한 회귀
+
+사용자가 이 PC에서 연결된 기기의 자체 빌드 실패를 직접 수정·검증하도록 승인했다.
+`c79b2ab7b1ddfe5abe2b85cc9ed8916a395f3fd7`을 AGNOS `19.8-carrot-bt1`,
+커널 `4.9.103`, aarch64/tizi에서 시작했다. 디스크·메모리·구형 cgroup 검사는
+통과했으나 SDK capture가 `usr/lib/aarch64-linux-gnu/utempter/utempter`를
+set-id 파일로 거부해 도구 컴파일 전 종료됐다.
+
+기기 파일은 67,512 bytes, mode `2755`이며 SHA256은
+`8e56d3a7c2226b21829ee69b8168d10e8bd5876c3418eb199fe191714fc6eaf2`다.
+독립 factory SDK receipt의 같은 파일은 bytes/SHA256이 일치하고 mode만 `0755`다.
+읽기 전용 system SDK receipt는 파일을 복사하거나 권한을 부여하지 않으므로
+일반 접근 권한 `0777`을 비교한다. payload/hash/크기/경로/namespace 검증은 유지하고
+추출되는 일반 input Tree와 실행 도구의 set-id 거부는 변경하지 않는다.
+
+집중 회귀는 setuid/setgid 비트만 다른 live SDK의 일치, 실제 파일 권한 불변,
+일반 input Tree의 계속된 거부, 일반 접근 권한·내용 변경의 계속된 실패를 확인한다.
+실기 SDK 19,775항목을 읽기 전용으로 대조한 결과 이 setgid 차이 외의 bytes/hash/일반
+권한·namespace 차이는 없었다. [집중 x86 검사42049448735](https://github.com/bin9208/openpilot-rust/actions/runs/42049448735)의
+`focused x86 checks`는 성공했으며 같은 workflow의 실기 수용은 아직 실패 상태다.
+[ARM seed export42048262420](https://github.com/bin9208/openpilot-rust/actions/runs/42048262420)와
+[pin 발행42049867566](https://github.com/bin9208/openpilot-rust/actions/runs/42049867566)이 성공했다.
+seed source는 `0847cd18c3b4662b574a8fcf47123d5a447df67a`, descriptor는
+`a30507c04272393c551007730d179186d9263a21904d0d60c2df4832ccc610eb`다.
+발행된 입력을 Git에 포함하고 실제 기기의 해당 HEAD 빌드·시작을 이어 확인한다.
+
+## 2026-11-05 기존 설치의 미추적 파일로 시작이 막힌 회귀
+
+사용자는 `dev / 0f462ccc`를 Git pull한 뒤 재부팅했으나
+`native source driver requires the exact clean repository root`에서 중단됐다고 보고했다.
+기존 생성 파일·패키지2207개가 남았다는 사용자 보고다. 이 설치 경로를 빠뜨렸으므로
+#598/#599를 다시 열었다. 이전 CI 성공은 이 조건의 기기 부팅 성공을 뜻하지 않는다.
+
+재현 source `80ae2ac9922721069eb2be912b175cb9504062c8`의
+[Actions42005313089](https://github.com/bin9208/openpilot-rust/actions/runs/42005313089)에서
+ARM/X64 모두 같은2207개 조건으로 기존 오류가 발생했다. 다른34개 entry 사례는 성공했다.
+
+수정은 설치 폴더의 미추적 파일을 삭제하거나 ignore 목록에 추가하지 않는다. 기존
+updater 저장소 아래의 재사용 가능한 Git 체크아웃에 커밋된 파일만 전달하고, 원래 설치
+폴더와 패키지·로그는 보존한다. 같은 커밋은 체크아웃을 재사용하고 이후 Git 변경에서도
+바뀌지 않은 소스의 수정 시각을 유지한다. 고정 seed와 native worker는 계속 엄격한
+소스 판정을 사용하므로 이전 seed를 재발행하거나 새 runtime release를 요구하지 않는다.
+원래 추적 소스가 빌드 중 바뀌는 경우도 계속 중단한다. 새 서비스·수동 정리 단계는 없다.
+
+로컬은 AST·Rustfmt·YAML 구문과 diff만 확인한다. 수동 `installed_checkout_only` 모드는
+이 시작 경로의 Python/Git 회귀만 hosted ARM/X64에서 실행하며 runtime 재빌드는 하지 않는다.
+push 자동 Fast checks와 PR 필수 검사 정책은 변경하지 않는다. 이후의 같은 커밋 재사용과
+다음 Git 업데이트, 실제 native source store의 shallow 수용도 해당 경계에서 확인한다.
+정확 SHA의 최신 결과는 #598에 기록한다. 실제 기기의 빌드·시작 수용 전에는 완료로
+판단하지 않는다.
+
 2026-11-03 사용자 지시. 기준 원본은 로컬 Git에 보존된
 `ajouatom/openpilot:carrot-wip`의 `e8e152dbcfd9574a1791ed12026d1880e87689b3`이다.
 원본 `launch_chffrplus.sh`는 기존 Git/overlay 업데이트를 처리하고 필요한 의존성을 준비한
@@ -553,3 +685,122 @@ job에도 명시돼 있다. [#679](https://github.com/bin9208/openpilot-rust/iss
 같은6개 정책 검사를 PR/source foundation의 기존 짧은 전처리 단계에도 추가한다.
 원래 명령·runner·matrix·필수 context·ARM/AGNOS 기준이나 기기 runtime/입력은 바꾸지 않는다.
 이 후속의 실제 통과와 정상 supporting PR/병합 후 결과는 Actions에서 확인한다.
+
+## 2026-11-05 기존 설치의 빌드 전 공간 정리 — #682
+
+[#682](https://github.com/bin9208/openpilot-rust/issues/682)는 기존 Python 설치와 반복
+prebuilt 시험 뒤 남은 패키지·주행 로그 때문에 소스 빌드의 공간 admission에 도달하지
+못하는 경우를 다룬다. 사용자가 보고한 여유18.6GiB와 요구24.5GiB는 부족6GiB 정도다.
+요구량은 현재 작업의 최대 증가량24GiB+정상 실행 여유0.5GiB이며 이를 낮추지 않는다.
+보고된 패키지12개28.8GiB, 주행 로그20.6GiB는 재현 배경이고 정리 조건의 개수·크기로
+하드코딩하지 않는다. 아래 정책은 앞선 기록의 로그 자동 삭제 없음보다 최신 지시다.
+
+- `source_entry.py`가 최초 빌드/업데이트의 소스 복사·입력 준비 전에 정리한다.
+  입력 복사와 도구 준비가 공간을 소비할 수 있으므로 실제 native admission 직전에도
+  같은 정책을 확인한다. 필요한 여유를 확보하면 즉시 멈춘다.
+- 원래 installer의 `rust/.runtime-packages`에서 오래된 정규 패키지만 먼저 정리한다.
+  installer/source 요청 lock을 지키며 active, 실제 실행 중인 패키지 전체, 최신 이전
+  패키지 하나를 남긴다. 설치 journal/rollback 또는 사용 프로세스 조사 실패가 있으면
+  패키지 정리를 보류한다. 활성/복구 패키지의 실행 파일·라이브러리는 삭제하지 않는다.
+- 그래도 부족할 때만 Params와 같은 data 아래 `media/0/realdata`의 오래된 세그먼트를
+  지운다. 최신 세그먼트, `.lock`이 있는 세그먼트, 모든 `user.preserve=1` 세그먼트와
+  앞2개는 남긴다. boot/crash, 알 수 없는 디렉터리, symlink는 정리 대상이 아니다.
+  과거 업로드 전 로그도 공간 부족 시 정리될 수 있다. Git·Params·별도 영상·입력 묶음과
+  변경분 컴파일 캐시는 유지한다. 저장된 IsOnroad가1인 동안 삭제하지 않는다.
+- 기존 실행본이 있어 빌드가 필요하지 않은 시작은 공간 부족만으로 주행 로그를 지우지
+  않는다. 정리 후에도 부족하면 available/required/short GiB와 보호 파일 보존을 알리고
+  실제 빌드를 시작하지 않는다. 기기 접속·직접 정리·재부팅은 하지 않는다.
+
+합성 사례는18.6/24.5 비율의 패키지 우선 정리, live/active/복구 패키지 보존,
+Python 설치의 로그 정리·잠금/보존/최신 보호, symlink·다른 캐시 보존, installer
+journal/lock/조사 실패, 공간 부족 보고, 충분한 공간·무변경 시작 보존과 실제 main 진입
+연결을 다룬다. 로컬은 Python AST/diff만 확인하고 기능 검사는 기존 짧은 ARM/X64
+수동 모드에서 수행한다. 정확 SHA/Actions 결과는 #682와 PR #681에 기록한다.
+실제 콤마의 확보 용량·빌드 완료·정상 시작은 아직 사용자 확인 전이다.
+
+## 2026-11-05 기기 가용량에 맞춘 작업 메모리 한도 — #683
+
+사용자가 디스크 검사 통과 뒤 current-tools bootstrap에서 다음 중단을 보고했다.
+`available_bytes=3219333120`, `requested_bytes=3221225472`,
+`normal_reserve_bytes=134217728`, `required_bytes=3355443200`이다.
+실제 컴파일/OOM 전의 host admission 거부이며 요구량이136110080bytes 높다.
+
+`build_memory.py`는 기존 machine.json과 그 pin을 수정하지 않고 이번 작업의 private
+hard cap만 configured maximum 이하로 정한다. host MemAvailable과 보이는 v1/v2
+ancestor headroom 중 작은 값에서 정상 여유와 같은 크기의 시작 변동 여유를 뺀다.
+한도를 낮추는 경우64MiB 단위로 내린다. 보고 수치에서는2752MiB(2.6875GiB)의
+hard cap,128MiB 정상 여유와 약190MiB 추가 headroom이 된다. 충분한 메모리에서는
+기존 cap을 유지하며, 여유 부족·잘못된 MemAvailable·ancestor counter는 계속 거부한다.
+
+기본 JSON만 바꾸면 이미 설치된 정책이 계속3GiB를 요구하므로, source driver가
+`memory-admission.json`과 별도 pinned `admitted-config.json`을 기록하고 고정 seed의
+최초 current-tools부터 이를 전달한다. 이후 입력/실제 빌드도 같은 축소 정책을 사용한다.
+원래 config pin도 전 과정에서 재확인한다. native 메모리·swap·OOM·owner/offroad
+검사는 변경하지 않으며, global cache/swap/기기 설정이나 compiler 동시 수는 바꾸지 않는다.
+새 seed나99개 runtime 전체 빌드를 이 Python 설정 수정의 전달 선행 조건으로 추가하지 않는다.
+
+집중 사례는 실제 보고 수치의 기존 거부/축소 한도, 충분한 메모리, v1/v2 ancestor와
+inactive-file 회수분, 잘못된/부족한 메모리, 실제 source driver의 최초 seed config
+전달과 원본 pin 변경 거부를 확인한다. 이 seed 경계 사례는 컴파일러 대신 경계에서
+멈추며 실제2.69GiB bootstrap/전체 컴파일 성공을 주장하지 않는다. 정확 SHA의 ARM/X64
+결과는 [#683](https://github.com/bin9208/openpilot-rust/issues/683)과 PR #681에 기록한다.
+실제 기기의 후속 빌드·정상 시작은 계속 사용자 확인 전이다.
+
+## 2026-11-05 실제 AGNOS4.9의 v2 메모리 인터페이스 — #684
+
+사용자가 제공한 마지막 strace는 private build cgroup 생성과 memory.max 설정 성공 뒤
+memory.oom.group 조회가ENOENT로 실패하고 helper가exit1하는 것을 확인했다. 같은 기기의
+기존kernelVersion은4.9.103이다. 해당파일과memory.peak를 최신v2와 동일하게 필수로 가정한
+실제 시작 호환성 결함이다. 현대host kernel에서 AGNOS userspace를 실행한 CI는 이를 잡지
+못했다. 메모리 한도2752MiB 조정은 적용됐고, 이번 중단은 설정 파일이 없어서가 아니다.
+
+v2는 feature가 있을 때 group OOM1을 계속 설정·검증하고, 없는 kernel은 cumulative
+memory.events OOM 감시와 기존 supervisor/private-group 전체 정리로 실패를 처리한다.
+memory.max hard cap·swap0·host/ancestor 여유와 owner/offroad 검사는 유지한다. 필수
+current/events/limit 또는 존재하던 control이 사라지는 경우는 계속 실패한다. optional
+interface도 symlink나권한오류를 없는기능으로 취급하지 않는다.
+
+memory.peak가 없으면 kernel_peak_bytes=null로 기록한다. observed_peak_bytes는 실제
+current 표본의 최대값이며 관측 사이의 peak를 측정했다고 주장하지 않는다. 최신kernel은
+실제kernelpeak를 계속 사용한다.3개 합성Rust사례로 legacy/modern/redirected interfaces와
+limits/swap/events/실제통계구분을 확인하고, 기존 v1 OOM 누적 사례도 유지한다. 이 합성
+파일은 kernel cgroup으로 실행하지 않는다. native ARM의 기존 export_seed job에서 해당
+lib 사례를 실행하고 최초 고정 seed용 release helper를 빌드한다. 실제99개 전체runtime을
+다시 빌드하는 작업이 아니다.
+
+[#684](https://github.com/bin9208/openpilot-rust/issues/684)에 정확 소스/Actions/새 seed
+SHA·descriptor/index와 설치 후보를 기록한다. 소스만 고치고 기존seed를 계속 받는 상태는
+완료가 아니다. 기기 직접 접속·제어·재부팅은 하지 않고, 실제빌드·정상시작은사용자확인전이다.
+
+새 seed 발행은 기존 `native-input-publication.yml`의 명시적 `seed_export=true` 모드에서
+수행한다. 원래 전체 입력 발행의 source/PR/SDK/provider gate와 기본 모드는 유지한다.
+이 제한된 모드는 성공한 동일 source ARM release export, 새 kernel-interface 사례와
+ARM/X64 시작 집중 검사, artifact digest/source/tree/descriptor/helper/license/protocol을
+확인하고 해당 source의 bootstrap prerelease4파일만 발행한다. ARM helper를 publisher에서
+실행하지 않으며 source 정책·정상 source driver에 포함할 Git overlay만 만든다. 원본
+machine의 boot seed용 구 파일은 보존한다. 기존 불변 asset 검증·충돌 보존·draft 원자 발행과
+공개 HTTPS 수신 검사를 재사용하며 발행도 Actions에서만 수행한다. 이 결과는 전체 runtime
+release나 PR 필수 검사 완료를 뜻하지 않는다.
+
+### #684 새 seed의 확정 결과와 Git 입력
+
+소스af3dd546e718bb0410f9bf3c0bcaca1b49ee233a의
+[ARM export42030505128](https://github.com/bin9208/openpilot-rust/actions/runs/42030505128)는
+구형/현대 인터페이스Rust4사례와 release bootstrap 생성을 성공했다. 실제 도구 빌드는
+217.203초, private hard cap/peak는2752MiB, 실제OOM0이었다. 이는host kernel7.0에서
+AGNOS userspace를 실행한 결과이며 물리kernel4.9 부팅 검증은 아니다.
+
+[Actions 발행42034413133](https://github.com/bin9208/openpilot-rust/actions/runs/42034413133)는
+artifact/source/파일 검증과 공개HTTPS4파일 수신을 성공했다. 새 helper는3686608bytes,
+SHA256`b2fbbcdfd3a0be12de6efdeeb326a1828239fc1e90dc847cab0797213115350a`이다.
+새 descriptor는`0d43c39915c19ec80f9ba227add262fec5594fecb0c3189065673d33ed13fd99`,
+입력 index는`815c187c2d9b2e53f54c65e67ecedb92b389390de8f9b41b834d33ff2a97bcc7`다.
+Git에는 새manifest/helper/license와index를 포함하고, 기존 설치machine이 고정한 구
+boot_seed의metadata/seed파일은 보존한다. SDK·provider·모델 입력은 변경하지 않는다.
+
+발행 중 source 영수증의commit/tree형식과 draft조회 누락을 실제 데이터에 맞춰 고쳤고,
+기존 불변 파일/소유권·정확source검사는 유지했다. 검증된소스의동일Git태그를 준비한 뒤
+Actions가release를생성하므로workflow수정용추가토큰권한은주지않았다. GitHub의tagendpoint에
+보이지않는draft는인증된release목록에서찾고중복은거부한다. 해당새mode의작은사례4개도성공했다.
+최종Git입력을포함한정확후보의ARM/X64집중검사에서는그입력의실제seed파일도다시읽어
+새descriptor/byte/ELF와원본pin의연결을확인한다. 실제기기후속빌드/정상시작은사용자확인전이다.

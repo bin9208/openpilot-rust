@@ -44,6 +44,8 @@ pub fn activate(repository: &Path, staging: &Path) -> Result<Outcome, Error> {
         .try_exists()?
         || staging.join(".runtime-update-journal.json").try_exists()?
         || (repository.join("rust/runtime-manifest.json").is_file()
+            && std::env::var_os("OPENPILOT_USER_SOURCE_BUILD").as_deref()
+                != Some(std::ffi::OsStr::new("1"))
             && staging.join("finalized").try_exists()?)
     {
         return Ok(Outcome::Unchanged);

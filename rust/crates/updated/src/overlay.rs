@@ -141,7 +141,10 @@ impl Updater<'_> {
             )?;
             return Ok(());
         }
-        if paths.base.join("rust/runtime-manifest.json").is_file() {
+        if paths.base.join("rust/runtime-manifest.json").is_file()
+            && std::env::var_os("OPENPILOT_USER_SOURCE_BUILD").as_deref()
+                != Some(std::ffi::OsStr::new("1"))
+        {
             let target = self.context.commands.run(
                 &args(&["git", "rev-parse", "--verify", "HEAD^{commit}"]),
                 Some(&paths.merged()),

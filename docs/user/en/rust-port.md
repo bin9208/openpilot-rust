@@ -33,10 +33,13 @@ Git install/update and restart flow. Pinned build inputs and default configurati
 included with the Git branch. First startup prepares the required tools and dependencies
 automatically; later builds reuse the common cache. Check #598 above for the exact test
 candidate commit and its results.
-After a branch change, normal startup builds and verifies the changed checkout under the
-existing boot lock before starting manager. Build failures preserve the previous generation and logs.
-Startup does not run the full functional test suite or Clippy. It checks the required
-inputs and executable/library compatibility; full regression tests run separately in Actions.
+Normal startup starts the progress display and recovery port 6999 first, compiles changed
+source using prepared dependencies and the existing Cargo cache, then starts manager.
+Repeated full SDK/output audits, sealing and generation packages belong to the explicit
+development path. An unchanged start skips preparation and compilation. On failure, the
+error screen shows the log path and recovery stays available. First-time dependency
+installation still requires the existing download/input preparation once. Policy and
+unmeasured device results are recorded in the [#689 notes](../../naver/user-startup-689.md).
 
 For device testing, install or update the candidate identified in #598 through the existing
 Git flow, then restart. No manual Rust installation or separate input preparation command
@@ -62,7 +65,7 @@ For unpacked toolchains/providers, `openpilot-runtime-inputs --root INPUT_TREE
 --output RECEIPT_JSON` records actual file hashes, lengths, modes and contained file
 links. Bind this receipt to independently verified asset provenance, pin its SHA-256
 in the recipe's `inputs`, and map the tree to the receipt in `input_trees`. The driver
-checks the complete actual tree before and after building, rejecting changes, additions
+in this explicit developer audit path checks the complete actual tree before and after building, rejecting changes, additions
 and missing files. Capturing a new receipt alone does not establish trust; trees without
 receipts are not reported as verified.
 The [verification guide](../../naver/native-build-test-guide-598.md) records expected

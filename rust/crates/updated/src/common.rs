@@ -15,7 +15,10 @@ pub fn finalize_runtime_package(
 ) -> Result<(), Error> {
     let finalized = paths.finalized();
     set_consistent_flag(paths, &finalized, false)?;
-    if finalized.join("rust/Cargo.toml").is_file() {
+    if finalized.join("rust/Cargo.toml").is_file()
+        && std::env::var_os("OPENPILOT_USER_SOURCE_BUILD").as_deref()
+            != Some(std::ffi::OsStr::new("1"))
+    {
         let installer = finalized.join("rust/tools/ensure_runtime.sh");
         if !installer.is_file() {
             return Err(Error::Contract(

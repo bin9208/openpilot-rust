@@ -22,6 +22,9 @@ HOST_PREFIXES = ('.github/', 'docs/', 'tools/ci/tests/')
 RUST_PACKAGES = {
     'runtime-core': 'openpilot-runtime-core',
     'runtime-build': 'openpilot-runtime-build',
+    'runtime-launcher': 'openpilot-runtime-launcher',
+    'updated': 'openpilot-updated',
+    'runtime-version': 'openpilot-runtime-version',
     'runtime-installer': 'openpilot-runtime-installer',
     'disk-space': 'openpilot-disk-space',
 }
@@ -68,6 +71,8 @@ def selected_tests(paths):
     if path.startswith('tools/ci/tests/test_') and path.endswith('.py'):
       suites.add(Path(path).name)
     if path.startswith('tools/native/'):
+      if name in ('user_startup', 'early_startup'):
+        suites.add('test_user_startup.py')
       if name in ('source_entry', 'source_runtime', 'build_memory', 'build_space'):
         suites.update(('test_native_source_entry.py', 'test_native_source_runtime.py'))
       elif name == 'bootstrap_seed':
@@ -114,9 +119,18 @@ def host_checks(paths):
     parts = name.split('/')
     if len(parts) > 3 and parts[:2] == ['rust', 'crates'] and parts[2] in RUST_PACKAGES:
       crates.add(RUST_PACKAGES[parts[2]])
+  if crates & {'openpilot-runtime-launcher', 'openpilot-runtime-version', 'openpilot-updated'}:
+    # These focused host crates use cereal/logging. Prepare only their small
+    # host dependencies, never the native SDK/providers or workspace build.
+    run(['sudo', 'apt-get', 'update'])
+    run(['sudo', 'apt-get', 'install', '-y', '--no-install-recommends', 'capnproto', 'libzmq3-dev'])
+  command = ['cargo', 'test', '--manifest-path', 'rust/Cargo.toml', '--locked',
+             '--lib', '--tests', '--no-default-features']
   for crate in sorted(crates):
-    run(['cargo', 'test', '--manifest-path', 'rust/Cargo.toml', '--locked',
-         '-p', crate, '--lib', '--tests', '--no-default-features'], timeout=300)
+    command += ['-p', crate]
+  # Resolve shared host features once; separate invocations rebuilt cereal/ZMQ
+  # repeatedly for slightly different dependency feature sets.
+  run(command, timeout=600)
   if any(name in HOST_ONLY and name.endswith('publish.rs') for name in paths):
     run(['cargo', 'test', '--manifest-path', 'rust/Cargo.toml', '--locked',
          '-p', 'openpilot-dev-tools', '--test', 'publish'], timeout=300)

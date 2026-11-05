@@ -37,10 +37,17 @@ if __name__ == '__main__':
 _SPEC = importlib.util.spec_from_file_location('openpilot_native_bootstrap_seed_source', Path(__file__).with_name('bootstrap_seed.py'))
 seed = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(seed)
+_MEMORY_SPEC = importlib.util.spec_from_file_location('openpilot_native_build_memory', Path(__file__).with_name('build_memory.py'))
+memory = importlib.util.module_from_spec(_MEMORY_SPEC)
+_MEMORY_SPEC.loader.exec_module(memory)
+
+PROGRESS = lambda *args, **kwargs: None
 
 TOOLS_FIELDS = {'schema', 'stores', 'cache', 'system_sdk_receipt', 'system_sdk_sha256',
                 'expected_source_growth_bytes', 'expected_compile_growth_bytes',
                 'remaining_object_growth_bytes', 'resources'}
+AGNOS = Path('/AGNOS')
+POWER_WATCHDOG = Path('/var/tmp/power_watchdog')
 
 
 def owned_child(owner, parent, command):
@@ -68,30 +75,55 @@ class OwnedCommands:
   def __init__(self, owner, params=None):
     self.owner = owner
     self.params = params
+    self.watchdog = POWER_WATCHDOG if params is not None and AGNOS.is_file() else None
+    self.watchdog_at = None
 
-  def observe(self):
+  def observe(self, *, progress=True):
     seed.verify_owners(self.owner)
+    if progress:
+      PROGRESS()
     if self.params is not None:
       offroad(self.params)
+    # AGNOS powers off after an hour without a manager heartbeat, including
+    # while a first build is still running. Renew its existing monotonic lease
+    # only while the request owner is alive and offroad remains verified.
+    if self.watchdog is not None:
+      now = time.monotonic()
+      if self.watchdog_at is None or now-self.watchdog_at >= 30:
+        with tempfile.TemporaryDirectory(prefix='.native-power-', dir=self.watchdog.parent) as temp:
+          pending = Path(temp)/'watchdog'
+          pending.write_text(str(now))
+          pending.replace(self.watchdog)
+        self.watchdog_at = now
 
-  def run(self, argv, *, env, stdout, stderr, check):
+  def run(self, argv, *, env, stdout, stderr, check, stderr_limit=4*1024**2):
+    if stderr_limit is None and stderr == subprocess.PIPE:
+      raise ValueError('unbounded compiler diagnostics require a file, not memory capture')
     self.observe()
     with ExitStack() as stack:
       out = stack.enter_context(tempfile.TemporaryFile()) if stdout == subprocess.PIPE else stdout
       err = stack.enter_context(tempfile.TemporaryFile()) if stderr == subprocess.PIPE else stderr
+      streams = ((stdout, out, 4*1024**2), (stderr, err, stderr_limit))
       wrapped = ['/usr/bin/python3', '-I', '-B', '-S', str(Path(__file__).resolve()), '--owned-child', self.owner,
           str(os.getpid()), '--', *map(str, argv)]
       child = subprocess.Popen(wrapped, env=env, stdout=out, stderr=err, start_new_session=True)
       try:
         while child.poll() is None:
-          self.observe()
-          if any(os.fstat(s.fileno()).st_size > 4*1024**2 for s in (out, err)):
+          self.observe(progress=False)
+          if any(limit is not None and os.fstat(s.fileno()).st_size > limit for _, s, limit in streams):
             raise ValueError('native source command output exceeded 4 MiB; worker evidence retained')
+          detail = None
+          if err.readable():
+            size = os.fstat(err.fileno()).st_size
+            tail = os.pread(err.fileno(), min(size, 2048), max(0, size - 2048))
+            lines = tail.decode('utf-8', 'replace').splitlines()
+            if lines: detail = lines[-1]
+          PROGRESS(detail=detail)
           time.sleep(0.1)
         self.observe()
         captured = []
-        for original, stream in ((stdout, out), (stderr, err)):
-          if os.fstat(stream.fileno()).st_size > 4*1024**2:
+        for original, stream, limit in streams:
+          if limit is not None and os.fstat(stream.fileno()).st_size > limit:
             raise ValueError('native source command output exceeded 4 MiB')
           if original == subprocess.PIPE:
             stream.seek(0)
@@ -162,10 +194,11 @@ def absolute(value):
   return path
 
 
-def source_identity(source):
+def source_identity(source, *, allow_untracked=False):
   def git(*args):
     return subprocess.check_output(['/usr/bin/git', '-C', str(source), *args], env=seed.ENV, text=True).strip()
-  if Path(git('rev-parse', '--show-toplevel')) != source or git('status', '--porcelain', '--untracked-files=all', '--ignore-submodules=none'):
+  untracked = '--untracked-files=no' if allow_untracked else '--untracked-files=all'
+  if Path(git('rev-parse', '--show-toplevel')) != source or git('status', '--porcelain', untracked, '--ignore-submodules=none'):
     raise ValueError('native source driver requires the exact clean repository root')
   return dict(commit=git('rev-parse', 'HEAD'), tree=git('rev-parse', 'HEAD^{tree}'))
 
@@ -261,7 +294,8 @@ def preserve_configuration(generations, configuration, pin):
 
 
 def build_runtime(prepared, plan, config_path, config_pin, source, request_owner=None,
-                  running_config=None, running_pin=None, previous=None, expected_source=None, observe=None):
+                  running_config=None, running_pin=None, previous=None, expected_source=None, observe=None, reclaim=None,
+                  prepare_only=False, prepared_inputs=None):
   started = time.monotonic()
   phases = {}
   marked = started
@@ -283,6 +317,7 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
     raise ValueError('native requested source changed during seed preparation')
   config_path = config_path.resolve(strict=True)
   configuration = read(config_path, config_pin)
+  requested_config, requested_pin = config_path, config_pin
   validate(configuration, source)
   params = Path(configuration['stores']['params'])
   offroad(params)
@@ -301,6 +336,7 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
       observe()
     seed.verify_owners(owner)
     offroad(params)
+    read(requested_config, requested_pin)
     read(config_path, config_pin)
     selection = configuration['runtime_inputs']
     read(Path(selection['path']), selection['sha256'])
@@ -316,7 +352,11 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
       return path
 
     def execute(name, command, pins):
+      PROGRESS({'prepared-inputs': 'Preparing build inputs', 'built-generation': 'Building runtime'}.get(name, name))
       check(pins)
+      if reclaim is not None and name in ('prepared-inputs', 'built-generation'):
+        reclaim()
+        check(pins)
       path = attempt/(name+'.json')
       # Capture into retained files, then read with a byte bound. Compiler and
       # worker logs remain in their independently monitored native attempts.
@@ -332,14 +372,39 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
       return read(path)
 
     check()
+    if reclaim is not None:
+      reclaim()
+      check()
+    resources, admission = memory.fit(configuration['resources'])
+    save('memory-admission.json', admission)
+    if resources != configuration['resources']:
+      configuration = dict(configuration, resources=resources)
+      config_path = save('admitted-config.json', configuration)
+      config_pin = seed.digest(config_path)
+      print(f"native build memory: hard limit {resources['maximum_memory_bytes']/1024**2:.0f} MiB, "
+            f"normal reserve {resources['minimum_available_memory_bytes']/1024**2:.0f} MiB, "
+            f"available {admission['available_bytes']/1024**2:.0f} MiB", file=sys.stderr)
+      check()
     timing('admission')
     small = {k: configuration[k] for k in TOOLS_FIELDS}
     first_config = save('tools-config.json', small)
+    PROGRESS('Preparing build tools')
     first = seed.current_tools(prepared, plan, first_config, source, request_owner=owner, run=commands.run)
     save('seed-current-tools.json', first)
     check()
     tools, tool_pins = tools_from_report(first['current_tools'], before, configuration)
     timing('current_tools')
+    if prepare_only and prepared_inputs is not None:
+      native = prepared_inputs(configuration, source)
+      if native is not None:
+        native_config = save('user-native-config.json', native)
+        native_pin = seed.digest(native_config)
+        retained = preserve_configuration(Path(configuration['stores']['generations']), native_config, native_pin)
+        result = dict(schema=1, source=before, configuration=str(retained), configuration_sha256=native_pin,
+            tools=str(tools), prepared_only=True, inputs_reused=True, full_runtime_build=False,
+            runtime_activated=False, runtime_started=False)
+        save('result.json', result)
+        return result
     input_report = execute('prepared-inputs', ['/usr/bin/sudo', '-n', tools/'openpilot-runtime-inputs',
         '--bootstrap-tools-scope', '--config', config_path, '--configuration-sha256', config_pin,
         '--root', source, '--request-owner', owner], tool_pins)
@@ -370,6 +435,15 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
         or native['toolchain'] != str(Path(input_report['preparations']['rust']['root'])/'bin')):
       raise ValueError('full build configuration changed its stores or resource policy')
     timing('runtime_inputs')
+    if prepare_only:
+      # Normal use needs compiler paths and prepared dependencies, not a sealed
+      # generation. Do not run the generation builder, sealer or ABI audits.
+      retained_config = preserve_configuration(Path(configuration['stores']['generations']), native_config, native_pin)
+      result = dict(schema=1, source=before, configuration=str(retained_config),
+          configuration_sha256=native_pin, tools=str(tools), prepared_only=True,
+          full_runtime_build=False, runtime_activated=False, runtime_started=False)
+      save('result.json', result)
+      return result
     built = execute('built-generation', ['/usr/bin/sudo', '-n', tools/'openpilot-native-build-scope',
         '--config', native_config, '--configuration-sha256', native_pin, '--build', '--root', source,
         '--request-owner', owner], tool_pins)

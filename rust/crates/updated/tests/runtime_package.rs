@@ -68,6 +68,39 @@ fn original_checkout_without_rust_retains_original_update_path() {
     assert!(!paths.finalized().join("package-attempted").exists());
 }
 
+#[test]
+#[ignore]
+fn user_source_finalization_child() {
+    let (_root, paths) = checkout(17);
+    std::fs::create_dir_all(paths.base.join("rust")).unwrap();
+    // A leftover package manifest must not re-enable package preparation in a
+    // source-built user's updater. The target installer deliberately fails.
+    std::fs::write(paths.base.join("rust/runtime-manifest.json"), "old package").unwrap();
+    finalize_checkout(&paths).unwrap();
+    assert!(common::get_consistent_flag(&paths.finalized()));
+    assert!(!paths.finalized().join("package-attempted").exists());
+}
+
+#[test]
+fn user_source_update_finalizes_git_without_running_distribution_installation() {
+    let output = Command::new(std::env::current_exe().unwrap())
+        .env("OPENPILOT_USER_SOURCE_BUILD", "1")
+        .args([
+            "--exact",
+            "user_source_finalization_child",
+            "--ignored",
+            "--nocapture",
+        ])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
 struct Hardware;
 impl openpilot_hardware_info::HardwareInfo for Hardware {
     fn get_device_type(&self) -> Result<String, openpilot_hardware_info::Error> {

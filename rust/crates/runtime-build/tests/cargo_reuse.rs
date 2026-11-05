@@ -112,6 +112,73 @@ fn commit(root: &std::path::Path) {
 }
 
 #[test]
+fn native_source_profile_keeps_optimized_release_without_whole_program_lto() {
+    use std::os::unix::fs::PermissionsExt;
+    let mut fixture = Fixture::new();
+    let manifest = fixture.root.join("rust/Cargo.toml");
+    let mut body = fs::read_to_string(&manifest).unwrap();
+    body.push_str("\n[profile.release]\nlto='thin'\ncodegen-units=1\n");
+    fs::write(manifest, body).unwrap();
+    commit(&fixture.root);
+    let compiler = fixture.toolchain.join("rustc");
+    let wrappers = fixture._temp.path().join("toolchain");
+    fs::create_dir(&wrappers).unwrap();
+    fs::copy(fixture.toolchain.join("cargo"), wrappers.join("cargo")).unwrap();
+    let wrapper = wrappers.join("rustc");
+    fs::write(
+        &wrapper,
+        "#!/bin/sh\nprintf '%s\\n' \"$@\" >> \"$RUSTC_ARGUMENT_TRACE\"\nexec \"$REAL_RUSTC\" \"$@\"\n",
+    )
+    .unwrap();
+    fs::set_permissions(&wrapper, fs::Permissions::from_mode(0o755)).unwrap();
+    fixture.toolchain = wrappers;
+    let trace = fixture._temp.path().join("rustc-arguments");
+    fixture
+        .recipe
+        .environment
+        .insert("REAL_RUSTC".into(), compiler.display().to_string());
+    fixture
+        .recipe
+        .environment
+        .insert("RUSTC_ARGUMENT_TRACE".into(), trace.display().to_string());
+    fixture
+        .recipe
+        .environment
+        .insert("OPENPILOT_NATIVE_INCREMENTAL".into(), "1".into());
+    let native = build_with_metadata(
+        &fixture.root,
+        &fixture.cache,
+        &fixture.toolchain,
+        &fixture.recipe,
+    )
+    .unwrap();
+    let arguments = fs::read_to_string(&trace).unwrap();
+    assert!(arguments.lines().any(|line| line == "opt-level=3"));
+    assert!(arguments.lines().any(|line| line == "codegen-units=16"));
+    assert!(!arguments.lines().any(|line| line == "lto=thin"));
+    assert_eq!(native.cargo_artifacts[0].profile["opt_level"], "3");
+    assert_eq!(native.cargo_artifacts[0].profile["debug_assertions"], false);
+    assert!(fixture.run().artifacts[0].fresh);
+    fs::write(&trace, "").unwrap();
+    fixture
+        .recipe
+        .environment
+        .remove("OPENPILOT_NATIVE_INCREMENTAL");
+    let distribution = fixture.run();
+    let arguments = fs::read_to_string(&trace).unwrap();
+    assert!(arguments.lines().any(|line| line == "lto=thin"));
+    assert!(arguments.lines().any(|line| line == "codegen-units=1"));
+    assert_ne!(native.build.cache_key, distribution.cache_key);
+    for report in [&native.build, &distribution] {
+        let output = Command::new(&report.artifacts[0].executable)
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        assert_eq!(output.stdout, b"42\n");
+    }
+}
+
+#[test]
 fn actual_cargo_feature_messages_match_executed_binaries_and_keep_report_schema_compatible() {
     let mut fixture = Fixture::new();
     let manifest = fixture.root.join("rust/Cargo.toml");
@@ -249,6 +316,58 @@ fn main() {
 }
 
 #[test]
+fn shared_compiler_context_rejects_pin_environment_and_flag_conflicts_without_mutation() {
+    use openpilot_runtime_build::{catalog_bindings::share_compiler_context, prepare::Plan};
+    let fixture = Fixture::new();
+    let mut other = fixture.recipe.clone();
+    other.binaries = vec!["other-fixture".into()];
+    let plan = Plan {
+        schema: 1,
+        groups: BTreeMap::from([
+            ("main".into(), fixture.recipe.clone()),
+            ("other".into(), other),
+        ]),
+        expected_source_growth_bytes: 1,
+        remaining_object_growth_bytes: 1,
+        runtime_inputs: Default::default(),
+    };
+    for fault in ["pin", "environment", "flags"] {
+        let mut changed = plan.clone();
+        match fault {
+            "pin" => {
+                changed
+                    .groups
+                    .get_mut("other")
+                    .unwrap()
+                    .inputs
+                    .insert("provider.receipt".into(), "0".repeat(64));
+            }
+            "environment" => {
+                for (group, value) in [("main", "/usr/bin/gcc"), ("other", "/foreign/gcc")] {
+                    changed
+                        .groups
+                        .get_mut(group)
+                        .unwrap()
+                        .environment
+                        .insert("CC".into(), value.into());
+                }
+            }
+            _ => {
+                changed
+                    .groups
+                    .get_mut("other")
+                    .unwrap()
+                    .environment
+                    .insert("RUSTFLAGS".into(), "-C opt-level=0".into());
+            }
+        }
+        let before = serde_json::to_vec(&changed).unwrap();
+        assert!(share_compiler_context(&mut changed).is_err(), "{fault}");
+        assert_eq!(serde_json::to_vec(&changed).unwrap(), before);
+    }
+}
+
+#[test]
 fn serial_package_groups_reuse_their_real_shared_dependency() {
     let mut fixture = Fixture::new();
     fs::create_dir_all(fixture.root.join("rust/shared/src")).unwrap();
@@ -306,6 +425,41 @@ fn main() {
     other.binaries = vec!["runtime-other".into()];
     other.features = vec!["runtime-other/selected-feature".into()];
     assert_ne!(fixture.recipe.features, other.features);
+    // Reproduce the production split: different provider receipts, environments
+    // and linker search flags must not duplicate the common Rust dependency.
+    for (index, recipe) in [&mut fixture.recipe, &mut other].into_iter().enumerate() {
+        let prefix = fixture._temp.path().join(format!("provider-{index}"));
+        fs::create_dir(&prefix).unwrap();
+        let receipt = prefix.join("receipt");
+        fs::write(&receipt, format!("owned provider {index}")).unwrap();
+        recipe
+            .inputs
+            .insert(receipt.clone(), digest_file(&receipt).unwrap());
+        recipe.environment.insert(
+            format!("OWNED_PROVIDER_{index}"),
+            prefix.display().to_string(),
+        );
+        recipe
+            .environment
+            .insert("LD_LIBRARY_PATH".into(), prefix.display().to_string());
+        recipe.environment.insert(
+            "RUSTFLAGS".into(),
+            format!("-C link-arg=-Wl,-rpath-link,{}", prefix.display()),
+        );
+    }
+    let mut plan = openpilot_runtime_build::prepare::Plan {
+        schema: 1,
+        groups: BTreeMap::from([
+            ("main".into(), fixture.recipe.clone()),
+            ("other".into(), other),
+        ]),
+        expected_source_growth_bytes: 1,
+        remaining_object_growth_bytes: 1,
+        runtime_inputs: Default::default(),
+    };
+    openpilot_runtime_build::catalog_bindings::share_compiler_context(&mut plan).unwrap();
+    fixture.recipe = plan.groups["main"].clone();
+    let other = plan.groups["other"].clone();
     let first = fixture.run();
     let libraries: Vec<_> = fs::read_dir(
         first
