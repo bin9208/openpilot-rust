@@ -383,8 +383,6 @@ def installed_checkout(machine, source, request_owner=None):
       observe()
       return result.stdout.decode().strip()
 
-    common = subprocess.check_output(['/usr/bin/git', '-C', str(source), 'rev-parse',
-        '--path-format=absolute', '--git-common-dir'], env=seed.ENV, text=True).strip()
     branch = subprocess.run(['/usr/bin/git', '-C', str(source), 'symbolic-ref', '--short', '-q', 'HEAD'],
         env=seed.ENV, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False).stdout.decode().strip()
     if not os.path.lexists(root):
@@ -398,14 +396,16 @@ def installed_checkout(machine, source, request_owner=None):
           raise ValueError('installed source checkout differs from the requested Git tree')
         seed.publish(pending, root)
     directory(root)
-    with seed.regular(root/'.git/objects/info/alternates') as stream:
-      if stream.read(65536) != (str(Path(common)/'objects')+'\n').encode():
-        raise ValueError('installed source checkout belongs to another Git object store')
+    origin = subprocess.check_output(['/usr/bin/git', '-C', str(root), 'remote', 'get-url', 'origin'],
+        env=seed.ENV, text=True).strip()
+    if origin != 'https://github.com/bin9208/openpilot-rust.git':
+      raise ValueError('installed source checkout belongs to another Git origin')
     current = runtime.source_identity(root)
     selected_branch = subprocess.run(['/usr/bin/git', '-C', str(root), 'symbolic-ref', '--short', '-q', 'HEAD'],
         env=seed.ENV, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False).stdout.decode().strip()
     if current != before or selected_branch != branch:
       Metadata(machine, commands, observe).admit(machine['expected_source_growth_bytes'], parent)
+      git(root, 'fetch', '--no-tags', '--update-shallow', '--', source, before['commit'])
       git(root, 'checkout', *(['-B', branch] if branch else ['--detach']), before['commit'])
     observe()
     if runtime.source_identity(root) != before:

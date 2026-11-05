@@ -569,6 +569,25 @@ mod native_tests {
     }
 
     #[test]
+    fn retains_the_clean_shallow_checkout_used_by_an_existing_device_installation() {
+        let temp = tempfile::tempdir().unwrap();
+        let input = source(temp.path());
+        fs::write(input.join("tracked.rs"), b"source B").unwrap();
+        git(&input, &["add", "."]);
+        git(&input, &["commit", "--quiet", "-m", "source B"]);
+        let expected = crate::source::inspect(&input).unwrap();
+        fs::write(input.join(".git/shallow"), format!("{}\n", expected.commit)).unwrap();
+        let store = temp.path().join("store");
+        let retained = retain(&input, &store, 8 * 1024 * 1024).unwrap();
+        assert_eq!(retained.source, expected);
+        retained.verify(&store).unwrap();
+        assert_eq!(
+            fs::read(retained.root.join("tracked.rs")).unwrap(),
+            b"source B"
+        );
+    }
+
+    #[test]
     fn updater_owns_a_complete_git_directory_and_never_resets_dirty_or_previous_source() {
         let temp = tempfile::tempdir().unwrap();
         let input = source(temp.path());
