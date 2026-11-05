@@ -533,8 +533,7 @@ pub fn retain(input: &Path, store: &Path, expected_growth_bytes: u64) -> Result<
                 repaired = true;
             }
         }
-        if repaired
-            && (source::inspect(&input)? != source || modules(&input)? != expected_modules)
+        if repaired && (source::inspect(&input)? != source || modules(&input)? != expected_modules)
         {
             return Err("source changed during retained reference repair".into());
         }
