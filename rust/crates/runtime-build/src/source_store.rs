@@ -123,13 +123,21 @@ fn repository(store: &Path, module: &Path) -> PathBuf {
     store.join("repositories").join(format!("{key}.git"))
 }
 
-fn checkout(
-    store: &Path,
-    input: &Path,
-    destination: &Path,
-    module: &Path,
-    sha: &str,
-) -> Result<()> {
+fn recorded(store: &Path, module: &Path, sha: &str) -> Result<bool> {
+    let value = git([
+        OsStr::new("--git-dir"),
+        repository(store, module).as_os_str(),
+        OsStr::new("for-each-ref"),
+        OsStr::new("--format=%(objectname)"),
+        OsStr::new(&format!("refs/openpilot/{sha}")),
+    ])?;
+    if !value.trim().is_empty() && value.trim() != sha {
+        return Err("retained source reference differs from its pinned commit".into());
+    }
+    Ok(value.trim() == sha)
+}
+
+fn fetch(store: &Path, input: &Path, module: &Path, sha: &str) -> Result<()> {
     let repository = repository(store, module);
     if !repository.exists() {
         git([
@@ -148,10 +156,27 @@ fn checkout(
         OsStr::new("fetch"),
         OsStr::new("--no-tags"),
         OsStr::new("--no-write-fetch-head"),
+        // Without this Git can return success but reject the requested ref
+        // from a shallow installed checkout, repacking all assets next time.
+        OsStr::new("--update-shallow"),
         OsStr::new("--"),
         input.as_os_str(),
         OsStr::new(&reference),
     ])?;
+    if !recorded(store, module, sha)? {
+        return Err("retained source fetch did not publish its pinned reference".into());
+    }
+    Ok(())
+}
+
+fn checkout(
+    store: &Path,
+    input: &Path,
+    destination: &Path,
+    module: &Path,
+    sha: &str,
+) -> Result<()> {
+    fetch(store, input, module, sha)?;
     add_worktree(store, destination, module, sha)
 }
 
@@ -490,6 +515,29 @@ pub fn retain(input: &Path, store: &Path, expected_growth_bytes: u64) -> Result<
             return Err("retained source identity conflict".into());
         }
         retained.verify(&store)?;
+        // Older seeds retained valid files but left no ref/shallow boundary.
+        // Repair only this verified request under the normal growth admission.
+        let mut repaired = false;
+        for (module, identity) in std::iter::once((Path::new(""), &retained.source)).chain(
+            retained
+                .modules
+                .iter()
+                .map(|(path, source)| (path.as_path(), source)),
+        ) {
+            if !recorded(&store, module, &identity.commit)? {
+                if expected_growth_bytes == 0 {
+                    return Err("retained source reference repair needs a growth budget".into());
+                }
+                admit(&store, expected_growth_bytes)?;
+                fetch(&store, &input.join(module), module, &identity.commit)?;
+                repaired = true;
+            }
+        }
+        if repaired
+            && (source::inspect(&input)? != source || modules(&input)? != expected_modules)
+        {
+            return Err("source changed during retained reference repair".into());
+        }
         return Ok(retained);
     }
     admit(&store, expected_growth_bytes)?;
@@ -585,6 +633,27 @@ mod native_tests {
             fs::read(retained.root.join("tracked.rs")).unwrap(),
             b"source B"
         );
+        let reference = format!("refs/openpilot/{}", expected.commit);
+        git(&retained.root, &["show-ref", "--verify", &reference]);
+        git(&retained.root, &["fsck", "--no-reflogs"]);
+        // Reproduce the old seed's valid checkout with missing ref and shallow
+        // metadata. Reuse must repair it without replacing the retained tree.
+        git(&retained.root, &["update-ref", "-d", &reference]);
+        fs::remove_file(repository(&store, Path::new("")).join("shallow")).unwrap();
+        assert!(retain(&input, &store, 0).is_err());
+        let repaired = retain(&input, &store, 8 * 1024 * 1024).unwrap();
+        assert_eq!(repaired.root, retained.root);
+        git(&repaired.root, &["show-ref", "--verify", &reference]);
+        git(&repaired.root, &["fsck", "--no-reflogs"]);
+        fs::write(input.join("tracked.rs"), b"source C").unwrap();
+        git(&input, &["add", "."]);
+        git(&input, &["commit", "--quiet", "-m", "source C"]);
+        let next = retain(&input, &store, 8 * 1024 * 1024).unwrap();
+        fs::remove_dir_all(input).unwrap();
+        retained.verify(&store).unwrap();
+        next.verify(&store).unwrap();
+        git(&next.root, &["fsck", "--no-reflogs"]);
+        assert_eq!(fs::read(next.root.join("tracked.rs")).unwrap(), b"source C");
     }
 
     #[test]
