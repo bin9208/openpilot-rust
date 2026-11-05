@@ -1,5 +1,24 @@
 # 당근파일럿 원본 설치·빌드 흐름으로 정리 — #598 / #675
 
+## 2026-11-05 USB 연결 실기 SDK 권한 회귀
+
+사용자가 이 PC에서 연결된 기기의 자체 빌드 실패를 직접 수정·검증하도록 승인했다.
+`c79b2ab7b1ddfe5abe2b85cc9ed8916a395f3fd7`을 AGNOS `19.8-carrot-bt1`,
+커널 `4.9.103`, aarch64/tizi에서 시작했다. 디스크·메모리·구형 cgroup 검사는
+통과했으나 SDK capture가 `usr/lib/aarch64-linux-gnu/utempter/utempter`를
+set-id 파일로 거부해 도구 컴파일 전 종료됐다.
+
+기기 파일은 67,512 bytes, mode `2755`이며 SHA256은
+`8e56d3a7c2226b21829ee69b8168d10e8bd5876c3418eb199fe191714fc6eaf2`다.
+독립 factory SDK receipt의 같은 파일은 bytes/SHA256이 일치하고 mode만 `0755`다.
+읽기 전용 system SDK receipt는 파일을 복사하거나 권한을 부여하지 않으므로
+일반 접근 권한 `0777`을 비교한다. payload/hash/크기/경로/namespace 검증은 유지하고
+추출되는 일반 input Tree와 실행 도구의 set-id 거부는 변경하지 않는다.
+
+집중 회귀는 setuid/setgid 비트만 다른 live SDK의 일치, 실제 파일 권한 불변,
+일반 input Tree의 계속된 거부, 일반 접근 권한·내용 변경의 계속된 실패를 확인한다.
+새 seed의 ARM 생성·pin 발행과 해당 HEAD의 실기 빌드·시작은 후속 증거가 필요하다.
+
 ## 2026-11-05 기존 설치의 미추적 파일로 시작이 막힌 회귀
 
 사용자는 `dev / 0f462ccc`를 Git pull한 뒤 재부팅했으나
