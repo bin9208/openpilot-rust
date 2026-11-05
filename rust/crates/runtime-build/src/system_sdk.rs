@@ -294,11 +294,9 @@ impl Capture<'_> {
                         .checked_add(metadata.len())
                         .ok_or("system SDK payload size overflow")?;
                     if self.bytes > MAX_BYTES {
-                        return Err(format!(
-                            "oversized system SDK file: {}",
-                            resolved.display()
-                        )
-                        .into());
+                        return Err(
+                            format!("oversized system SDK file: {}", resolved.display()).into()
+                        );
                     }
                     let mut file = regular_file(&physical)?;
                     let mut digest = Sha256::new();
