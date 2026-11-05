@@ -517,7 +517,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                             and value['type'] == 'string' for value in inputs.values()))
         after['workflow_dispatch'] = before['workflow_dispatch']
         paths = after['push']['paths']
-        for addition in ('rust/crates/dev-tools/src/native_provider/**', 'tools/native/build_space.py'):
+        for addition in ('rust/crates/dev-tools/src/native_provider/**', 'tools/native/build_space.py', 'tools/native/build_memory.py'):
             self.assertEqual(paths.count(addition), 1)
             paths.remove(addition)
         self.assertEqual(after, before, 'original trigger boundary changed beyond the batch dependency')

@@ -17,6 +17,122 @@ seed = driver.seed
 
 
 class SourceRuntimeTests(unittest.TestCase):
+  def memory_fixture(self, root, available=3219333120):
+    meminfo = root/'meminfo'
+    meminfo.write_text(f'MemTotal: 4000000 kB\nMemAvailable: {available//1024} kB\n')
+    controller = root/'controller'
+    controller.mkdir()
+    policy = dict(schema=1, memory_cgroup_parent=str(controller/'not-created-yet'),
+        maximum_memory_bytes=3*1024**3, minimum_available_memory_bytes=128*1024**2,
+        filesystems={str(root): dict(maximum_growth_bytes=1, minimum_free_bytes=1)})
+    return policy, meminfo, controller
+
+  def test_reported_device_memory_fits_a_smaller_enforced_cap_without_editing_policy(self):
+    with tempfile.TemporaryDirectory() as temp:
+      policy, meminfo, _ = self.memory_fixture(Path(temp))
+      original = copy.deepcopy(policy)
+      self.assertGreater(3221225472+134217728, 3219333120, 'original device failure must remain reproducible')
+      fitted, report = driver.memory.fit(policy, meminfo)
+      self.assertEqual(fitted['maximum_memory_bytes'], 2885681152)
+      self.assertEqual(fitted['minimum_available_memory_bytes'], 134217728)
+      self.assertLessEqual(fitted['maximum_memory_bytes']+fitted['minimum_available_memory_bytes'], 3219333120)
+      self.assertGreaterEqual(report['startup_headroom_bytes'], 128*1024**2)
+      self.assertEqual(report['host_available_bytes'], 3219333120)
+      self.assertEqual(policy, original)
+      meminfo.write_text('MemAvailable: 8388608 kB\n')
+      unchanged, _ = driver.memory.fit(policy, meminfo)
+      self.assertEqual(unchanged, policy)
+
+  def test_memory_fit_respects_v1_v2_ancestors_and_reclaimable_cache(self):
+    for version in (1, 2):
+      with self.subTest(version=version), tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        policy, meminfo, controller = self.memory_fixture(root, 8*1024**3)
+        names = ('memory.limit_in_bytes', 'memory.usage_in_bytes') if version == 1 else ('memory.max', 'memory.current')
+        (controller/names[0]).write_text(str(4*1024**3))
+        (controller/names[1]).write_text(str(2*1024**3))
+        (controller/'memory.stat').write_text(f'inactive_file {512*1024**2}\ntotal_inactive_file {1024**3}\n')
+        fitted, report = driver.memory.fit(policy, meminfo)
+        self.assertEqual(fitted['maximum_memory_bytes'], 2952790016)
+        self.assertEqual(report['available_bytes'], 3*1024**3)
+        self.assertEqual(report['ancestors'][0]['path'], str(controller))
+        child = controller/'not-created-yet'
+        child.mkdir()
+        if version == 2:
+          (child/'memory.max').write_text('max\n')
+          self.assertEqual(driver.memory.fit(policy, meminfo)[0], fitted)
+        (controller/names[1]).write_text(str(4*1024**3))
+        (controller/'memory.stat').write_text('inactive_file 0\n')
+        with self.assertRaisesRegex(ValueError, 'insufficient memory'):
+          driver.memory.fit(policy, meminfo)
+
+  def test_memory_fit_rejects_missing_corrupt_and_exhausted_headroom(self):
+    with tempfile.TemporaryDirectory() as temp:
+      policy, meminfo, _ = self.memory_fixture(Path(temp))
+      for text in ('MemFree: 900000 kB\n', 'MemAvailable: -1 kB\n', 'MemAvailable: 999 MB\n',
+                   'MemAvailable: 100 kB\n', 'MemAvailable: 999 kB\nMemAvailable: 888 kB\n',
+                   f'MemAvailable: {1 << 64} kB\n'):
+        with self.subTest(text=text):
+          meminfo.write_text(text)
+          with self.assertRaises(ValueError):
+            driver.memory.fit(policy, meminfo)
+
+  def test_actual_source_driver_passes_fitted_pinned_configuration_to_the_first_seed(self):
+    class SeedBoundary(Exception):
+      pass
+    with tempfile.TemporaryDirectory() as temp:
+      root = Path(temp)
+      policy, meminfo, _ = self.memory_fixture(root)
+      source = root/'source'
+      source.mkdir()
+      def git(*args):
+        subprocess.run(['/usr/bin/git', '-c', 'user.name=Owned memory fixture', '-c', 'user.email=ci@example.invalid',
+            '-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null', '-C', source, *args], check=True,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+      git('init', '-q')
+      (source/'README').write_text('source stays unchanged')
+      git('add', '.')
+      git('commit', '-qm', 'owned memory fixture')
+      stores = {name: str(root/name) for name in ('sources', 'objects', 'generations', 'params')}
+      (root/'generations').mkdir()
+      (root/'params/d').mkdir(parents=True)
+      (root/'params/d/IsOnroad').write_bytes(b'0')
+      selection = root/'selection.json'
+      selection.write_bytes(b'{}\n')
+      configuration = dict(schema=1, stores=stores, cache=str(root/'cache'),
+          system_sdk_receipt=str(root/'unused-sdk.json'), system_sdk_sha256='a'*64,
+          expected_source_growth_bytes=1, expected_compile_growth_bytes=1, remaining_object_growth_bytes=1,
+          resources=policy, runtime_inputs=dict(path=str(selection), sha256=seed.digest(selection)))
+      config_path = root/'bootstrap.json'
+      original = seed.json_bytes(configuration)
+      config_path.write_bytes(original)
+      pin = seed.digest(config_path)
+      fit = driver.memory.fit
+      for fault in (False, True):
+        config_path.write_bytes(original)
+        def seed_boundary(prepared, plan, current, checkout, **kwargs):
+          first = driver.read(current)
+          self.assertEqual(first['resources']['maximum_memory_bytes'], 2885681152)
+          self.assertEqual(first['resources']['minimum_available_memory_bytes'], 134217728)
+          self.assertEqual(config_path.read_bytes(), original)
+          admitted = current.parent/'admitted-config.json'
+          self.assertEqual(driver.read(admitted)['resources'], first['resources'])
+          self.assertEqual(admitted.stat().st_mode & 0o777, 0o444)
+          if fault:
+            config_path.write_bytes(b'{}\n')
+            return {}  # Original pin must be checked before this report is used.
+          raise SeedBoundary('first seed received bounded configuration')
+        with mock.patch.object(seed, 'verify_native'), mock.patch.object(os, 'geteuid', return_value=1000), \
+             mock.patch.object(driver.memory, 'fit', side_effect=lambda p: fit(p, meminfo)), \
+             mock.patch.object(seed, 'current_tools', side_effect=seed_boundary) as bootstrap, \
+             mock.patch.object(driver.OwnedCommands, 'run') as command:
+          exception = ValueError if fault else SeedBoundary
+          message = 'pin or byte bound' if fault else 'first seed received bounded'
+          with self.assertRaisesRegex(exception, message):
+            driver.build_runtime(dict(root=temp), dict(protocols=dict(request_owner=2)), config_path, pin, source)
+          bootstrap.assert_called_once()
+          command.assert_not_called()
+
   def test_actual_build_cpu_scope_opens_available_cores_and_restores_on_error(self):
     # Only this child changes its own affinity; other tests and runner jobs keep
     # their existing masks. Verify a compiler child inherits the opened mask.

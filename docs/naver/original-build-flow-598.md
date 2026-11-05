@@ -610,3 +610,31 @@ journal/lock/조사 실패, 공간 부족 보고, 충분한 공간·무변경 �
 연결을 다룬다. 로컬은 Python AST/diff만 확인하고 기능 검사는 기존 짧은 ARM/X64
 수동 모드에서 수행한다. 정확 SHA/Actions 결과는 #682와 PR #681에 기록한다.
 실제 콤마의 확보 용량·빌드 완료·정상 시작은 아직 사용자 확인 전이다.
+
+## 2026-11-05 기기 가용량에 맞춘 작업 메모리 한도 — #683
+
+사용자가 디스크 검사 통과 뒤 current-tools bootstrap에서 다음 중단을 보고했다.
+`available_bytes=3219333120`, `requested_bytes=3221225472`,
+`normal_reserve_bytes=134217728`, `required_bytes=3355443200`이다.
+실제 컴파일/OOM 전의 host admission 거부이며 요구량이136110080bytes 높다.
+
+`build_memory.py`는 기존 machine.json과 그 pin을 수정하지 않고 이번 작업의 private
+hard cap만 configured maximum 이하로 정한다. host MemAvailable과 보이는 v1/v2
+ancestor headroom 중 작은 값에서 정상 여유와 같은 크기의 시작 변동 여유를 뺀다.
+한도를 낮추는 경우64MiB 단위로 내린다. 보고 수치에서는2752MiB(2.6875GiB)의
+hard cap,128MiB 정상 여유와 약190MiB 추가 headroom이 된다. 충분한 메모리에서는
+기존 cap을 유지하며, 여유 부족·잘못된 MemAvailable·ancestor counter는 계속 거부한다.
+
+기본 JSON만 바꾸면 이미 설치된 정책이 계속3GiB를 요구하므로, source driver가
+`memory-admission.json`과 별도 pinned `admitted-config.json`을 기록하고 고정 seed의
+최초 current-tools부터 이를 전달한다. 이후 입력/실제 빌드도 같은 축소 정책을 사용한다.
+원래 config pin도 전 과정에서 재확인한다. native 메모리·swap·OOM·owner/offroad
+검사는 변경하지 않으며, global cache/swap/기기 설정이나 compiler 동시 수는 바꾸지 않는다.
+새 seed나99개 runtime 전체 빌드를 이 Python 설정 수정의 전달 선행 조건으로 추가하지 않는다.
+
+집중 사례는 실제 보고 수치의 기존 거부/축소 한도, 충분한 메모리, v1/v2 ancestor와
+inactive-file 회수분, 잘못된/부족한 메모리, 실제 source driver의 최초 seed config
+전달과 원본 pin 변경 거부를 확인한다. 이 seed 경계 사례는 컴파일러 대신 경계에서
+멈추며 실제2.69GiB bootstrap/전체 컴파일 성공을 주장하지 않는다. 정확 SHA의 ARM/X64
+결과는 [#683](https://github.com/bin9208/openpilot-rust/issues/683)과 PR #681에 기록한다.
+실제 기기의 후속 빌드·정상 시작은 계속 사용자 확인 전이다.

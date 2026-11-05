@@ -109,6 +109,7 @@ on:
       - 'tools/native/source_runtime.py'
       - 'tools/native/source_entry.py'
       - 'tools/native/build_space.py'
+      - 'tools/native/build_memory.py'
       - 'tools/native/publish_inputs.py'
       - 'tools/ci/stage_native_input_payload.py'
       - 'tools/ci/validation_context.py'

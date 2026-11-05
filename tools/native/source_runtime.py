@@ -37,6 +37,9 @@ if __name__ == '__main__':
 _SPEC = importlib.util.spec_from_file_location('openpilot_native_bootstrap_seed_source', Path(__file__).with_name('bootstrap_seed.py'))
 seed = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(seed)
+_MEMORY_SPEC = importlib.util.spec_from_file_location('openpilot_native_build_memory', Path(__file__).with_name('build_memory.py'))
+memory = importlib.util.module_from_spec(_MEMORY_SPEC)
+_MEMORY_SPEC.loader.exec_module(memory)
 
 TOOLS_FIELDS = {'schema', 'stores', 'cache', 'system_sdk_receipt', 'system_sdk_sha256',
                 'expected_source_growth_bytes', 'expected_compile_growth_bytes',
@@ -284,6 +287,7 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
     raise ValueError('native requested source changed during seed preparation')
   config_path = config_path.resolve(strict=True)
   configuration = read(config_path, config_pin)
+  requested_config, requested_pin = config_path, config_pin
   validate(configuration, source)
   params = Path(configuration['stores']['params'])
   offroad(params)
@@ -302,6 +306,7 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
       observe()
     seed.verify_owners(owner)
     offroad(params)
+    read(requested_config, requested_pin)
     read(config_path, config_pin)
     selection = configuration['runtime_inputs']
     read(Path(selection['path']), selection['sha256'])
@@ -338,6 +343,16 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
     check()
     if reclaim is not None:
       reclaim()
+      check()
+    resources, admission = memory.fit(configuration['resources'])
+    save('memory-admission.json', admission)
+    if resources != configuration['resources']:
+      configuration = dict(configuration, resources=resources)
+      config_path = save('admitted-config.json', configuration)
+      config_pin = seed.digest(config_path)
+      print(f"native build memory: hard limit {resources['maximum_memory_bytes']/1024**2:.0f} MiB, "
+            f"normal reserve {resources['minimum_available_memory_bytes']/1024**2:.0f} MiB, "
+            f"available {admission['available_bytes']/1024**2:.0f} MiB", file=sys.stderr)
       check()
     timing('admission')
     small = {k: configuration[k] for k in TOOLS_FIELDS}
