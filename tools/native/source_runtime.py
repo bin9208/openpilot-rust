@@ -78,9 +78,10 @@ class OwnedCommands:
     self.watchdog = POWER_WATCHDOG if params is not None and AGNOS.is_file() else None
     self.watchdog_at = None
 
-  def observe(self):
+  def observe(self, *, progress=True):
     seed.verify_owners(self.owner)
-    PROGRESS()
+    if progress:
+      PROGRESS()
     if self.params is not None:
       offroad(self.params)
     # AGNOS powers off after an hour without a manager heartbeat, including
@@ -95,18 +96,21 @@ class OwnedCommands:
           pending.replace(self.watchdog)
         self.watchdog_at = now
 
-  def run(self, argv, *, env, stdout, stderr, check):
+  def run(self, argv, *, env, stdout, stderr, check, stderr_limit=4*1024**2):
+    if stderr_limit is None and stderr == subprocess.PIPE:
+      raise ValueError('unbounded compiler diagnostics require a file, not memory capture')
     self.observe()
     with ExitStack() as stack:
       out = stack.enter_context(tempfile.TemporaryFile()) if stdout == subprocess.PIPE else stdout
       err = stack.enter_context(tempfile.TemporaryFile()) if stderr == subprocess.PIPE else stderr
+      streams = ((stdout, out, 4*1024**2), (stderr, err, stderr_limit))
       wrapped = ['/usr/bin/python3', '-I', '-B', '-S', str(Path(__file__).resolve()), '--owned-child', self.owner,
           str(os.getpid()), '--', *map(str, argv)]
       child = subprocess.Popen(wrapped, env=env, stdout=out, stderr=err, start_new_session=True)
       try:
         while child.poll() is None:
-          self.observe()
-          if any(os.fstat(s.fileno()).st_size > 4*1024**2 for s in (out, err)):
+          self.observe(progress=False)
+          if any(limit is not None and os.fstat(s.fileno()).st_size > limit for _, s, limit in streams):
             raise ValueError('native source command output exceeded 4 MiB; worker evidence retained')
           detail = None
           if err.readable():
@@ -118,8 +122,8 @@ class OwnedCommands:
           time.sleep(0.1)
         self.observe()
         captured = []
-        for original, stream in ((stdout, out), (stderr, err)):
-          if os.fstat(stream.fileno()).st_size > 4*1024**2:
+        for original, stream, limit in streams:
+          if limit is not None and os.fstat(stream.fileno()).st_size > limit:
             raise ValueError('native source command output exceeded 4 MiB')
           if original == subprocess.PIPE:
             stream.seek(0)

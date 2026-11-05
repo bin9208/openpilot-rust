@@ -172,7 +172,7 @@ def compile_runtime(args, functions, source, machine, pin):
   try:
     with runtime.build_cpus(), log_path.open('w+b') as log:
       output = commands.run(command, env=functions['seed'].ENV, stdout=subprocess.PIPE,
-                            stderr=log, check=True)
+                            stderr=log, check=True, stderr_limit=None)
   except subprocess.CalledProcessError as error:
     raise RuntimeError(f'Compilation failed; log: {log_path}') from error
   result = json.loads(output.stdout)

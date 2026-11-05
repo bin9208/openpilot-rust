@@ -17,6 +17,19 @@ seed = driver.seed
 
 
 class SourceRuntimeTests(unittest.TestCase):
+  def test_successful_user_compile_is_not_rejected_by_the_summary_log_size_limit(self):
+    # The default 4 MiB summary bound is appropriate for captured JSON, while
+    # actual Cargo diagnostics belong in the file watched by the disk budget.
+    with tempfile.TemporaryDirectory() as temp:
+      path = Path(temp)/'user-build.log'
+      with path.open('w+b') as log:
+        result = driver.OwnedCommands(seed.owner_chain()).run(
+            ['/usr/bin/python3', '-c', "import sys; sys.stderr.buffer.write(b'x'*(5*1024**2)); print('built')"],
+            env=seed.ENV, stdout=subprocess.PIPE, stderr=log, check=True, stderr_limit=None)
+      self.assertEqual(result.stdout, b'built\n')
+      self.assertIsNone(result.stderr)
+      self.assertEqual(path.stat().st_size, 5*1024**2)
+
   def memory_fixture(self, root, available=3219333120):
     meminfo = root/'meminfo'
     meminfo.write_text(f'MemTotal: 4000000 kB\nMemAvailable: {available//1024} kB\n')
