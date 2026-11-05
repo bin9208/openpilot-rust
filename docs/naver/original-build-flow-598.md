@@ -1,5 +1,19 @@
 # 당근파일럿 원본 설치·빌드 흐름으로 정리 — #598 / #675
 
+## 2026-11-06 전체 빌드의 미예산 tmpfs 진입 오류
+
+`7aefe3e03df2f295d7561f84e4c7d1dbaa6b02b2`의 재시도에서 watchdog 갱신을
+AGNOS 전원 관리 로그로 확인했고 입력 준비가 완료됐다. 모델 준비는164.523초였다.
+전체 빌드 진입은 `a native build writable filesystem has no resource budget`로
+거부됐다. 실제 `/tmp`는150MiB tmpfs이고 기본 정책은 `/data/openpilot-native`만
+감시한다. sudo 뒤의 기본 임시 경로를 예산에 무조건 추가하거나 검사를 제거하지 않는다.
+
+full native frontend는 cache 아래의 실제 `tmp` 디렉터리를 예산 검사하고 worker에도
+같은 `TMPDIR`를 명시한다. 캐시 경로 redirect는 거부한다. 별도 tmpfs를 상속한 실제
+입장 경로 회귀는 예산 없는 tmpfs의 계속된 거부와, 관리 캐시를 사용한 입장이 디스크
+검사를 통과한 뒤 가짜 메모리 controller에서 계속 거부되는 것을 구분한다.
+수정 HEAD의 실기 전체 빌드·부팅은 이어서 확인한다.
+
 ## 2026-11-06 실기 최초 빌드 중 AGNOS 자동 전원 종료
 
 `8d5281bfded7367497e7223d9d95abca155481e7`의 실제 tizi 빌드는 SDK 검사를

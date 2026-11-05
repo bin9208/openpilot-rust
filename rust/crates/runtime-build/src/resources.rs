@@ -468,7 +468,14 @@ pub fn attempt(
         .prefix("attempt-")
         .tempdir_in(&attempts)?
         .keep();
-    let temporary = std::env::temp_dir();
+    // sudo may discard TMPDIR, and AGNOS /tmp is a separate small tmpfs.
+    // The worker uses the same explicit cache temporary path below.
+    let temporary = config.cache.join("tmp");
+    generation::directory(&config.cache)?;
+    if config.cache.canonicalize()? != config.cache {
+        return Err("native build cache is redirected".into());
+    }
+    generation::directory(&temporary)?;
     let writes = [
         config.stores.sources.as_path(),
         config.stores.objects.as_path(),

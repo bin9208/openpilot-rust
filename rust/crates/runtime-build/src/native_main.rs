@@ -151,6 +151,8 @@ fn run() -> Result<()> {
             let output = supervision::retain_output(&mut command, &output_path)?;
             eprintln!("native build worker output: {}", output_path.display());
             command
+                // Match resource admission even when sudo removed TMPDIR.
+                .env("TMPDIR", config.cache.join("tmp"))
                 // Retained worker diagnostics distinguish Cargo from input,
                 // copying and sealing costs without changing cache identities.
                 .env("OPENPILOT_NATIVE_BUILD_TIMINGS", "1")
