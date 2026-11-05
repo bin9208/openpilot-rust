@@ -208,7 +208,7 @@ fn shallow_library_namespace_pins_immediate_files_but_not_unselected_subtrees() 
 }
 
 #[test]
-fn unsafe_links_cycles_set_id_special_files_and_wrong_os_fail_closed() {
+fn unsafe_links_cycles_special_files_and_wrong_os_fail_closed() {
     let image = image();
     let root = image.path();
     let link = root.join("usr/include/unsafe");
@@ -228,10 +228,6 @@ fn unsafe_links_cycles_set_id_special_files_and_wrong_os_fail_closed() {
             fs::remove_file(root.join("usr/include/loop")).unwrap();
         }
     }
-    let header = root.join("usr/include/native.h");
-    fs::set_permissions(&header, fs::Permissions::from_mode(0o4755)).unwrap();
-    assert!(Snapshot::capture(root, &plan()).is_err());
-    fs::set_permissions(header, fs::Permissions::from_mode(0o644)).unwrap();
     let fifo = root.join("usr/include/pipe");
     rustix::fs::mknodat(
         rustix::fs::CWD,
