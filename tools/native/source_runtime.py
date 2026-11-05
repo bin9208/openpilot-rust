@@ -162,10 +162,11 @@ def absolute(value):
   return path
 
 
-def source_identity(source):
+def source_identity(source, *, allow_untracked=False):
   def git(*args):
     return subprocess.check_output(['/usr/bin/git', '-C', str(source), *args], env=seed.ENV, text=True).strip()
-  if Path(git('rev-parse', '--show-toplevel')) != source or git('status', '--porcelain', '--untracked-files=all', '--ignore-submodules=none'):
+  untracked = '--untracked-files=no' if allow_untracked else '--untracked-files=all'
+  if Path(git('rev-parse', '--show-toplevel')) != source or git('status', '--porcelain', untracked, '--ignore-submodules=none'):
     raise ValueError('native source driver requires the exact clean repository root')
   return dict(commit=git('rev-parse', 'HEAD'), tree=git('rev-parse', 'HEAD^{tree}'))
 

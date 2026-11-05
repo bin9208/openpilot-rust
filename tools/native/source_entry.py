@@ -11,6 +11,7 @@ if __name__ == '__main__' and not (sys.flags.isolated and sys.flags.no_site and 
   raise SystemExit('native source entry requires /usr/bin/python3 -I -B -S')
 
 import argparse
+from contextlib import contextmanager
 import fcntl
 import hashlib
 import importlib.util
@@ -140,7 +141,7 @@ def installed_machine_configuration(source, path, expected=None):
     return machine_configuration(path, expected)
   # The existing Git installer receives this policy with the branch. It is not
   # a second setup flow, nor permission to replace an installed device policy.
-  runtime.source_identity(source)
+  runtime.source_identity(source, allow_untracked=True)
   machine, _ = git_json(source, 'rust/native-machine.json')
   if 'boot_seed' not in machine:
     machine['boot_seed'] = input_index(source)[0]['seed']
@@ -247,14 +248,15 @@ class Metadata:
     self.root = directory(self.root/'metadata-assets')
     self.objects = directory(self.root/'sha256')
 
-  def admit(self, needed):
-    device = self.root.stat().st_dev
+  def admit(self, needed, path=None):
+    path = self.root if path is None else path
+    device = path.stat().st_dev
     budgets = {(b['maximum_growth_bytes'], b['minimum_free_bytes']) for p, b in self.machine['resources']['filesystems'].items()
         if Path(p).stat().st_dev == device}
     if len(budgets) != 1:
       raise ValueError('metadata cache needs one unambiguous budget for its filesystem')
     growth, reserve = next(iter(budgets))
-    if self.growth+needed > growth or shutil.disk_usage(self.root).free < needed+reserve:
+    if self.growth+needed > growth or shutil.disk_usage(path).free < needed+reserve:
       raise ValueError('insufficient budget for this metadata preparation; other caches retained')
     self.growth += needed
 
@@ -346,12 +348,80 @@ def resolve(machine, source, output, commands, observe, offline=None):
   return dict(schema=1, index_sha256=index_sha, receipts=receipts, configuration=str(config), configuration_sha256=config_sha)
 
 
-def build_requested(args, machine, source, pin):
+@contextmanager
+def installed_checkout(machine, source, request_owner=None):
+  # A deployed checkout also holds old packages and generated files. Never
+  # delete them or feed them to Cargo: the existing strict native workers get
+  # a reusable checkout containing only the requested committed Git tree.
+  try:
+    runtime.source_identity(source)
+  except ValueError:
+    before = runtime.source_identity(source, allow_untracked=True)
+  else:
+    yield source, None
+    return
+  parent = directory(directory(Path(machine['updater_staging']))/'installed-checkouts')
+  key = hashlib.sha256(os.fsencode(source)).hexdigest()
+  root = parent/key
+  fd = os.open(parent/(key+'.lock'), os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
+  try:
+    if not stat.S_ISREG(os.fstat(fd).st_mode):
+      raise ValueError('installed source checkout lock must be regular')
+    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    commands = runtime.OwnedCommands(seed.owner_chain(request_owner), Path(machine['stores']['params']))
+
+    def observe():
+      if runtime.source_identity(source, allow_untracked=True) != before:
+        raise ValueError('installed tracked source changed during preparation')
+
+    def git(at, *args):
+      observe()
+      result = commands.run(['/usr/bin/git', '-c', 'core.hooksPath=/dev/null',
+          '-c', 'gc.auto=0', '-C', str(at), *map(str, args)],
+          env=seed.ENV, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+      observe()
+      return result.stdout.decode().strip()
+
+    common = subprocess.check_output(['/usr/bin/git', '-C', str(source), 'rev-parse',
+        '--path-format=absolute', '--git-common-dir'], env=seed.ENV, text=True).strip()
+    branch = subprocess.run(['/usr/bin/git', '-C', str(source), 'symbolic-ref', '--short', '-q', 'HEAD'],
+        env=seed.ENV, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False).stdout.decode().strip()
+    if not os.path.lexists(root):
+      Metadata(machine, commands, observe).admit(machine['expected_source_growth_bytes'], parent)
+      with tempfile.TemporaryDirectory(prefix='.pending-installed-', dir=parent) as temporary:
+        pending = Path(temporary)/'checkout'
+        git(source, 'clone', '--shared', '--no-checkout', '--', source, pending)
+        git(pending, 'remote', 'set-url', 'origin', 'https://github.com/bin9208/openpilot-rust.git')
+        git(pending, 'checkout', *(['-B', branch] if branch else ['--detach']), before['commit'])
+        if runtime.source_identity(pending) != before:
+          raise ValueError('installed source checkout differs from the requested Git tree')
+        seed.publish(pending, root)
+    directory(root)
+    with seed.regular(root/'.git/objects/info/alternates') as stream:
+      if stream.read(65536) != (str(Path(common)/'objects')+'\n').encode():
+        raise ValueError('installed source checkout belongs to another Git object store')
+    current = runtime.source_identity(root)
+    selected_branch = subprocess.run(['/usr/bin/git', '-C', str(root), 'symbolic-ref', '--short', '-q', 'HEAD'],
+        env=seed.ENV, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False).stdout.decode().strip()
+    if current != before or selected_branch != branch:
+      Metadata(machine, commands, observe).admit(machine['expected_source_growth_bytes'], parent)
+      git(root, 'checkout', *(['-B', branch] if branch else ['--detach']), before['commit'])
+    observe()
+    if runtime.source_identity(root) != before:
+      raise ValueError('installed source checkout differs from the requested Git tree')
+    yield root, observe
+  finally:
+    os.close(fd)
+
+
+def build_requested(args, machine, source, pin, observe_source=None):
   started = time.monotonic()
   before = runtime.source_identity(source)
   owner = seed.owner_chain(args.request_owner)
   commands = runtime.OwnedCommands(owner, Path(machine['stores']['params']))
   def observe():
+    if observe_source is not None:
+      observe_source()
     commands.observe()
     machine_configuration(args.machine_config, pin)
     if runtime.source_identity(source) != before:
@@ -434,7 +504,7 @@ def boot_seed(machine, commands, observe, source):
   return prepared
 
 
-def launch(args, machine, source, pin):
+def launch(args, machine, source, pin, observe_source=None):
   owner = seed.owner_chain(args.request_owner)
   commands = runtime.OwnedCommands(owner, Path(machine['stores']['params']))
   def observe():
@@ -442,11 +512,13 @@ def launch(args, machine, source, pin):
     # power loss. Downloads/builds still use the offroad-only command driver.
     seed.verify_owners(owner)
     machine_configuration(args.machine_config, pin)
+    if observe_source is not None:
+      observe_source()
   observe()
   prepared = boot_seed(machine, commands, observe, source)
   record = startup_record(machine)
   if record is None:
-    result = build_requested(args, machine, source, pin)
+    result = build_requested(args, machine, source, pin, observe_source=observe_source)
     observe()
     record = retain_startup(machine, result)
     print(json.dumps(result, indent=2), file=sys.stderr)
@@ -495,14 +567,15 @@ def main():
   if not args.launch and args.machine_configuration_sha256 is None:
     raise ValueError('native source build needs the operation machine configuration pin')
   validate_machine(machine, source)
-  if args.launch:
-    if args.running_config is not None or args.running_configuration_sha256 is not None or args.previous is not None:
-      raise ValueError('native startup cannot also stage an updater request')
-    launch(args, machine, source, pin)
-  else:
-    if args.paths is not None or args.verify_package:
-      raise ValueError('launcher paths/package verification require --launch')
-    print(json.dumps(build_requested(args, machine, source, pin), indent=2))
+  with installed_checkout(machine, source, args.request_owner) as (source, observe_source):
+    if args.launch:
+      if args.running_config is not None or args.running_configuration_sha256 is not None or args.previous is not None:
+        raise ValueError('native startup cannot also stage an updater request')
+      launch(args, machine, source, pin, observe_source=observe_source)
+    else:
+      if args.paths is not None or args.verify_package:
+        raise ValueError('launcher paths/package verification require --launch')
+      print(json.dumps(build_requested(args, machine, source, pin, observe_source=observe_source), indent=2))
 
 
 if __name__ == '__main__':

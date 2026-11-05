@@ -117,6 +117,18 @@ class SourceEntryTests(unittest.TestCase):
         self.assertNotEqual(source, f.source)
         self.assertFalse((source/'installed-generated').exists())
         self.assertTrue(all(not (source/name).exists() for name in leftovers))
+        observe = kwargs['observe_source']
+        observe()
+        if not seen:
+          readme = f.source/'README'
+          content = readme.read_bytes()
+          try:
+            readme.write_bytes(b'tracked source changed during the build')
+            with self.assertRaises(ValueError):
+              observe()
+          finally:
+            readme.write_bytes(content)
+          observe()
         seen.append(source)
 
       argv = ['source_entry.py', '--source', str(f.source), '--machine-config', str(path), '--launch']
