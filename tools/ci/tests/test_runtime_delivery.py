@@ -11,16 +11,18 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 SHA = 'a' * 40
-GATES = ['check mapped user docs', 'integration gate', 'rust checks', 'rust aarch64 build']
+GATES = ['focused x86 checks', 'device acceptance']
 
 
 def fixture():
-  run = dict(id=42, run_attempt=1, path='.github/workflows/ci.yml', head_sha=SHA,
+  run = dict(id=42, run_attempt=1, path='.github/workflows/focused-validation.yml', head_sha=SHA,
              head_branch='dev-md', event='push', repository=dict(full_name='bin9208/openpilot-rust'),
              status='completed', conclusion='success')
   return dict(sha=SHA, run_id='42', branch_sha=SHA, message='Merge PR [runtime-package]',
               prs=[dict(merged_at='2026-10-20T00:00:00Z', merge_commit_sha=SHA, base=dict(ref='dev-md'))],
               run=run, latest=copy.deepcopy(run),
+              docs=dict(run, id=43, path='.github/workflows/user-docs.yaml'),
+              doc_jobs=[dict(name='check mapped user docs', head_sha=SHA, status='completed', conclusion='success')],
               jobs=[dict(name=name, head_sha=SHA, status='completed', conclusion='success') for name in GATES])
 
 
@@ -34,7 +36,7 @@ const context={repo:{owner:'bin9208',repo:'openpilot-rust'}};
 const github={rest:{repos:{getBranch:async()=>({data:{commit:{sha:f.branch_sha}}}),
 getCommit:async()=>({data:{commit:{message:f.message}}}),listPullRequestsAssociatedWithCommit:'prs'},
 actions:{getWorkflowRun:async()=>({data:f.run}),listWorkflowRunsForRepo:'latest',listJobsForWorkflowRun:'jobs'}},
-paginate:async(method)=>method==='prs'?f.prs:method==='latest'?[f.latest]:f.jobs};
+paginate:async(method,args)=>method==='prs'?f.prs:method==='latest'?[f.latest,f.docs]:args.run_id===43?f.doc_jobs:f.jobs};
 const core={setOutput:(key,value)=>process.stdout.write(JSON.stringify({[key]:value}))};
 const setTimeout=callback=>callback();
 (async()=>{ SCRIPT })().catch(e=>{console.error(e.message);process.exit(1)});
@@ -97,7 +99,7 @@ class RuntimeDeliveryTests(unittest.TestCase):
     faults = ['sha', 'run-id', 'stale-branch', 'marker', 'no-pr', 'unmerged', 'wrong-merge',
               'wrong-base', 'workflow', 'head', 'branch', 'event', 'repository', 'running',
               'failed', 'cancelled', 'superseded', 'rerun', 'missing-job', 'duplicate-job',
-              'job-head', 'job-skipped', 'job-cancelled']
+              'job-head', 'job-skipped', 'job-cancelled', 'docs-missing', 'docs-sha', 'docs-failed', 'docs-job-skipped']
     for fault in faults:
       f = fixture()
       if fault == 'sha': f['sha'] = 'invalid'
@@ -123,6 +125,10 @@ class RuntimeDeliveryTests(unittest.TestCase):
       elif fault == 'job-head': f['jobs'][0]['head_sha'] = 'b' * 40
       elif fault == 'job-skipped': f['jobs'][0]['conclusion'] = 'skipped'
       elif fault == 'job-cancelled': f['jobs'][0]['conclusion'] = 'cancelled'
+      elif fault == 'docs-missing': f['docs']['path'] = '.github/workflows/other.yml'
+      elif fault == 'docs-sha': f['docs']['head_sha'] = 'b' * 40
+      elif fault == 'docs-failed': f['docs']['conclusion'] = 'failure'
+      elif fault == 'docs-job-skipped': f['doc_jobs'][0]['conclusion'] = 'skipped'
       with self.subTest(fault=fault):
         result = invoke(f)
         self.assertNotEqual(result.returncode, 0, result.stdout)

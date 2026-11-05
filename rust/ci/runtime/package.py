@@ -74,6 +74,11 @@ def source_path_allowed(path, source_entry="", inherited_entry=""):
     """Reviewed CI/consumer paths; OpenCV exceptions require fresh provider builds."""
     allowed = (
         'AGENTS.md',
+        '.github/pull_request_template.md',
+        '.github/workflows/focused-validation.yml',
+        'tools/ci/focused_validation.py',
+        'tools/ci/tests/test_focused_validation.py',
+        'docs/naver/device-first-validation-685.md',
         'launch_openpilot.sh',
         'rust/Cargo.lock',
         'rust/crates/jetlink/',

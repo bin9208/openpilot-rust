@@ -1,22 +1,20 @@
 #[path = "common/release.rs"]
 mod release;
 use openpilot_dev_tools::{
-    publish::{Github, publish, publish_for_branch},
-    seal::{Result, digest},
+    publish::{publish, publish_for_branch, Github},
+    seal::{digest, Result},
 };
-use release::{Fixture, git};
-use serde_json::{Value, json};
+use release::{git, Fixture};
+use serde_json::{json, Value};
 use std::{collections::BTreeMap, fs, path::Path};
 const REPO: &str = "bin9208/openpilot-rust";
-const GATES: &[(&str, &[&str])] = &[(
-    "ci.yml",
-    &[
-        "check mapped user docs",
-        "integration gate",
-        "rust checks",
-        "rust aarch64 build",
-    ],
-)];
+const GATES: &[(&str, &[&str])] = &[
+    (
+        "focused-validation.yml",
+        &["focused x86 checks", "device acceptance"],
+    ),
+    ("user-docs.yaml", &["check mapped user docs"]),
+];
 struct OwnedGithub {
     commit: String,
     store: tempfile::TempDir,

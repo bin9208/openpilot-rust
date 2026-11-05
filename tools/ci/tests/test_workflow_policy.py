@@ -28,17 +28,14 @@ const core = {setOutput: (key,value) => outputs[key] = value};
 
 
 class WorkflowPolicyTests(unittest.TestCase):
-  def test_one_entry_point_without_path_skips(self):
-    events = workflow()['on']
-    self.assertEqual(events['push']['branches'], ['dev', 'dev-md', 'main'])
-    self.assertEqual(set(events['pull_request']['branches']), {'dev', 'dev-md', 'main'})
-    self.assertIn('edited', events['pull_request']['types'])
+  def test_focused_automatic_entry_and_manual_full_diagnostic(self):
+    self.assertEqual(set(workflow()['on']), {'workflow_dispatch'})
+    events = workflow('focused-validation.yml')['on']
     for event in ('push', 'pull_request'):
+      self.assertEqual(set(events[event]['branches']), {'dev', 'dev-md', 'main'})
       self.assertNotIn('paths', events[event])
-      self.assertNotIn('paths-ignore', events[event])
-    for old in ('fast-checks.yml', 'integration.yml', 'rust.yml', 'user-docs.yaml',
-                'tests.yaml', 'jetlink.yml', 'jetlink-native.yml', 'naver-ci.yml', 'naver-apk-tools.yml'):
-      self.assertFalse((ROOT / '.github/workflows' / old).exists(), old)
+    self.assertIn('edited', events['pull_request']['types'])
+    self.assertIn('user-docs.yaml', [p.name for p in (ROOT / '.github/workflows').iterdir()])
 
 
   def test_all_jobs_form_one_chain_and_matrices_are_serial(self):
