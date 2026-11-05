@@ -674,3 +674,26 @@ ARM/X64 시작 집중 검사, artifact digest/source/tree/descriptor/helper/lice
 machine의 boot seed용 구 파일은 보존한다. 기존 불변 asset 검증·충돌 보존·draft 원자 발행과
 공개 HTTPS 수신 검사를 재사용하며 발행도 Actions에서만 수행한다. 이 결과는 전체 runtime
 release나 PR 필수 검사 완료를 뜻하지 않는다.
+
+### #684 새 seed의 확정 결과와 Git 입력
+
+소스af3dd546e718bb0410f9bf3c0bcaca1b49ee233a의
+[ARM export42030505128](https://github.com/bin9208/openpilot-rust/actions/runs/42030505128)는
+구형/현대 인터페이스Rust4사례와 release bootstrap 생성을 성공했다. 실제 도구 빌드는
+217.203초, private hard cap/peak는2752MiB, 실제OOM0이었다. 이는host kernel7.0에서
+AGNOS userspace를 실행한 결과이며 물리kernel4.9 부팅 검증은 아니다.
+
+[Actions 발행42034413133](https://github.com/bin9208/openpilot-rust/actions/runs/42034413133)는
+artifact/source/파일 검증과 공개HTTPS4파일 수신을 성공했다. 새 helper는3686608bytes,
+SHA256`b2fbbcdfd3a0be12de6efdeeb326a1828239fc1e90dc847cab0797213115350a`이다.
+새 descriptor는`0d43c39915c19ec80f9ba227add262fec5594fecb0c3189065673d33ed13fd99`,
+입력 index는`815c187c2d9b2e53f54c65e67ecedb92b389390de8f9b41b834d33ff2a97bcc7`다.
+Git에는 새manifest/helper/license와index를 포함하고, 기존 설치machine이 고정한 구
+boot_seed의metadata/seed파일은 보존한다. SDK·provider·모델 입력은 변경하지 않는다.
+
+발행 중 source 영수증의commit/tree형식과 draft조회 누락을 실제 데이터에 맞춰 고쳤고,
+기존 불변 파일/소유권·정확source검사는 유지했다. 검증된소스의동일Git태그를 준비한 뒤
+Actions가release를생성하므로workflow수정용추가토큰권한은주지않았다. GitHub의tagendpoint에
+보이지않는draft는인증된release목록에서찾고중복은거부한다. 해당새mode의작은사례4개도성공했다.
+최종Git입력을포함한정확후보의ARM/X64집중검사에서는그입력의실제seed파일도다시읽어
+새descriptor/byte/ELF와원본pin의연결을확인한다. 실제기기후속빌드/정상시작은사용자확인전이다.
