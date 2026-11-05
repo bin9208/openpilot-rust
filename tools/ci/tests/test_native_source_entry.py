@@ -98,6 +98,9 @@ class SourceEntryTests(unittest.TestCase):
       (f.source/'README').write_text('committed source')
       f.commit()
       original = runtime.source_identity(f.source)
+      # Device installers commonly leave a shallow checkout. Its existing
+      # objects must be sufficient; no source/model network fetch is needed.
+      (f.source/'.git/shallow').write_text(original['commit']+'\n')
       legacy = f.source/'installed-generated'
       legacy.mkdir()
       for index in range(2200):

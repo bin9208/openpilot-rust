@@ -376,8 +376,9 @@ def installed_checkout(machine, source, request_owner=None):
 
     def git(at, *args):
       observe()
-      result = commands.run(['/usr/bin/git', '-c', 'core.hooksPath=/dev/null',
-          '-c', 'gc.auto=0', '-C', str(at), *map(str, args)],
+      result = commands.run(['/usr/bin/git', '-c', 'core.hooksPath=/dev/null', '-c', 'gc.auto=0',
+          '-c', 'filter.lfs.process=', '-c', 'filter.lfs.smudge=', '-c', 'filter.lfs.required=false',
+          '-C', str(at), *map(str, args)],
           env=seed.ENV, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
       observe()
       return result.stdout.decode().strip()
