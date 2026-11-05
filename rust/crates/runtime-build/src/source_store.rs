@@ -137,7 +137,7 @@ fn recorded(store: &Path, module: &Path, sha: &str) -> Result<bool> {
     Ok(value.trim() == sha)
 }
 
-fn fetch(store: &Path, input: &Path, module: &Path, sha: &str) -> Result<()> {
+fn fetch(store: &Path, input: &Path, module: &Path, sha: &str, repair: bool) -> Result<()> {
     let repository = repository(store, module);
     if !repository.exists() {
         git([
@@ -150,7 +150,7 @@ fn fetch(store: &Path, input: &Path, module: &Path, sha: &str) -> Result<()> {
     }
     directory(&repository)?;
     let reference = format!("{sha}:refs/openpilot/{sha}");
-    git([
+    let mut arguments = vec![
         OsStr::new("--git-dir"),
         repository.as_os_str(),
         OsStr::new("fetch"),
@@ -159,13 +159,28 @@ fn fetch(store: &Path, input: &Path, module: &Path, sha: &str) -> Result<()> {
         // Without this Git can return success but reject the requested ref
         // from a shallow installed checkout, repacking all assets next time.
         OsStr::new("--update-shallow"),
+    ];
+    if repair {
+        // Existing worktree HEADs make an ordinary fetch skip objects and can
+        // leave a lost boundary missing. Ask for all history the source has.
+        arguments.push(OsStr::new("--depth=2147483647"));
+    }
+    arguments.extend([
         OsStr::new("--"),
         input.as_os_str(),
         OsStr::new(&reference),
-    ])?;
+    ]);
+    git(arguments)?;
     if !recorded(store, module, sha)? {
         return Err("retained source fetch did not publish its pinned reference".into());
     }
+    git([
+        OsStr::new("--git-dir"),
+        repository.as_os_str(),
+        OsStr::new("rev-list"),
+        OsStr::new("--count"),
+        OsStr::new(sha),
+    ])?;
     Ok(())
 }
 
@@ -176,7 +191,7 @@ fn checkout(
     module: &Path,
     sha: &str,
 ) -> Result<()> {
-    fetch(store, input, module, sha)?;
+    fetch(store, input, module, sha, false)?;
     add_worktree(store, destination, module, sha)
 }
 
@@ -529,7 +544,7 @@ pub fn retain(input: &Path, store: &Path, expected_growth_bytes: u64) -> Result<
                     return Err("retained source reference repair needs a growth budget".into());
                 }
                 admit(&store, expected_growth_bytes)?;
-                fetch(&store, &input.join(module), module, &identity.commit)?;
+                fetch(&store, &input.join(module), module, &identity.commit, true)?;
                 repaired = true;
             }
         }
@@ -600,7 +615,9 @@ mod native_tests {
             .unwrap();
         assert!(
             result.status.success(),
-            "{}",
+            "git {args:?}: {} stdout={} stderr={}",
+            result.status,
+            String::from_utf8_lossy(&result.stdout),
             String::from_utf8_lossy(&result.stderr)
         );
     }
