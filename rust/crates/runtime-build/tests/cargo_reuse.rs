@@ -112,6 +112,73 @@ fn commit(root: &std::path::Path) {
 }
 
 #[test]
+fn native_source_profile_keeps_optimized_release_without_whole_program_lto() {
+    use std::os::unix::fs::PermissionsExt;
+    let mut fixture = Fixture::new();
+    let manifest = fixture.root.join("rust/Cargo.toml");
+    let mut body = fs::read_to_string(&manifest).unwrap();
+    body.push_str("\n[profile.release]\nlto='thin'\ncodegen-units=1\n");
+    fs::write(manifest, body).unwrap();
+    commit(&fixture.root);
+    let compiler = fixture.toolchain.join("rustc");
+    let wrappers = fixture._temp.path().join("toolchain");
+    fs::create_dir(&wrappers).unwrap();
+    fs::copy(fixture.toolchain.join("cargo"), wrappers.join("cargo")).unwrap();
+    let wrapper = wrappers.join("rustc");
+    fs::write(
+        &wrapper,
+        "#!/bin/sh\nprintf '%s\\n' \"$@\" >> \"$RUSTC_ARGUMENT_TRACE\"\nexec \"$REAL_RUSTC\" \"$@\"\n",
+    )
+    .unwrap();
+    fs::set_permissions(&wrapper, fs::Permissions::from_mode(0o755)).unwrap();
+    fixture.toolchain = wrappers;
+    let trace = fixture._temp.path().join("rustc-arguments");
+    fixture
+        .recipe
+        .environment
+        .insert("REAL_RUSTC".into(), compiler.display().to_string());
+    fixture
+        .recipe
+        .environment
+        .insert("RUSTC_ARGUMENT_TRACE".into(), trace.display().to_string());
+    fixture
+        .recipe
+        .environment
+        .insert("OPENPILOT_NATIVE_INCREMENTAL".into(), "1".into());
+    let native = build_with_metadata(
+        &fixture.root,
+        &fixture.cache,
+        &fixture.toolchain,
+        &fixture.recipe,
+    )
+    .unwrap();
+    let arguments = fs::read_to_string(&trace).unwrap();
+    assert!(arguments.lines().any(|line| line == "opt-level=3"));
+    assert!(arguments.lines().any(|line| line == "codegen-units=16"));
+    assert!(!arguments.lines().any(|line| line == "lto=thin"));
+    assert_eq!(native.cargo_artifacts[0].profile["opt_level"], "3");
+    assert_eq!(native.cargo_artifacts[0].profile["debug_assertions"], false);
+    assert!(fixture.run().artifacts[0].fresh);
+    fs::write(&trace, "").unwrap();
+    fixture
+        .recipe
+        .environment
+        .remove("OPENPILOT_NATIVE_INCREMENTAL");
+    let distribution = fixture.run();
+    let arguments = fs::read_to_string(&trace).unwrap();
+    assert!(arguments.lines().any(|line| line == "lto=thin"));
+    assert!(arguments.lines().any(|line| line == "codegen-units=1"));
+    assert_ne!(native.build.cache_key, distribution.cache_key);
+    for report in [&native.build, &distribution] {
+        let output = Command::new(&report.artifacts[0].executable)
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        assert_eq!(output.stdout, b"42\n");
+    }
+}
+
+#[test]
 fn actual_cargo_feature_messages_match_executed_binaries_and_keep_report_schema_compatible() {
     let mut fixture = Fixture::new();
     let manifest = fixture.root.join("rust/Cargo.toml");

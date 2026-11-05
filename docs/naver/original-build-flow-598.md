@@ -1,5 +1,19 @@
 # 당근파일럿 원본 설치·빌드 흐름으로 정리 — #598 / #675
 
+## 2026-11-06 기기 반복 빌드의 링크 최적화 비용
+
+실제 `openpilot-ui` rustc 명령에서 `opt-level=3`, `lto=thin`, `codegen-units=1`을
+확인했다. source entry의99개 실행 파일마다 전체 dependency graph 링크 최적화를
+반복했다. 명시된 `OPENPILOT_NATIVE_INCREMENTAL=1` 소스 빌드만 일반적인 Cargo
+release 설정인 crate 간 LTO false/codegen16을 사용한다. opt-level3, debug assertions,
+overflow/panic 정책과 기능 선택은 변경하지 않는다. 동시 compiler는 메모리 경계를
+위해2개로 제한한다. 별도 distribution release의 thin LTO/codegen1은 유지한다.
+
+실제 profile override를 compiler cache identity에 포함해 이전 profile의 결과와
+혼합하지 않는다. 실제 rustc 인자·Cargo profile·출력 실행·재사용·distribution 분리를
+회귀에서 확인한다. 실기 빌드 시간과 주행 성능이 같다고 가정하지 않으며 실제 결과를
+구분해 기록한다.
+
 ## 2026-11-06 shallow 설치의 소스 전체 재전송
 
 실기 source store에는 서로 다른1.4GiB Git pack 세 개가 있었으나 `show-ref`는
