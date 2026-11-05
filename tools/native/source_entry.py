@@ -368,7 +368,9 @@ def installed_checkout(machine, source, request_owner=None):
     if not stat.S_ISREG(os.fstat(fd).st_mode):
       raise ValueError('installed source checkout lock must be regular')
     fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    commands = runtime.OwnedCommands(seed.owner_chain(request_owner), Path(machine['stores']['params']))
+    # Local Git copying runs before manager resets persisted onroad state.
+    # Compiler/download operations still use the offroad-bound driver below.
+    commands = runtime.OwnedCommands(seed.owner_chain(request_owner))
 
     def observe():
       if runtime.source_identity(source, allow_untracked=True) != before:

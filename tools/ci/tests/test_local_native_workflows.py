@@ -509,6 +509,9 @@ class LocalNativeWorkflowTests(unittest.TestCase):
         self.assertEqual(inputs.pop('export_seed'), dict(
             description='Export only the source-built release bootstrap seed, without building the full runtime',
             required='false', default='false', type='boolean'))
+        self.assertEqual(inputs.pop('installed_checkout_only'), dict(
+            description='Check existing Git-pull startup and legacy-file preservation without rebuilding the runtime',
+            required='false', default='false', type='boolean'))
         self.assertEqual(set(inputs), {'input_producer_run', 'index_sha256', 'operation_estimates_json'})
         self.assertTrue(all(value['required'] == 'false' and value['default'] == ''
                             and value['type'] == 'string' for value in inputs.values()))
@@ -524,13 +527,13 @@ class LocalNativeWorkflowTests(unittest.TestCase):
         self.assertEqual(document['permissions'], dict(contents='read', actions='read'))
         job = document['jobs']['source-entry']
         self.assertEqual(job, {
-            'if': "${{ github.event_name == 'workflow_dispatch' && inputs.index_sha256 != '' }}",
+            'if': "${{ github.event_name == 'workflow_dispatch' && !inputs.installed_checkout_only && inputs.index_sha256 != '' }}",
             'uses': './.github/workflows/native-source-entry.yml',
             'with': {**{name: '${{ inputs.'+name+' }}' for name in
                      ('input_producer_run', 'index_sha256', 'operation_estimates_json')},
                      'export_seed': '${{ inputs.export_seed || false }}'}})
         self.assertEqual(document['jobs']['offline-cargo-reuse']['if'],
-                         "${{ ("+SAFETY+") && inputs.index_sha256 == '' }}")
+                         "${{ ("+SAFETY+") && !inputs.installed_checkout_only && inputs.index_sha256 == '' }}")
 
     def test_native_arm_probe_preserves_original_acceptance_and_deadlines(self):
         path = 'rust/tools/check_aarch64.py'

@@ -147,6 +147,7 @@ class SourceEntryTests(unittest.TestCase):
         (f.source/'README').write_text('next Git update')
         f.git('add', 'README')
         f.git('commit', '-qm', 'next committed update')
+        (f.root/'params/d/IsOnroad').write_bytes(b'1')
         entry.main()
         self.assertEqual(seen[-1], first)
         self.assertNotEqual(runtime.source_identity(first), original)

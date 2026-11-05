@@ -18,8 +18,12 @@ updater 저장소 아래의 재사용 가능한 Git 체크아웃에 커밋된 �
 소스 판정을 사용하므로 이전 seed를 재발행하거나 새 runtime release를 요구하지 않는다.
 원래 추적 소스가 빌드 중 바뀌는 경우도 계속 중단한다. 새 서비스·수동 정리 단계는 없다.
 
-로컬은 AST와 diff만 확인한다. 같은 재현 사례의 수정 후 ARM/X64 결과와 실제 기기의
-빌드·시작 결과는 아직 확인 전이다. 이 기록만으로 회귀를 완료 처리하지 않는다.
+로컬은 AST·Rustfmt·YAML 구문과 diff만 확인한다. 수동 `installed_checkout_only` 모드는
+이 시작 경로의 Python/Git 회귀만 hosted ARM/X64에서 실행하며 runtime 재빌드는 하지 않는다.
+push 자동 Fast checks와 PR 필수 검사 정책은 변경하지 않는다. 이후의 같은 커밋 재사용과
+다음 Git 업데이트, 실제 native source store의 shallow 수용도 해당 경계에서 확인한다.
+정확 SHA의 최신 결과는 #598에 기록한다. 실제 기기의 빌드·시작 수용 전에는 완료로
+판단하지 않는다.
 
 2026-11-03 사용자 지시. 기준 원본은 로컬 Git에 보존된
 `ajouatom/openpilot:carrot-wip`의 `e8e152dbcfd9574a1791ed12026d1880e87689b3`이다.
