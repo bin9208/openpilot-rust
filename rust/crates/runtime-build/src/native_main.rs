@@ -110,9 +110,18 @@ fn run() -> Result<()> {
             let root = root
                 .ok_or("--root required for user compilation")?
                 .canonicalize()?;
-            let group = memory_cgroup::Group::create(
-                &config.resources.memory_cgroup_parent,
-                config.resources.maximum_memory_bytes,
+            std::fs::create_dir_all(&config.cache)?;
+            let records = tempfile::Builder::new()
+                .prefix(".user-resources-")
+                .tempdir_in(&config.cache)?;
+            let journal = records.path().join("resources.jsonl");
+            // Kernel counters only: keep the device's memory/disk margin without
+            // inspecting SDK trees, compiler inputs or completed binaries.
+            let mut monitor = resources::Monitor::start(
+                &config.resources,
+                &[&config.cache, &config.stores.sources, &root],
+                &journal,
+                serde_json::json!({"phase":"user-compilation"}),
             )?;
             let mut child = Command::new(std::env::current_exe()?);
             child
@@ -123,15 +132,19 @@ fn run() -> Result<()> {
                 .arg(&configuration_sha256)
                 .arg("--root")
                 .arg(&root)
-                .env(memory_cgroup::ENV, &group.path);
-            let initial = group.memory()?.oom_events;
-            let status = supervision::run_observed(child, || {
+                .env(memory_cgroup::ENV, &monitor.group.path);
+            let result = supervision::run_observed(child, || {
                 openpilot_runtime_build::generation::offroad(&config.stores.params)?;
-                if group.memory()?.oom_events > initial {
-                    return Err("device compile exceeded its memory limit".into());
-                }
-                Ok(())
-            })?;
+                monitor.observe()
+            });
+            let success = result.as_ref().is_ok_and(|status| status.success());
+            let finished = monitor.finish(
+                success,
+                result.as_ref().err().map(|error| error.to_string()),
+            );
+            std::fs::rename(journal, config.cache.join("user-resources.jsonl"))?;
+            let status = result?;
+            finished?;
             if !status.success() {
                 return Err(format!("user Cargo build failed: {status}").into());
             }

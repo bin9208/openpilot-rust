@@ -62,8 +62,16 @@ fn normalization_replaces_only_first_occurrence_anywhere() {
 #[ignore]
 fn source_build_metadata_child() {
     use std::{fs, process::Command};
-    let temp = tempfile::tempdir().unwrap();
-    let root = temp.path();
+    let directory = std::env::temp_dir().join(format!(
+        "user-version-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    fs::create_dir(&directory).unwrap();
+    let root = directory.as_path();
     fs::create_dir_all(root.join("openpilot/common")).unwrap();
     fs::write(
         root.join("openpilot/common/version.h"),
@@ -109,6 +117,8 @@ fn source_build_metadata_child() {
     let metadata = openpilot_runtime_version::get_build_metadata(root).unwrap();
     assert!(metadata.openpilot.git_commit.text_eq(&head));
     assert!(metadata.openpilot.version.text_eq("0.1.0"));
+    std::env::set_current_dir(std::env::temp_dir()).unwrap();
+    fs::remove_dir_all(root).unwrap();
 }
 
 #[test]

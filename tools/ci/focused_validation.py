@@ -124,9 +124,13 @@ def host_checks(paths):
     # host dependencies, never the native SDK/providers or workspace build.
     run(['sudo', 'apt-get', 'update'])
     run(['sudo', 'apt-get', 'install', '-y', '--no-install-recommends', 'capnproto', 'libzmq3-dev'])
+  command = ['cargo', 'test', '--manifest-path', 'rust/Cargo.toml', '--locked',
+             '--lib', '--tests', '--no-default-features']
   for crate in sorted(crates):
-    run(['cargo', 'test', '--manifest-path', 'rust/Cargo.toml', '--locked',
-         '-p', crate, '--lib', '--tests', '--no-default-features'], timeout=300)
+    command += ['-p', crate]
+  # Resolve shared host features once; separate invocations rebuilt cereal/ZMQ
+  # repeatedly for slightly different dependency feature sets.
+  run(command, timeout=600)
   if any(name in HOST_ONLY and name.endswith('publish.rs') for name in paths):
     run(['cargo', 'test', '--manifest-path', 'rust/Cargo.toml', '--locked',
          '-p', 'openpilot-dev-tools', '--test', 'publish'], timeout=300)

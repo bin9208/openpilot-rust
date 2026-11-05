@@ -80,6 +80,7 @@ class OwnedCommands:
 
   def observe(self):
     seed.verify_owners(self.owner)
+    PROGRESS()
     if self.params is not None:
       offroad(self.params)
     # AGNOS powers off after an hour without a manager heartbeat, including
