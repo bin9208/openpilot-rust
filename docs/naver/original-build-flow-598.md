@@ -1,5 +1,28 @@
 # 당근파일럿 원본 설치·빌드 흐름으로 정리 — #598 / #675
 
+## 2026-11-06 실기 대기 시간과 분리된 공통 의존성 캐시
+
+사용자는 한 시간을 넘는 체감 대기가 원본 설치 경험에 맞지 않는다고 지적했다.
+`cb3c062afc773b1d3be65768ac5516c9c986ac35`의 실제 재시도는 전체 Cargo 진입 전
+약24분이 걸렸고 첫12개 Cargo 묶음은16분57초였다. 부팅 후1시간 이후에도 작업이
+살아 있는 것은 전원 종료 수정 확인이며, 설치 시간 수용이나 전체 빌드 성공이 아니다.
+AGNOS `magic.py`가 기본 쉼표 배경을 표시하고 이 첫 빌드 경로에는 진행 UI 연결도 없다.
+
+실제13개 recipe의 package/bin/features를 제외해 비교하니 compiler input·환경이
+8가지로 갈라졌다. provider 부분집합과 그룹별 rpath-link 플래그가 Cargo target 저장소를
+나눠 공통 Rust 의존성을 재컴파일하게 한다. production 입력 assembly는 전체 고정
+compiler context를 한 번 결합하고13개 feature/package/bin 선택은 그대로 유지한다.
+모든 실제 compiler/provider receipt·tree·환경은 결과 plan과 report에 기록하고 전후
+hash 검증·SDK·ABI·seal·자원 제한은 유지한다. 충돌하는 pin/환경이나 임의 Rust flag는
+결합하지 않는다. 모델/데이터는 compiler cache identity에 넣지 않는다.
+
+이 선택은 compiler provider 자체가 바뀌면 공통 context 전체를 다시 빌드하는 보수적
+무효화를 사용한다. 일반 Rust 수정은 기존 Cargo fingerprint를 재사용한다. 기존 입력
+배정 audit는 소비 관계를 유지하며 실행 plan은 검증된 compiler 입력의 합집합이다.
+실제 offline Cargo 회귀에 서로 다른 provider receipt·환경·검색 flag를 넣어 공통
+의존성 한 번 컴파일, 별도 feature 선택, 실제 소스 변경 시 재빌드를 확인한다.
+집중 검사와 수정 HEAD의 실기 시간 확인 전까지 단축 시간을 주장하지 않는다.
+
 ## 2026-11-06 전체 빌드의 미예산 tmpfs 진입 오류
 
 `7aefe3e03df2f295d7561f84e4c7d1dbaa6b02b2`의 재시도에서 watchdog 갱신을

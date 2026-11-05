@@ -249,6 +249,58 @@ fn main() {
 }
 
 #[test]
+fn shared_compiler_context_rejects_pin_environment_and_flag_conflicts_without_mutation() {
+    use openpilot_runtime_build::{catalog_bindings::share_compiler_context, prepare::Plan};
+    let fixture = Fixture::new();
+    let mut other = fixture.recipe.clone();
+    other.binaries = vec!["other-fixture".into()];
+    let plan = Plan {
+        schema: 1,
+        groups: BTreeMap::from([
+            ("main".into(), fixture.recipe.clone()),
+            ("other".into(), other),
+        ]),
+        expected_source_growth_bytes: 1,
+        remaining_object_growth_bytes: 1,
+        runtime_inputs: Default::default(),
+    };
+    for fault in ["pin", "environment", "flags"] {
+        let mut changed = plan.clone();
+        match fault {
+            "pin" => {
+                changed
+                    .groups
+                    .get_mut("other")
+                    .unwrap()
+                    .inputs
+                    .insert("provider.receipt".into(), "0".repeat(64));
+            }
+            "environment" => {
+                for (group, value) in [("main", "/usr/bin/gcc"), ("other", "/foreign/gcc")] {
+                    changed
+                        .groups
+                        .get_mut(group)
+                        .unwrap()
+                        .environment
+                        .insert("CC".into(), value.into());
+                }
+            }
+            _ => {
+                changed
+                    .groups
+                    .get_mut("other")
+                    .unwrap()
+                    .environment
+                    .insert("RUSTFLAGS".into(), "-C opt-level=0".into());
+            }
+        }
+        let before = serde_json::to_vec(&changed).unwrap();
+        assert!(share_compiler_context(&mut changed).is_err(), "{fault}");
+        assert_eq!(serde_json::to_vec(&changed).unwrap(), before);
+    }
+}
+
+#[test]
 fn serial_package_groups_reuse_their_real_shared_dependency() {
     let mut fixture = Fixture::new();
     fs::create_dir_all(fixture.root.join("rust/shared/src")).unwrap();
@@ -306,6 +358,41 @@ fn main() {
     other.binaries = vec!["runtime-other".into()];
     other.features = vec!["runtime-other/selected-feature".into()];
     assert_ne!(fixture.recipe.features, other.features);
+    // Reproduce the production split: different provider receipts, environments
+    // and linker search flags must not duplicate the common Rust dependency.
+    for (index, recipe) in [&mut fixture.recipe, &mut other].into_iter().enumerate() {
+        let prefix = fixture._temp.path().join(format!("provider-{index}"));
+        fs::create_dir(&prefix).unwrap();
+        let receipt = prefix.join("receipt");
+        fs::write(&receipt, format!("owned provider {index}")).unwrap();
+        recipe
+            .inputs
+            .insert(receipt.clone(), digest_file(&receipt).unwrap());
+        recipe.environment.insert(
+            format!("OWNED_PROVIDER_{index}"),
+            prefix.display().to_string(),
+        );
+        recipe
+            .environment
+            .insert("LD_LIBRARY_PATH".into(), prefix.display().to_string());
+        recipe.environment.insert(
+            "RUSTFLAGS".into(),
+            format!("-C link-arg=-Wl,-rpath-link,{}", prefix.display()),
+        );
+    }
+    let mut plan = openpilot_runtime_build::prepare::Plan {
+        schema: 1,
+        groups: BTreeMap::from([
+            ("main".into(), fixture.recipe.clone()),
+            ("other".into(), other),
+        ]),
+        expected_source_growth_bytes: 1,
+        remaining_object_growth_bytes: 1,
+        runtime_inputs: Default::default(),
+    };
+    openpilot_runtime_build::catalog_bindings::share_compiler_context(&mut plan).unwrap();
+    fixture.recipe = plan.groups["main"].clone();
+    let other = plan.groups["other"].clone();
     let first = fixture.run();
     let libraries: Vec<_> = fs::read_dir(
         first

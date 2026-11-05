@@ -89,7 +89,7 @@ pub fn read<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T> {
     Ok(crate::read_json(file.take(4 * 1024 * 1024 + 1))?)
 }
 
-fn merge<K: Ord + Clone, V: PartialEq + Clone>(
+pub(crate) fn merge<K: Ord + Clone, V: PartialEq + Clone>(
     target: &mut BTreeMap<K, V>,
     input: &BTreeMap<K, V>,
 ) -> Result<()> {
