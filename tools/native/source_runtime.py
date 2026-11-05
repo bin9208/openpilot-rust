@@ -262,7 +262,7 @@ def preserve_configuration(generations, configuration, pin):
 
 
 def build_runtime(prepared, plan, config_path, config_pin, source, request_owner=None,
-                  running_config=None, running_pin=None, previous=None, expected_source=None, observe=None):
+                  running_config=None, running_pin=None, previous=None, expected_source=None, observe=None, reclaim=None):
   started = time.monotonic()
   phases = {}
   marked = started
@@ -318,6 +318,9 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
 
     def execute(name, command, pins):
       check(pins)
+      if reclaim is not None and name in ('prepared-inputs', 'built-generation'):
+        reclaim()
+        check(pins)
       path = attempt/(name+'.json')
       # Capture into retained files, then read with a byte bound. Compiler and
       # worker logs remain in their independently monitored native attempts.
@@ -333,6 +336,9 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
       return read(path)
 
     check()
+    if reclaim is not None:
+      reclaim()
+      check()
     timing('admission')
     small = {k: configuration[k] for k in TOOLS_FIELDS}
     first_config = save('tools-config.json', small)

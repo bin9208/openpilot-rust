@@ -578,3 +578,35 @@ job에도 명시돼 있다. [#679](https://github.com/bin9208/openpilot-rust/iss
 같은6개 정책 검사를 PR/source foundation의 기존 짧은 전처리 단계에도 추가한다.
 원래 명령·runner·matrix·필수 context·ARM/AGNOS 기준이나 기기 runtime/입력은 바꾸지 않는다.
 이 후속의 실제 통과와 정상 supporting PR/병합 후 결과는 Actions에서 확인한다.
+
+## 2026-11-05 기존 설치의 빌드 전 공간 정리 — #682
+
+[#682](https://github.com/bin9208/openpilot-rust/issues/682)는 기존 Python 설치와 반복
+prebuilt 시험 뒤 남은 패키지·주행 로그 때문에 소스 빌드의 공간 admission에 도달하지
+못하는 경우를 다룬다. 사용자가 보고한 여유18.6GiB와 요구24.5GiB는 부족6GiB 정도다.
+요구량은 현재 작업의 최대 증가량24GiB+정상 실행 여유0.5GiB이며 이를 낮추지 않는다.
+보고된 패키지12개28.8GiB, 주행 로그20.6GiB는 재현 배경이고 정리 조건의 개수·크기로
+하드코딩하지 않는다. 아래 정책은 앞선 기록의 로그 자동 삭제 없음보다 최신 지시다.
+
+- `source_entry.py`가 최초 빌드/업데이트의 소스 복사·입력 준비 전에 정리한다.
+  입력 복사와 도구 준비가 공간을 소비할 수 있으므로 실제 native admission 직전에도
+  같은 정책을 확인한다. 필요한 여유를 확보하면 즉시 멈춘다.
+- 원래 installer의 `rust/.runtime-packages`에서 오래된 정규 패키지만 먼저 정리한다.
+  installer/source 요청 lock을 지키며 active, 실제 실행 중인 패키지 전체, 최신 이전
+  패키지 하나를 남긴다. 설치 journal/rollback 또는 사용 프로세스 조사 실패가 있으면
+  패키지 정리를 보류한다. 활성/복구 패키지의 실행 파일·라이브러리는 삭제하지 않는다.
+- 그래도 부족할 때만 Params와 같은 data 아래 `media/0/realdata`의 오래된 세그먼트를
+  지운다. 최신 세그먼트, `.lock`이 있는 세그먼트, 모든 `user.preserve=1` 세그먼트와
+  앞2개는 남긴다. boot/crash, 알 수 없는 디렉터리, symlink는 정리 대상이 아니다.
+  과거 업로드 전 로그도 공간 부족 시 정리될 수 있다. Git·Params·별도 영상·입력 묶음과
+  변경분 컴파일 캐시는 유지한다. 저장된 IsOnroad가1인 동안 삭제하지 않는다.
+- 기존 실행본이 있어 빌드가 필요하지 않은 시작은 공간 부족만으로 주행 로그를 지우지
+  않는다. 정리 후에도 부족하면 available/required/short GiB와 보호 파일 보존을 알리고
+  실제 빌드를 시작하지 않는다. 기기 접속·직접 정리·재부팅은 하지 않는다.
+
+합성 사례는18.6/24.5 비율의 패키지 우선 정리, live/active/복구 패키지 보존,
+Python 설치의 로그 정리·잠금/보존/최신 보호, symlink·다른 캐시 보존, installer
+journal/lock/조사 실패, 공간 부족 보고, 충분한 공간·무변경 시작 보존과 실제 main 진입
+연결을 다룬다. 로컬은 Python AST/diff만 확인하고 기능 검사는 기존 짧은 ARM/X64
+수동 모드에서 수행한다. 정확 SHA/Actions 결과는 #682와 PR #681에 기록한다.
+실제 콤마의 확보 용량·빌드 완료·정상 시작은 아직 사용자 확인 전이다.

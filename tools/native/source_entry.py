@@ -34,6 +34,9 @@ _SPEC = importlib.util.spec_from_file_location('openpilot_native_source_runtime'
 runtime = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(runtime)
 seed = runtime.seed
+_SPACE_SPEC = importlib.util.spec_from_file_location('openpilot_native_build_space', Path(__file__).with_name('build_space.py'))
+build_space = importlib.util.module_from_spec(_SPACE_SPEC)
+_SPACE_SPEC.loader.exec_module(build_space)
 
 INDEX = 'rust/native-bootstrap-inputs.json'
 DEFAULT_MACHINE = Path('/data/openpilot-native/machine.json')
@@ -441,9 +444,11 @@ def build_requested(args, machine, source, pin, observe_source=None):
       Path(machine['seed_cache']), offline=source/INSTALLED_INPUTS/'seeds'/resolved['receipts']['seed']['sha256'])
   observe()
   prepared_ms = int((time.monotonic()-started)*1000)
+  def reclaim():
+    build_space.prepare(machine, args.source.resolve(strict=True), observe)
   result = runtime.build_runtime(prepared, plan, Path(resolved['configuration']), resolved['configuration_sha256'],
       source, owner, args.running_config, args.running_configuration_sha256, args.previous,
-      expected_source=before, observe=observe)
+      expected_source=before, observe=observe, reclaim=reclaim)
   result.update(input_index_sha256=resolved['index_sha256'], metadata=resolved['receipts'],
       machine_configuration_sha256=pin, resolver_evidence=str(attempt), local_input_copied_bytes=local_input_bytes,
       input_resolution_and_seed_ms=prepared_ms, source_entry_elapsed_ms=int((time.monotonic()-started)*1000))
@@ -570,14 +575,33 @@ def main():
   if not args.launch and args.machine_configuration_sha256 is None:
     raise ValueError('native source build needs the operation machine configuration pin')
   validate_machine(machine, source)
+  if args.launch and (args.running_config is not None or args.running_configuration_sha256 is not None or args.previous is not None):
+    raise ValueError('native startup cannot also stage an updater request')
+  if not args.launch and (args.paths is not None or args.verify_package):
+    raise ValueError('launcher paths/package verification require --launch')
+  if build_space.shortfalls(machine):
+    needs_build = not args.launch or startup_record(machine) is None
+    try:
+      runtime.offroad(Path(machine['stores']['params']))
+    except ValueError:
+      if needs_build:
+        raise
+      # An existing runtime must boot and reset stale persisted onroad state.
+    else:
+      before = runtime.source_identity(source, allow_untracked=True)
+      owner = seed.owner_chain(args.request_owner)
+      def observe_cleanup():
+        seed.verify_owners(owner)
+        runtime.offroad(Path(machine['stores']['params']))
+        machine_configuration(args.machine_config, pin)
+        if runtime.source_identity(source, allow_untracked=True) != before:
+          raise ValueError('installed tracked source changed during space cleanup')
+      with runtime.operation(directory(Path(machine['stores']['generations']))):
+        build_space.prepare(machine, source, observe_cleanup, allow_logs=needs_build)
   with installed_checkout(machine, source, args.request_owner) as (source, observe_source):
     if args.launch:
-      if args.running_config is not None or args.running_configuration_sha256 is not None or args.previous is not None:
-        raise ValueError('native startup cannot also stage an updater request')
       launch(args, machine, source, pin, observe_source=observe_source)
     else:
-      if args.paths is not None or args.verify_package:
-        raise ValueError('launcher paths/package verification require --launch')
       print(json.dumps(build_requested(args, machine, source, pin, observe_source=observe_source), indent=2))
 
 
