@@ -38,7 +38,10 @@ def fit(policy, meminfo=Path('/proc/meminfo')):
     elif (parent/'memory.limit_in_bytes').is_file():
       limit_name, usage_name = 'memory.limit_in_bytes', 'memory.usage_in_bytes'
     else:
-      break
+      if parent == parent.parent:
+        break
+      parent = parent.parent
+      continue
     raw = (parent/limit_name).read_text().strip()
     if raw != 'max':
       limit = number(raw)
