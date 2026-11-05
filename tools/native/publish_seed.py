@@ -24,7 +24,7 @@ BUILD_STEP = 'Check legacy and current kernel memory interfaces on native ARM'
 def validate(bundle, source, target):
   proof = bundle.json('source-entry-full/result.json')
   if (proof['kind'] != 'release-seed-export' or proof['source']['commit'] != source
-      or proof['workflow_source'] != source or proof['cleanup_verified'] is not True
+      or proof['workflow_source'] != proof['source'] or proof['cleanup_verified'] is not True
       or proof['native_arm_execution'] is not True or proof['emulated'] is not False
       or proof['source_entry_full_build_executed'] is not False or proof['runtime_activated'] is not False
       or proof['manager_started'] is not False):

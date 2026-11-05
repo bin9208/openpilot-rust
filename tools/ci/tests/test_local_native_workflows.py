@@ -640,6 +640,10 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                             expected = 'ubuntu-24.04-arm' if name in {'actual-arm-batch', 'numerics-repro', 'transport-repro'} else 'ubuntu-24.04'
                         elif path.name == 'native-cache-reuse.yml':
                             expected = LABELS  # #644 cache proof uses only registered bin-actions.
+                        elif path.name == 'native-input-publication.yml' and name == 'seed':
+                            expected = 'ubuntu-24.04'
+                        elif path.name == 'runtime-source-build.yml' and name == 'installed-checkout':
+                            expected = '${{ matrix.runner }}'
                         elif path.name == 'runtime-source-build.yml' and name == 'offline-cargo-reuse':
                             expected = '${{ matrix.runner == \'ubuntu-24.04-arm\' && \'ubuntu-24.04-arm\' || fromJSON(\'["self-hosted","Linux","X64","openpilot-rust"]\') }}'
                         elif (path.name, name) in NATIVE_ARM_ROUTES:

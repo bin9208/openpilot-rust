@@ -21,7 +21,7 @@ class SeedPublicationTests(unittest.TestCase):
     raw = (ROOT/'native-inputs/metadata'/(descriptor+'.json')).read_bytes()
     plan = json.loads(raw)
     source = plan['source']['commit']
-    proof = dict(kind='release-seed-export', source=copy.deepcopy(plan['source']), workflow_source=source,
+    proof = dict(kind='release-seed-export', source=copy.deepcopy(plan['source']), workflow_source=copy.deepcopy(plan['source']),
         cleanup_verified=True, native_arm_execution=True, emulated=False, source_entry_full_build_executed=False,
         runtime_activated=False, manager_started=False, exported=dict(descriptor_sha256=descriptor),
         release_artifact=dict(sha256=plan['assets']['helper']['sha256'], bytes=plan['assets']['helper']['bytes'],
