@@ -1,9 +1,9 @@
 //! Publish verified exact-source assets after the selected branch's push gates.
 use crate::{
     package::{clean_source, disk_guard, validate_assets},
-    seal::{Result, digest},
+    seal::{digest, Result},
 };
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs::{self, OpenOptions},
@@ -13,15 +13,13 @@ use std::{
 };
 pub const REPOSITORY: &str = "bin9208/openpilot-rust";
 const BASE: &str = "repos/bin9208/openpilot-rust";
-const GATES: &[(&str, &[&str])] = &[(
-    "ci.yml",
-    &[
-        "check mapped user docs",
-        "integration gate",
-        "rust checks",
-        "rust aarch64 build",
-    ],
-)];
+const GATES: &[(&str, &[&str])] = &[
+    (
+        "focused-validation.yml",
+        &["focused x86 checks", "device acceptance"],
+    ),
+    ("user-docs.yaml", &["check mapped user docs"]),
+];
 fn require(ok: bool, message: impl Into<String>) -> Result<()> {
     if ok {
         Ok(())

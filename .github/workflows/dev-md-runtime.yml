@@ -7,7 +7,7 @@ on:
         required: true
         type: string
       ci_run_id:
-        description: Successful unified push CI run
+        description: Successful focused push validation run
         required: true
         type: string
 permissions:
@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   verify:
-    name: Verify completed exact-source merge CI
+    name: Verify completed exact-source focused checks
     if: github.repository == 'bin9208/openpilot-rust' && github.ref == 'refs/heads/dev-md'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -47,21 +47,26 @@ jobs:
             let run;
             for (let attempt = 0; attempt < 60; attempt++) {
               run = (await github.rest.actions.getWorkflowRun({...context.repo, run_id: Number(id)})).data;
-              if (run.path !== '.github/workflows/ci.yml' || run.head_sha !== sha || run.head_branch !== 'dev-md' || run.event !== 'push' || run.repository.full_name !== 'bin9208/openpilot-rust') throw new Error('Wrong validation identity');
+              if (run.path !== '.github/workflows/focused-validation.yml' || run.head_sha !== sha || run.head_branch !== 'dev-md' || run.event !== 'push' || run.repository.full_name !== 'bin9208/openpilot-rust') throw new Error('Wrong validation identity');
               if (run.status === 'completed') break;
               await new Promise(resolve => setTimeout(resolve, 5000));
             }
-            if (run.status !== 'completed' || run.conclusion !== 'success') throw new Error('Unified CI did not succeed');
+            if (run.status !== 'completed' || run.conclusion !== 'success') throw new Error('Focused checks did not succeed');
             const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
               ...context.repo, head_sha: sha, branch: 'dev-md', event: 'push', per_page: 100
             });
-            const latest = runs.filter(r => r.path === '.github/workflows/ci.yml').sort((a,b) => b.id-a.id)[0];
+            const latest = runs.filter(r => r.path === '.github/workflows/focused-validation.yml').sort((a,b) => b.id-a.id)[0];
             if (!latest || latest.id !== Number(id) || latest.run_attempt !== run.run_attempt) throw new Error('Validation was superseded');
             const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {...context.repo, run_id: Number(id), filter: 'latest', per_page: 100});
-            for (const name of ['check mapped user docs', 'integration gate', 'rust checks', 'rust aarch64 build']) {
+            for (const name of ['focused x86 checks', 'device acceptance']) {
               const matching = jobs.filter(j => j.name === name);
               if (matching.length !== 1 || matching[0].head_sha !== sha || matching[0].status !== 'completed' || matching[0].conclusion !== 'success') throw new Error(`Missing/failed gate: ${name}`);
             }
+            const docs = runs.filter(r => r.path === '.github/workflows/user-docs.yaml').sort((a,b) => b.id-a.id)[0];
+            if (!docs || docs.repository.full_name !== 'bin9208/openpilot-rust' || docs.head_sha !== sha || docs.head_branch !== 'dev-md' || docs.event !== 'push' || docs.status !== 'completed' || docs.conclusion !== 'success') throw new Error('Missing/failed exact-source documentation checks');
+            const docJobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {...context.repo, run_id: docs.id, filter: 'latest', per_page: 100});
+            const docGate = docJobs.filter(j => j.name === 'check mapped user docs');
+            if (docGate.length !== 1 || docGate[0].head_sha !== sha || docGate[0].status !== 'completed' || docGate[0].conclusion !== 'success') throw new Error('Missing/failed documentation job');
             core.setOutput('source_sha', sha);
   package:
     needs: verify
@@ -152,7 +157,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh api repos/bin9208/openpilot-rust/branches/dev-md > "$RUNNER_TEMP/publication-policy.json"
-          python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/publication-policy.json")); assert p["name"] == "dev-md" and p["protected"] and p["protection"]["enabled"] and {"fast checks","integration gate","check mapped user docs","rust checks","rust aarch64 build"} <= set(p["protection"]["required_status_checks"]["contexts"])'
+          python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/publication-policy.json")); assert p["name"] == "dev-md" and p["protected"] and p["protection"]["enabled"] and {"focused x86 checks","device acceptance","check mapped user docs"} <= set(p["protection"]["required_status_checks"]["contexts"])'
       - name: Install build tools
         run: |
           python3 -c 'import os,shutil; assert shutil.disk_usage(os.environ["RUNNER_TEMP"]).free >= (25+4)*2**30, "disk reserve before dependency installation"'
