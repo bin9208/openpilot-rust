@@ -91,6 +91,61 @@ class Fixture:
 
 
 class SourceEntryTests(unittest.TestCase):
+  def test_installed_checkout_preserves_legacy_files_and_builds_only_committed_source(self):
+    with tempfile.TemporaryDirectory() as temp:
+      f = Fixture(Path(temp))
+      f.put('rust/native-machine.json', f.machine)
+      (f.source/'README').write_text('committed source')
+      f.commit()
+      original = runtime.source_identity(f.source)
+      legacy = f.source/'installed-generated'
+      legacy.mkdir()
+      for index in range(2200):
+        (legacy/f'object-{index}').write_bytes(b'existing installed output')
+      leftovers = ('build.json', 'installed-package.whl', 'previous-build.log', 'runtime-package.json',
+                   'old-model.bin', 'untracked.rs', 'installed-version.txt')
+      for name in leftovers:
+        (f.source/name).write_bytes(b'preserve existing installation')
+      self.assertEqual(len(f.git('ls-files', '--others', '--exclude-standard', '-z').split(b'\0'))-1, 2207)
+      untouched = (legacy/'object-0').stat()
+      path = f.root/'machine.json'
+      seen = []
+
+      def launched(args, machine, source, pin, **kwargs):
+        identity = runtime.source_identity(source)
+        self.assertEqual(identity, runtime.source_identity(f.source, allow_untracked=True))
+        self.assertNotEqual(source, f.source)
+        self.assertFalse((source/'installed-generated').exists())
+        self.assertTrue(all(not (source/name).exists() for name in leftovers))
+        seen.append(source)
+
+      argv = ['source_entry.py', '--source', str(f.source), '--machine-config', str(path), '--launch']
+      with mock.patch.object(entry, 'DEFAULT_MACHINE', path), mock.patch.object(seed, 'native'), \
+           mock.patch.object(os, 'geteuid', return_value=1000), mock.patch.object(entry.sys, 'argv', argv), \
+           mock.patch.object(entry, 'launch', side_effect=launched):
+        entry.main()
+        first = seen[-1]
+        unchanged = (first/'rust/native-runtime-catalog.json').stat()
+        entry.main()
+        self.assertEqual(seen[-1], first)
+        self.assertEqual((first/'rust/native-runtime-catalog.json').stat().st_mtime_ns, unchanged.st_mtime_ns)
+        (f.source/'README').write_text('next Git update')
+        f.git('add', 'README')
+        f.git('commit', '-qm', 'next committed update')
+        entry.main()
+        self.assertEqual(seen[-1], first)
+        self.assertNotEqual(runtime.source_identity(first), original)
+        self.assertEqual((first/'README').read_text(), 'next Git update')
+        self.assertEqual((first/'rust/native-runtime-catalog.json').stat().st_mtime_ns, unchanged.st_mtime_ns)
+        (f.source/'README').write_text('uncommitted tracked edit')
+        with self.assertRaisesRegex(ValueError, 'repository root|tracked source'):
+          entry.main()
+        self.assertEqual(len(seen), 3)
+      self.assertEqual((legacy/'object-0').read_bytes(), b'existing installed output')
+      self.assertEqual((legacy/'object-0').stat().st_ino, untouched.st_ino)
+      self.assertEqual((legacy/'object-0').stat().st_mtime_ns, untouched.st_mtime_ns)
+      self.assertTrue(all((f.source/name).read_bytes() == b'preserve existing installation' for name in leftovers))
+
   def test_installed_storage_preserves_the_fixed_seed_generator_namespace(self):
     root = Path(entry.__file__).resolve().parents[2]
     publication = full_entry.module(root/'tools/native/publish_inputs.py', 'owned_input_directory')
