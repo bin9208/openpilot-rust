@@ -165,11 +165,7 @@ fn fetch(store: &Path, input: &Path, module: &Path, sha: &str, repair: bool) -> 
         // leave a lost boundary missing. Ask for all history the source has.
         arguments.push(OsStr::new("--depth=2147483647"));
     }
-    arguments.extend([
-        OsStr::new("--"),
-        input.as_os_str(),
-        OsStr::new(&reference),
-    ]);
+    arguments.extend([OsStr::new("--"), input.as_os_str(), OsStr::new(&reference)]);
     git(arguments)?;
     if !recorded(store, module, sha)? {
         return Err("retained source fetch did not publish its pinned reference".into());

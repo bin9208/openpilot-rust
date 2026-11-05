@@ -52,6 +52,8 @@ def preparation_key(source, revision='HEAD'):
     if not row: continue
     name = os.fsdecode(row.split(b'\t', 1)[1])
     path = Path(name)
+    if name in ('rust/native-bootstrap-inputs.json', 'rust/native-machine.json'):
+      continue  # Provider selection is compared separately; seed/resource changes are not model changes.
     if (path.name in ('Cargo.toml', 'Cargo.lock', 'build.rs')
         or path.suffix in ('.json', '.capnp', '.h', '.hpp', '.c', '.cc', '.cpp', '.S')
         or name.startswith(('rust/tools/', 'rust/crates/model-runtime/', 'rust/crates/usbgpu/',
@@ -161,9 +163,13 @@ def compile_runtime(args, functions, source, machine, pin):
   command = ['/usr/bin/sudo', '-n', str(tools/'openpilot-native-build-scope'),
       '--compile-user', '--config', state['configuration'], '--configuration-sha256',
       state['configuration_sha256'], '--root', str(source), '--request-owner', owner]
-  with runtime.build_cpus():
-    output = commands.run(command, env=functions['seed'].ENV, stdout=subprocess.PIPE,
-                          stderr=subprocess.PIPE, check=True)
+  log_path = cache/'user-build.log'
+  try:
+    with runtime.build_cpus(), log_path.open('w+b') as log:
+      output = commands.run(command, env=functions['seed'].ENV, stdout=subprocess.PIPE,
+                            stderr=log, check=True)
+  except subprocess.CalledProcessError as error:
+    raise RuntimeError(f'Compilation failed; log: {log_path}') from error
   result = json.loads(output.stdout)
   if result['development_audit_executed'] or result['sealed_generation_created']:
     raise RuntimeError('normal startup unexpectedly entered a development audit')

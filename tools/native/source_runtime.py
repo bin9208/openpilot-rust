@@ -108,7 +108,7 @@ class OwnedCommands:
           if any(os.fstat(s.fileno()).st_size > 4*1024**2 for s in (out, err)):
             raise ValueError('native source command output exceeded 4 MiB; worker evidence retained')
           detail = None
-          if hasattr(err, 'fileno'):
+          if err.readable():
             size = os.fstat(err.fileno()).st_size
             tail = os.pread(err.fileno(), min(size, 2048), max(0, size - 2048))
             lines = tail.decode('utf-8', 'replace').splitlines()

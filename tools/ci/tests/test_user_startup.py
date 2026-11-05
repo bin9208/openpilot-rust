@@ -29,6 +29,23 @@ class Child:
 
 
 class StartupTests(unittest.TestCase):
+  def test_unusable_native_tools_fall_back_to_original_ui_and_recovery(self):
+    with tempfile.TemporaryDirectory() as temp:
+      root = Path(temp)
+      ui = user.early.Startup(root, log=root/'launch_log')
+      native_recovery, recovery = Child(127), Child()
+      native_spinner, spinner = Child(127), Child()
+      with mock.patch.object(ui, 'command', side_effect=[(['old-recovery'], True), (['old-spinner'], True)]), \
+           mock.patch.object(user.early, 'listening', side_effect=[False, False, True]), \
+           mock.patch.object(user.early.subprocess, 'Popen',
+               side_effect=[native_recovery, recovery, native_spinner, spinner]) as start:
+        ui.start()
+        self.assertIn('openpilot.selfdrive.carrot.recovery.server', start.call_args_list[1].args[0])
+        self.assertIn('openpilot.system.ui.spinner', start.call_args_list[3].args[0])
+        self.assertIn(b'Preparing build', spinner.stdin.getvalue())
+        ui.handoff()
+        self.assertEqual(recovery.terminated, 0)
+
   def test_original_recovery_precedes_spinner_and_survives_the_manager_handoff(self):
     with tempfile.TemporaryDirectory() as temp:
       root = Path(temp)

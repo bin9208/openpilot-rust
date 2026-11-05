@@ -29,6 +29,7 @@ class Startup:
     self.log = Path(log)
     self.output = None
     self.spinner = None
+    self.spinner_native = False
     self.recovery = None
     self.started = time.monotonic()
     self.phase = 'Starting build'
@@ -52,19 +53,30 @@ class Startup:
   def start(self):
     self.output = self.log.open('ab', buffering=0)
     if not listening(self.port):
-      argv, _ = self.command('openpilot-carrot-recovery', 'openpilot.selfdrive.carrot.recovery.server')
-      self.recovery = subprocess.Popen([*argv, '--port', str(self.port)], cwd=self.source,
-          env=self.environment(), stdout=self.output, stderr=self.output, start_new_session=True)
-      until = time.monotonic() + 5
-      while not listening(self.port):
-        if self.recovery.poll() is not None or time.monotonic() >= until:
-          raise RuntimeError(f'recovery port {self.port} did not start; see {self.log}')
-        time.sleep(0.05)
+      argv, native = self.command('openpilot-carrot-recovery', 'openpilot.selfdrive.carrot.recovery.server')
+      for attempt in range(2 if native else 1):
+        if attempt:
+          argv = [interpreter(), '-B', '-m', 'openpilot.selfdrive.carrot.recovery.server']
+        self.recovery = subprocess.Popen([*argv, '--port', str(self.port)], cwd=self.source,
+            env=self.environment(), stdout=self.output, stderr=self.output, start_new_session=True)
+        until = time.monotonic() + 5
+        while not listening(self.port):
+          if self.recovery.poll() is not None or time.monotonic() >= until:
+            if self.recovery.poll() is None:
+              self.recovery.terminate()
+              self.recovery.wait(timeout=2)
+            break
+          time.sleep(0.05)
+        else:
+          break
+      else:
+        raise RuntimeError(f'recovery port {self.port} did not start; see {self.log}')
     argv, native = self.command('openpilot-spinner', 'openpilot.system.ui.spinner')
     if native:
       argv += ['--source-root', str(self.source)]
     self.spinner = subprocess.Popen(argv, cwd=self.source, env=self.environment(), stdin=subprocess.PIPE,
         stdout=self.output, stderr=self.output, start_new_session=True)
+    self.spinner_native = native
     self.update('Preparing build')
     return self
 
@@ -80,6 +92,14 @@ class Startup:
     if detail:
       message += ' · ' + ' '.join(detail.split())[-180:]
     self.last_message = message
+    if self.spinner is not None and self.spinner.poll() is not None:
+      if not self.spinner_native:
+        raise RuntimeError(f'progress display exited; see {self.log}; recovery port {self.port} is available')
+      self.close_spinner()
+      self.spinner = subprocess.Popen([interpreter(), '-B', '-m', 'openpilot.system.ui.spinner'],
+          cwd=self.source, env=self.environment(), stdin=subprocess.PIPE,
+          stdout=self.output, stderr=self.output, start_new_session=True)
+      self.spinner_native = False
     if self.spinner is not None and self.spinner.poll() is None:
       with suppress(OSError, ValueError):
         self.spinner.stdin.write((message + '\n').encode())
