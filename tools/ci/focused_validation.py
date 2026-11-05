@@ -104,7 +104,7 @@ def host_checks(paths):
     elif path.suffix == '.rs':
       run(['rustfmt', '--edition', '2021', '--check', '--config', 'skip_children=true', name])
   for suite in selected_tests(paths):
-    run([sys.executable, '-m', 'pytest', '-q', '-c', '/dev/null',
+    run([sys.executable, '-m', 'pytest', '-q', '-p', 'no:cacheprovider', '-c', '/dev/null', '--rootdir=.',
          '--confcutdir=tools/ci/tests', 'tools/ci/tests/' + suite])
   # Always retain one small, real x86 Rust test. Only bounded known host crates
   # are added automatically; native providers and the workspace run on device

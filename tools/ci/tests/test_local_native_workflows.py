@@ -501,6 +501,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                 self.assertNotIn('push', load(ROOT/relative)['on'])
                 after['on'].pop('push', None)
                 before['on'].pop('push', None)
+                before['on'].setdefault('workflow_dispatch', '')
                 self.assertEqual(after, before, 'unreviewed workflow, command, pin, gate or deadline change')
 
     def test_provider_submodule_changes_keep_original_foundation_push_boundary(self):
@@ -616,7 +617,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     ['git', 'show', MESSAGING_BASE+':.github/workflows/'+path.name],
                     cwd=ROOT, text=True), Loader=yaml.BaseLoader)
                 self.assertEqual(set(document['on']), {'workflow_dispatch'})
-                original['on'] = {'workflow_dispatch': None}
+                original['on'] = {'workflow_dispatch': ''}
                 original['concurrency'] = dict(original['concurrency'], queue='max', **{'cancel-in-progress': 'false'})
                 for job in original['jobs'].values():
                     for step in job['steps']:
@@ -744,6 +745,12 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                             expected_condition = expected_condition[:-3] + " && inputs.index_sha256 == '' }}"
                         self.assertEqual(after['if'], expected_condition)
                     for event, config in original.get('on', {}).items():
+                        if relative == '.github/workflows/user-docs.yaml':
+                            if event == 'workflow_dispatch':
+                                self.assertNotIn(event, current['on'])
+                            else:
+                                self.assertEqual(set(current['on'][event]['branches']), {'dev', 'dev-md', 'main'})
+                            continue  # #685 keeps only current protected documentation events.
                         if event in ('push', 'pull_request') and relative != '.github/workflows/user-docs.yaml':
                             self.assertNotIn(event, current['on'])
                             continue  # #685: costly diagnostics are opt-in.
