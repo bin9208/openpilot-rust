@@ -27,6 +27,8 @@ class DeviceAcceptanceTests(unittest.TestCase):
       with self.subTest(token=token), self.assertRaises(ValueError):
         focused.require_device(['launch_openpilot.sh'], dict(pr, body=pr['body'].replace(token, '')))
     with self.assertRaises(ValueError):
+      focused.require_device(['launch_openpilot.sh'], dict(pr, body=pr['body'].replace('Device-Environment: C3X / AGNOS 19.8-carrot-bt1', 'Device-Environment:')))
+    with self.assertRaises(ValueError):
       focused.require_device(['tools/native/source_runtime.py'], dict(pr, head=dict(sha='b' * 40)))
     with self.assertRaises(ValueError):
       focused.require_device(['launch_openpilot.sh'], dict(pr, body=pr['body'] + '\nDevice-Boot: passed'))
