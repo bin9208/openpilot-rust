@@ -36,7 +36,7 @@ def changed_paths(base, head='HEAD'):
 
 
 def field(body, name):
-  values = re.findall(r'^' + re.escape(name) + r':\s*([^\n\r]+)$', body, re.MULTILINE)
+  values = re.findall(r'^' + re.escape(name) + r':[ \t]*([^\n\r]+)$', body, re.MULTILINE)
   return values[0].strip() if len(values) == 1 else ''
 
 
