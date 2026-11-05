@@ -2,6 +2,11 @@ name: Native source input publication
 on:
   workflow_dispatch:
     inputs:
+      seed_export:
+        description: Publish only a successful native ARM release-seed export and exact-source startup checks
+        required: false
+        default: false
+        type: boolean
       source_run_id:
         description: Successful genuine AGNOS producer run ID
         required: true
@@ -32,7 +37,7 @@ concurrency:
 jobs:
   inputs:
     name: Validate or publish source-pinned native inputs
-    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && github.repository == 'bin9208/openpilot-rust' && github.event_name == 'workflow_dispatch' }}
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && github.repository == 'bin9208/openpilot-rust' && github.event_name == 'workflow_dispatch' && !inputs.seed_export }}
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
@@ -66,6 +71,39 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-input-publication/report.json
             ${{ env.CI_JOB_TEMP }}/native-input-publication/native-bootstrap-inputs*.json
             ${{ env.CI_JOB_TEMP }}/native-input-publication/installed-source/
+          if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+  seed:
+    name: Publish verified ARM bootstrap seed only
+    if: ${{ github.repository == 'bin9208/openpilot-rust' && github.event_name == 'workflow_dispatch' && inputs.seed_export }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with: {persist-credentials: false}
+      - uses: ./.github/actions/job-temp
+      - name: Check seed artifact boundaries without executing the helper
+        run: /usr/bin/python3 -I -B -S -m unittest discover -s tools/ci/tests -p test_native_seed_publication.py -v
+      - name: Verify and optionally publish the successful ARM seed export
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NATIVE_SEED_RUN: ${{ inputs.source_run_id }}
+          NATIVE_SEED_SOURCE: ${{ inputs.source_commit }}
+          NATIVE_SEED_INDEX: ${{ inputs.index_sha256 }}
+          NATIVE_SEED_PUBLISH: ${{ inputs.publish }}
+        run: |
+          arguments=(--source-run-id "$NATIVE_SEED_RUN" --source-commit "$NATIVE_SEED_SOURCE" --index-sha256 "$NATIVE_SEED_INDEX")
+          if [[ $NATIVE_SEED_PUBLISH == true ]]; then arguments+=(--publish); fi
+          /usr/bin/python3 -I -B -S tools/native/publish_seed.py "${arguments[@]}"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: native-seed-publication-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.CI_JOB_TEMP }}/seed-publication/report.json
+            ${{ env.CI_JOB_TEMP }}/seed-publication/installed-source/
           if-no-files-found: warn
       - uses: ./.github/actions/job-temp
         if: always()

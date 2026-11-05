@@ -664,3 +664,13 @@ lib 사례를 실행하고 최초 고정 seed용 release helper를 빌드한다.
 [#684](https://github.com/bin9208/openpilot-rust/issues/684)에 정확 소스/Actions/새 seed
 SHA·descriptor/index와 설치 후보를 기록한다. 소스만 고치고 기존seed를 계속 받는 상태는
 완료가 아니다. 기기 직접 접속·제어·재부팅은 하지 않고, 실제빌드·정상시작은사용자확인전이다.
+
+새 seed 발행은 기존 `native-input-publication.yml`의 명시적 `seed_export=true` 모드에서
+수행한다. 원래 전체 입력 발행의 source/PR/SDK/provider gate와 기본 모드는 유지한다.
+이 제한된 모드는 성공한 동일 source ARM release export, 새 kernel-interface 사례와
+ARM/X64 시작 집중 검사, artifact digest/source/tree/descriptor/helper/license/protocol을
+확인하고 해당 source의 bootstrap prerelease4파일만 발행한다. ARM helper를 publisher에서
+실행하지 않으며 source 정책·정상 source driver에 포함할 Git overlay만 만든다. 원본
+machine의 boot seed용 구 파일은 보존한다. 기존 불변 asset 검증·충돌 보존·draft 원자 발행과
+공개 HTTPS 수신 검사를 재사용하며 발행도 Actions에서만 수행한다. 이 결과는 전체 runtime
+release나 PR 필수 검사 완료를 뜻하지 않는다.
