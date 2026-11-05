@@ -24,6 +24,7 @@ RUST_PACKAGES = {
     'runtime-build': 'openpilot-runtime-build',
     'runtime-launcher': 'openpilot-runtime-launcher',
     'updated': 'openpilot-updated',
+    'runtime-version': 'openpilot-runtime-version',
     'runtime-installer': 'openpilot-runtime-installer',
     'disk-space': 'openpilot-disk-space',
 }
@@ -118,6 +119,11 @@ def host_checks(paths):
     parts = name.split('/')
     if len(parts) > 3 and parts[:2] == ['rust', 'crates'] and parts[2] in RUST_PACKAGES:
       crates.add(RUST_PACKAGES[parts[2]])
+  if crates & {'openpilot-runtime-launcher', 'openpilot-runtime-version', 'openpilot-updated'}:
+    # These focused host crates use cereal/logging. Prepare only their small
+    # host dependencies, never the native SDK/providers or workspace build.
+    run(['sudo', 'apt-get', 'update'])
+    run(['sudo', 'apt-get', 'install', '-y', '--no-install-recommends', 'capnproto', 'libzmq3-dev'])
   for crate in sorted(crates):
     run(['cargo', 'test', '--manifest-path', 'rust/Cargo.toml', '--locked',
          '-p', crate, '--lib', '--tests', '--no-default-features'], timeout=300)

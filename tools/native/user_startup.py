@@ -26,7 +26,7 @@ def inputs_key(source):
   # Git already received/checked these immutable objects. Compare Git object
   # identities rather than rereading SDK/model archives or all extracted files.
   entries = git(source, 'ls-tree', '-r', '-z', 'HEAD', '--',
-      'rust', 'tools/native', 'openpilot/cereal', 'opendbc', 'panda', 'tinygrad_repo',
+      'rust', 'tools/native', 'openpilot/cereal', 'opendbc', 'opendbc_repo', 'panda', 'tinygrad_repo',
       'openpilot/selfdrive/modeld/models')
   selected = []
   for row in entries.split(b'\0'):
@@ -34,7 +34,7 @@ def inputs_key(source):
     name = os.fsdecode(row.split(b'\t', 1)[1])
     path = Path(name)
     if (name.startswith(('tools/native/', 'rust/crates/runtime-build/', 'rust/crates/runtime-installer/',
-                         'openpilot/cereal/', 'opendbc/', 'panda/', 'tinygrad_repo/',
+                         'openpilot/cereal/', 'opendbc/', 'opendbc_repo/', 'panda/', 'tinygrad_repo/',
                          'openpilot/selfdrive/modeld/models/'))
         or path.suffix in ('.json', '.lock', '.capnp', '.h', '.hpp', '.c', '.cc', '.cpp', '.S')
         or path.name in ('Cargo.toml', 'build.rs')):
@@ -46,7 +46,7 @@ def preparation_key(source, revision='HEAD'):
   # Compiler/provider setup is independent of application/helper .rs edits.
   # Match committed dependency definitions, FFI and model generation inputs.
   entries = git(source, 'ls-tree', '-r', '-z', revision, '--', 'rust', 'openpilot/cereal',
-      'opendbc', 'panda', 'tinygrad_repo', 'openpilot/selfdrive/modeld/models')
+      'opendbc', 'opendbc_repo', 'panda', 'tinygrad_repo', 'openpilot/selfdrive/modeld/models')
   selected = []
   for row in entries.split(b'\0'):
     if not row: continue
@@ -57,7 +57,7 @@ def preparation_key(source, revision='HEAD'):
     if (path.name in ('Cargo.toml', 'Cargo.lock', 'build.rs')
         or path.suffix in ('.json', '.capnp', '.h', '.hpp', '.c', '.cc', '.cpp', '.S')
         or name.startswith(('rust/tools/', 'rust/crates/model-runtime/', 'rust/crates/usbgpu/',
-                            'openpilot/cereal/', 'opendbc/', 'panda/', 'tinygrad_repo/',
+                            'openpilot/cereal/', 'opendbc/', 'opendbc_repo/', 'panda/', 'tinygrad_repo/',
                             'openpilot/selfdrive/modeld/models/'))
         or name == 'rust/crates/runtime-build/src/catalog.rs'):
       selected.append(row)

@@ -149,6 +149,10 @@ pub fn is_dirty(path: &Path) -> Result<bool, Error> {
 /// Returns source file/JSON/Git errors, or `InvalidMetadata` after emitting the original
 /// error event if neither build source exists. Native logging failures also propagate.
 pub fn get_build_metadata(path: &Path) -> Result<BuildMetadata, Error> {
+    if std::env::var_os("OPENPILOT_USER_SOURCE_BUILD").as_deref() == Some(std::ffi::OsStr::new("1"))
+    {
+        return metadata::from_source(path);
+    }
     let build = path.join(BUILD_METADATA_FILENAME);
     if metadata_path_exists(&build)? {
         return build_metadata_from_dict(&JsonValue::parse(&read_text(&build)?)?);

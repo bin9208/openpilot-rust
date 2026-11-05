@@ -39,7 +39,8 @@ jobs:
         run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt
       - name: Reuse only the private host Cargo target
         run: echo "CARGO_TARGET_DIR=$CI_JOB_TEMP/cargo-target" >> "$GITHUB_ENV"
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
+        id: host-cache
         with:
           path: |
             ~/.cargo/registry
@@ -49,6 +50,14 @@ jobs:
           restore-keys: focused-x86-${{ hashFiles('rust/Cargo.lock') }}-
       - name: Check changed syntax and run focused x86 regressions
         run: python tools/ci/focused_validation.py host --base "$VALIDATION_BASE"
+      - uses: actions/cache/save@v4
+        if: ${{ !cancelled() && steps.host-cache.outputs.cache-hit != 'true' }}
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ${{ env.CI_JOB_TEMP }}/cargo-target
+          key: focused-x86-${{ hashFiles('rust/Cargo.lock') }}-${{ github.sha }}
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true', validation-context: 'true'}
