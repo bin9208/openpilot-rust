@@ -37,10 +37,15 @@ if __name__ == '__main__':
 _SPEC = importlib.util.spec_from_file_location('openpilot_native_bootstrap_seed_source', Path(__file__).with_name('bootstrap_seed.py'))
 seed = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(seed)
+_MEMORY_SPEC = importlib.util.spec_from_file_location('openpilot_native_build_memory', Path(__file__).with_name('build_memory.py'))
+memory = importlib.util.module_from_spec(_MEMORY_SPEC)
+_MEMORY_SPEC.loader.exec_module(memory)
 
 TOOLS_FIELDS = {'schema', 'stores', 'cache', 'system_sdk_receipt', 'system_sdk_sha256',
                 'expected_source_growth_bytes', 'expected_compile_growth_bytes',
                 'remaining_object_growth_bytes', 'resources'}
+AGNOS = Path('/AGNOS')
+POWER_WATCHDOG = Path('/var/tmp/power_watchdog')
 
 
 def owned_child(owner, parent, command):
@@ -68,11 +73,24 @@ class OwnedCommands:
   def __init__(self, owner, params=None):
     self.owner = owner
     self.params = params
+    self.watchdog = POWER_WATCHDOG if params is not None and AGNOS.is_file() else None
+    self.watchdog_at = None
 
   def observe(self):
     seed.verify_owners(self.owner)
     if self.params is not None:
       offroad(self.params)
+    # AGNOS powers off after an hour without a manager heartbeat, including
+    # while a first build is still running. Renew its existing monotonic lease
+    # only while the request owner is alive and offroad remains verified.
+    if self.watchdog is not None:
+      now = time.monotonic()
+      if self.watchdog_at is None or now-self.watchdog_at >= 30:
+        with tempfile.TemporaryDirectory(prefix='.native-power-', dir=self.watchdog.parent) as temp:
+          pending = Path(temp)/'watchdog'
+          pending.write_text(str(now))
+          pending.replace(self.watchdog)
+        self.watchdog_at = now
 
   def run(self, argv, *, env, stdout, stderr, check):
     self.observe()
@@ -162,10 +180,11 @@ def absolute(value):
   return path
 
 
-def source_identity(source):
+def source_identity(source, *, allow_untracked=False):
   def git(*args):
     return subprocess.check_output(['/usr/bin/git', '-C', str(source), *args], env=seed.ENV, text=True).strip()
-  if Path(git('rev-parse', '--show-toplevel')) != source or git('status', '--porcelain', '--untracked-files=all', '--ignore-submodules=none'):
+  untracked = '--untracked-files=no' if allow_untracked else '--untracked-files=all'
+  if Path(git('rev-parse', '--show-toplevel')) != source or git('status', '--porcelain', untracked, '--ignore-submodules=none'):
     raise ValueError('native source driver requires the exact clean repository root')
   return dict(commit=git('rev-parse', 'HEAD'), tree=git('rev-parse', 'HEAD^{tree}'))
 
@@ -261,7 +280,7 @@ def preserve_configuration(generations, configuration, pin):
 
 
 def build_runtime(prepared, plan, config_path, config_pin, source, request_owner=None,
-                  running_config=None, running_pin=None, previous=None, expected_source=None, observe=None):
+                  running_config=None, running_pin=None, previous=None, expected_source=None, observe=None, reclaim=None):
   started = time.monotonic()
   phases = {}
   marked = started
@@ -283,6 +302,7 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
     raise ValueError('native requested source changed during seed preparation')
   config_path = config_path.resolve(strict=True)
   configuration = read(config_path, config_pin)
+  requested_config, requested_pin = config_path, config_pin
   validate(configuration, source)
   params = Path(configuration['stores']['params'])
   offroad(params)
@@ -301,6 +321,7 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
       observe()
     seed.verify_owners(owner)
     offroad(params)
+    read(requested_config, requested_pin)
     read(config_path, config_pin)
     selection = configuration['runtime_inputs']
     read(Path(selection['path']), selection['sha256'])
@@ -317,6 +338,9 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
 
     def execute(name, command, pins):
       check(pins)
+      if reclaim is not None and name in ('prepared-inputs', 'built-generation'):
+        reclaim()
+        check(pins)
       path = attempt/(name+'.json')
       # Capture into retained files, then read with a byte bound. Compiler and
       # worker logs remain in their independently monitored native attempts.
@@ -332,6 +356,19 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
       return read(path)
 
     check()
+    if reclaim is not None:
+      reclaim()
+      check()
+    resources, admission = memory.fit(configuration['resources'])
+    save('memory-admission.json', admission)
+    if resources != configuration['resources']:
+      configuration = dict(configuration, resources=resources)
+      config_path = save('admitted-config.json', configuration)
+      config_pin = seed.digest(config_path)
+      print(f"native build memory: hard limit {resources['maximum_memory_bytes']/1024**2:.0f} MiB, "
+            f"normal reserve {resources['minimum_available_memory_bytes']/1024**2:.0f} MiB, "
+            f"available {admission['available_bytes']/1024**2:.0f} MiB", file=sys.stderr)
+      check()
     timing('admission')
     small = {k: configuration[k] for k in TOOLS_FIELDS}
     first_config = save('tools-config.json', small)

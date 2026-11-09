@@ -118,6 +118,8 @@ jobs:
           key: native-agnos-image-077d42186def98025ffad9723774c96f45da10c87cc6fedbc58d0cf4fa65ffd4-v1
       - name: Prepare this job's verified raw factory image
         run: /usr/bin/python3 -I -B -S tools/ci/probe_native_source_transport.py --prepare-image
+      - name: Check legacy and current kernel memory interfaces on native ARM
+        run: cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --lib memory_cgroup::tests
       - name: Prepare only the owned host-kernel scope
         run: sudo -n --preserve-env="$SCOPE_CONTEXT" /usr/bin/python3 -I -B -S tools/ci/native_resource_scope.py prepare
       - name: Exercise real ARM sudo and the unchanged production entry CLI

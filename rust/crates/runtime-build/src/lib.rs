@@ -376,9 +376,28 @@ fn build_inner(
     cache_recipe.packages.clear();
     cache_recipe.binaries.clear();
     cache_recipe.features.clear();
+    // The source build path uses Cargo's ordinary optimized release settings.
+    // Whole-program ThinLTO and one codegen unit make each of the 99 small
+    // executables relink its dependency graph on the device. Keep opt-level=3
+    // and the runtime checks/panic policy; final distribution builds retain the
+    // workspace's separately selected release profile.
+    let native_profile = if recipe
+        .environment
+        .get("OPENPILOT_NATIVE_INCREMENTAL")
+        .map(String::as_str)
+        == Some("1")
+    {
+        BTreeMap::from([
+            ("CARGO_PROFILE_RELEASE_LTO", "false"),
+            ("CARGO_PROFILE_RELEASE_CODEGEN_UNITS", "16"),
+        ])
+    } else {
+        BTreeMap::new()
+    };
     let identity = serde_json::to_vec(&(
-        "openpilot-native-cargo-cache-v2",
+        "openpilot-native-cargo-cache-v3",
         cache_recipe,
+        &native_profile,
         &compiler_digest,
         &cargo_digest,
         version.stdout,
@@ -440,10 +459,14 @@ fn build_inner(
         .env("CARGO_INCREMENTAL", "0")
         // Bound concurrent compiler/linker processes independently of rustc's
         // CPU affinity. Device builds share limited memory with normal services.
-        .env("CARGO_BUILD_JOBS", "4")
+        .env(
+            "CARGO_BUILD_JOBS",
+            if native_profile.is_empty() { "4" } else { "2" },
+        )
         .env("RUSTC", &rustc)
         .env("RUSTDOC", toolchain.join("rustdoc"))
         .envs(&recipe.environment)
+        .envs(&native_profile)
         .envs(&native.environment)
         .env(linker_key, &native.linker)
         .env("CARGO_ENCODED_RUSTFLAGS", flags.join("\u{1f}"));

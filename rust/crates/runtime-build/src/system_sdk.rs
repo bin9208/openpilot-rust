@@ -284,17 +284,19 @@ impl Capture<'_> {
                     return Err("system SDK traverses a non-directory".into());
                 }
                 if !self.entries.contains_key(&resolved) {
-                    let mode = metadata.permissions().mode() & 0o7777;
+                    // This receipt observes the existing read-only system; it
+                    // never copies or grants set-id privileges. Compare the
+                    // factory receipt's ordinary access modes while retaining
+                    // exact payload identities; package Trees stay stricter.
+                    let mode = metadata.permissions().mode() & 0o777;
                     self.bytes = self
                         .bytes
                         .checked_add(metadata.len())
                         .ok_or("system SDK payload size overflow")?;
-                    if mode & 0o6000 != 0 || self.bytes > MAX_BYTES {
-                        return Err(format!(
-                            "unsupported set-id or oversized system SDK file: {}",
-                            resolved.display()
-                        )
-                        .into());
+                    if self.bytes > MAX_BYTES {
+                        return Err(
+                            format!("oversized system SDK file: {}", resolved.display()).into()
+                        );
                     }
                     let mut file = regular_file(&physical)?;
                     let mut digest = Sha256::new();
@@ -312,7 +314,7 @@ impl Capture<'_> {
                         digest.update(&buffer[..n]);
                     }
                     if bytes != metadata.len()
-                        || file.metadata()?.permissions().mode() & 0o7777 != mode
+                        || file.metadata()?.permissions().mode() & 0o777 != mode
                     {
                         return Err("system SDK file changed during capture".into());
                     }
@@ -527,6 +529,33 @@ mod generation_input_tests {
         for recipe in plan.groups.values_mut() {
             recipe.inputs.insert(receipt.to_owned(), sha.clone());
         }
+    }
+
+    #[test]
+    fn read_only_sdk_matches_factory_permissions_without_applying_set_id_bits() {
+        let (temp, _source, _receipt, snapshot, _plan) = fixture();
+        let image = temp.path().join("image");
+        let helper = image.join("usr/lib/aarch64-linux-gnu/utempter");
+        fs::write(&helper, b"factory helper payload").unwrap();
+        fs::set_permissions(&helper, fs::Permissions::from_mode(0o755)).unwrap();
+        let factory = Snapshot::capture(&image, &snapshot.plan).unwrap();
+
+        for mode in [0o2755, 0o4755, 0o6755] {
+            fs::set_permissions(&helper, fs::Permissions::from_mode(mode)).unwrap();
+            factory.verify(&image).unwrap();
+            assert_eq!(
+                fs::metadata(&helper).unwrap().permissions().mode() & 0o7777,
+                mode
+            );
+            // Unpacked build inputs retain their separate set-id rejection.
+            assert!(crate::inputs::Tree::capture(&image).is_err());
+        }
+
+        fs::set_permissions(&helper, fs::Permissions::from_mode(0o2750)).unwrap();
+        assert!(factory.verify(&image).is_err());
+        fs::set_permissions(&helper, fs::Permissions::from_mode(0o2755)).unwrap();
+        fs::write(&helper, b"modified helper payload").unwrap();
+        assert!(factory.verify(&image).is_err());
     }
 
     #[test]

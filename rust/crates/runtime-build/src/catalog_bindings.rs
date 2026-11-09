@@ -334,6 +334,79 @@ impl NativeInputs {
     }
 }
 
+/// One fixed, fully pinned compiler context for serial native runtime groups.
+/// Keep their package/bin/features distinct, but let Cargo reuse dependencies
+/// instead of compiling them again for every provider subset and rpath flag.
+/// A compiler-provider change invalidates this complete context; runtime-only
+/// model/data inputs remain outside it.
+pub fn share_compiler_context(plan: &mut prepare::Plan) -> Result<()> {
+    plan.validate()?;
+    let mut files = BTreeMap::new();
+    let mut trees = BTreeMap::new();
+    let mut environment = BTreeMap::new();
+    let mut libraries = Vec::new();
+    for recipe in plan.groups.values() {
+        catalog::merge(&mut files, &recipe.inputs)?;
+        catalog::merge(&mut trees, &recipe.input_trees)?;
+        let paths: Vec<_> = recipe
+            .environment
+            .get("LD_LIBRARY_PATH")
+            .map(|value| std::env::split_paths(value).collect())
+            .unwrap_or_default();
+        if paths.iter().any(|path| !absolute(path)) {
+            return Err("shared compiler library paths must be absolute".into());
+        }
+        let expected = paths
+            .iter()
+            .map(|path| format!("-C link-arg=-Wl,-rpath-link,{}", path.display()))
+            .collect::<Vec<_>>()
+            .join(" ");
+        if recipe
+            .environment
+            .get("RUSTFLAGS")
+            .map(String::as_str)
+            .unwrap_or("")
+            != expected
+        {
+            return Err("shared compiler context only combines pinned library-search flags".into());
+        }
+        for path in paths {
+            if !libraries.contains(&path) {
+                libraries.push(path);
+            }
+        }
+        let ordinary = recipe
+            .environment
+            .iter()
+            .filter(|(key, _)| !matches!(key.as_str(), "LD_LIBRARY_PATH" | "RUSTFLAGS"))
+            .map(|(key, value)| (key.clone(), value.clone()))
+            .collect();
+        catalog::merge(&mut environment, &ordinary)?;
+    }
+    if !libraries.is_empty() {
+        environment.insert(
+            "LD_LIBRARY_PATH".into(),
+            std::env::join_paths(&libraries)?
+                .into_string()
+                .map_err(|_| "shared compiler library path is not UTF-8")?,
+        );
+        environment.insert(
+            "RUSTFLAGS".into(),
+            libraries
+                .iter()
+                .map(|path| format!("-C link-arg=-Wl,-rpath-link,{}", path.display()))
+                .collect::<Vec<_>>()
+                .join(" "),
+        );
+    }
+    for recipe in plan.groups.values_mut() {
+        recipe.inputs = files.clone();
+        recipe.input_trees = trees.clone();
+        recipe.environment = environment.clone();
+    }
+    Ok(())
+}
+
 pub fn assemble(
     root: &Path,
     cargo: &Path,
@@ -359,7 +432,8 @@ pub fn assemble(
         return Err("metadata Cargo must be the independently pinned native Rust input".into());
     }
     // Verify actual compiler content before executing the pinned Cargo binary.
-    let plan = source_catalog.compose(&bindings, root)?;
+    let mut plan = source_catalog.compose(&bindings, root)?;
+    share_compiler_context(&mut plan)?;
     let (catalog, mut audit) = catalog::audit(root, cargo)?;
     catalog.verify_compiler_bindings(&plan)?;
     system_sdk::generation_profiles(root, &plan)?;

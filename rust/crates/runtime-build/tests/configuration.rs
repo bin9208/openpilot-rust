@@ -146,6 +146,81 @@ fn source(root: &Path) -> Source {
 }
 
 #[test]
+fn build_temporaries_use_the_budgeted_cache_even_with_a_separate_host_tmpfs() {
+    const FIXTURE: &str = "OPENPILOT_TEST_TEMPORARY_ROOT";
+    let Some(root) = std::env::var_os(FIXTURE) else {
+        use std::os::unix::fs::MetadataExt;
+        let root = tempfile::tempdir().unwrap();
+        let foreign = tempfile::tempdir_in("/dev/shm").unwrap();
+        assert_ne!(
+            fs::metadata(root.path()).unwrap().dev(),
+            fs::metadata(foreign.path()).unwrap().dev()
+        );
+        let output = Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "build_temporaries_use_the_budgeted_cache_even_with_a_separate_host_tmpfs",
+                "--nocapture",
+            ])
+            .env(FIXTURE, root.path())
+            .env("TMPDIR", foreign.path())
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    };
+    let root = Path::new(&root);
+    let checkout = root.join("source");
+    fs::create_dir(&checkout).unwrap();
+    git(&checkout, &["init", "--quiet"]);
+    fs::write(checkout.join("README"), b"owned temporary fixture").unwrap();
+    git(&checkout, &["add", "."]);
+    git(&checkout, &["commit", "--quiet", "-m", "Temporary fixture"]);
+    let config = config(root);
+    for path in [
+        &config.stores.sources,
+        &config.stores.objects,
+        &config.stores.generations,
+        &config.cache,
+        &config.resources.memory_cgroup_parent,
+    ] {
+        fs::create_dir(path).unwrap();
+    }
+    fs::create_dir_all(config.stores.params.join("d")).unwrap();
+    fs::write(config.stores.params.join("d/IsOnroad"), b"0").unwrap();
+    let path = root.join("config.json");
+    fs::write(&path, serde_json::to_vec(&config).unwrap()).unwrap();
+    let (_, pin) = Config::read_pinned(&path).unwrap();
+    // The filesystem guard must still reject a genuinely unbudgeted tmpfs.
+    let error = resources::Monitor::start(
+        &config.resources,
+        &[&std::env::temp_dir()],
+        &root.join("unbudgeted.jsonl"),
+        serde_json::json!({}),
+    )
+    .err()
+    .unwrap()
+    .to_string();
+    assert!(
+        error.contains("writable filesystem has no resource budget"),
+        "{error}"
+    );
+    // Production admission now passes the disk boundary and still rejects the
+    // deliberately ordinary (not kernel) controller without starting a worker.
+    let error = resources::attempt(&config, &path, &checkout, &pin)
+        .err()
+        .unwrap()
+        .to_string();
+    assert!(error.contains("delegated kernel memory cgroup"), "{error}");
+    assert!(config.cache.join("tmp").is_dir());
+    assert_eq!(fs::read_dir(std::env::temp_dir()).unwrap().count(), 0);
+}
+
+#[test]
 fn a_later_clean_commit_cannot_be_reported_as_the_original_build_request() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path().join("source");

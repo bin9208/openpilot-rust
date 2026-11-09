@@ -2,6 +2,11 @@ name: Runtime source build foundation
 on:
   workflow_dispatch:
     inputs:
+      installed_checkout_only:
+        description: Check existing Git-pull startup and legacy-file preservation without rebuilding the runtime
+        required: false
+        default: false
+        type: boolean
       input_producer_run:
         description: Successful input producer for factory source-entry timing instead of foundation fixtures
         required: false
@@ -28,8 +33,45 @@ permissions:
   contents: read
   actions: read
 jobs:
+  installed-checkout:
+    name: Installed Git checkout startup (${{ matrix.runner }})
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'workflow_dispatch' && inputs.installed_checkout_only }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with: {persist-credentials: false, fetch-depth: 0}
+      - uses: ./.github/actions/job-temp
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
+      - run: python3 -m pip install PyYAML==6.0.3
+      - name: Check source entry with existing installed files and shallow Git updates
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools/ci/tests -p test_native_source_entry.py -v 2>&1 | tee "$CI_JOB_TEMP/installed-checkout.log"
+          python3 -m unittest discover -s tools/ci/tests -p test_native_source_runtime.py -v 2>&1 | tee -a "$CI_JOB_TEMP/installed-checkout.log"
+          python3 -m unittest discover -s tools/ci/tests -p test_native_seed_publication.py -v 2>&1 | tee -a "$CI_JOB_TEMP/installed-checkout.log"
+          PYTHONPATH="$GITHUB_WORKSPACE/tools/ci/tests" python3 -m unittest \
+            test_local_native_workflows.LocalNativeWorkflowTests.test_jobs_use_approved_parallel_routes_without_reactivating_inherited_publishers \
+            test_local_native_workflows.LocalNativeWorkflowTests.test_owned_native_arm_jobs_change_only_reviewed_host_preparation \
+            test_local_native_workflows.LocalNativeWorkflowTests.test_provider_submodule_changes_keep_original_foundation_push_boundary \
+            test_local_native_workflows.LocalNativeWorkflowTests.test_factory_timing_calls_the_same_production_workflow_without_fixture_jobs \
+            -v 2>&1 | tee -a "$CI_JOB_TEMP/installed-checkout.log"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: installed-checkout-${{ matrix.runner }}-${{ github.sha }}
+          path: ${{ env.CI_JOB_TEMP }}/installed-checkout.log
+          if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
   source-entry:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.index_sha256 != '' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.installed_checkout_only && inputs.index_sha256 != '' }}
     uses: ./.github/workflows/native-source-entry.yml
     with:
       input_producer_run: ${{ inputs.input_producer_run }}
@@ -38,7 +80,7 @@ jobs:
       export_seed: ${{ inputs.export_seed || false }}
   offline-cargo-reuse:
     name: Actual offline Cargo reuse (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
-    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && inputs.index_sha256 == '' }}
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && !inputs.installed_checkout_only && inputs.index_sha256 == '' }}
     runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     strategy:
       fail-fast: false

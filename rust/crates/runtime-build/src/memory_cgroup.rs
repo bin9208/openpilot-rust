@@ -30,8 +30,11 @@ pub enum Version {
 pub struct Memory {
     pub controller: Version,
     pub current_bytes: u64,
-    /// Kernel cgroup charge high-water mark, including descendants and cache.
-    pub kernel_peak_bytes: u64,
+    /// Kernel high-water mark, unavailable on older v2 controllers.
+    pub kernel_peak_bytes: Option<u64>,
+    /// Largest current charge actually sampled; not an unsampled kernel peak.
+    pub observed_peak_bytes: u64,
+    pub oom_group: bool,
     /// Limit pressure/reclaim notifications, not necessarily allocation failure.
     pub limit_events: u64,
     /// Actual OOM notifications; cache reclamation alone does not fail a build.
@@ -43,6 +46,9 @@ pub struct Group {
     version: Version,
     owned: bool,
     oom_watch: Option<OomWatch>,
+    oom_group: bool,
+    kernel_peak: bool,
+    observed_peak: AtomicU64,
 }
 
 // Linux 4.9's v1 memory.oom_control has no cumulative OOM counter. Subscribe
@@ -104,7 +110,18 @@ fn controller(path: &Path) -> Result<Version> {
 }
 
 fn number(path: &Path) -> Result<u64> {
-    Ok(fs::read_to_string(path)?.trim().parse()?)
+    let text = fs::read_to_string(path)
+        .map_err(|error| format!("native memory counter {}: {error}", path.display()))?;
+    Ok(text.trim().parse()?)
+}
+
+fn feature(path: &Path) -> Result<bool> {
+    match fs::symlink_metadata(path) {
+        Ok(metadata) if metadata.is_file() => Ok(true),
+        Ok(_) => Err(format!("native memory interface is redirected: {}", path.display()).into()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(format!("native memory interface {}: {error}", path.display()).into()),
+    }
 }
 
 fn control(root: &Path, file: &str, value: impl ToString) -> Result<()> {
@@ -138,11 +155,18 @@ impl Group {
             version,
             owned: true,
             oom_watch: None,
+            oom_group: false,
+            kernel_peak: true,
+            observed_peak: AtomicU64::new(0),
         };
         match version {
             Version::V2 => {
+                group.oom_group = feature(&group.path.join("memory.oom.group"))?;
+                group.kernel_peak = feature(&group.path.join("memory.peak"))?;
                 control(&group.path, "memory.max", limit)?;
-                control(&group.path, "memory.oom.group", 1)?;
+                if group.oom_group {
+                    control(&group.path, "memory.oom.group", 1)?;
+                }
                 if group.path.join("memory.swap.max").exists() {
                     control(&group.path, "memory.swap.max", 0)?;
                 } else if active_swap()? {
@@ -165,7 +189,7 @@ impl Group {
             }
         }
         group.verify_limit(limit)?;
-        group.memory()?; // A real kernel peak counter is mandatory.
+        group.memory()?; // Current charge and cumulative OOM evidence remain mandatory.
         Ok(group)
     }
 
@@ -194,7 +218,7 @@ impl Group {
                 }
             }
             Version::V2 => {
-                if number(&self.path.join("memory.oom.group"))? != 1 {
+                if self.oom_group && number(&self.path.join("memory.oom.group"))? != 1 {
                     return Err("build OOM group policy changed".into());
                 }
                 let path = self.path.join("memory.swap.max");
@@ -246,10 +270,19 @@ impl Group {
                 )
             }
         };
+        let current_bytes = number(&self.path.join(current))?;
+        self.observed_peak
+            .fetch_max(current_bytes, Ordering::Relaxed);
         Ok(Memory {
             controller: self.version,
-            current_bytes: number(&self.path.join(current))?,
-            kernel_peak_bytes: number(&self.path.join(peak))?,
+            current_bytes,
+            kernel_peak_bytes: if self.kernel_peak {
+                Some(number(&self.path.join(peak))?)
+            } else {
+                None
+            },
+            observed_peak_bytes: self.observed_peak.load(Ordering::Relaxed),
+            oom_group: self.oom_group,
             limit_events: events,
             oom_events,
         })
@@ -296,10 +329,13 @@ pub fn enter(parent: &Path, maximum: u64) -> Result<()> {
     let version = controller(&path)?;
     // This borrowed handle must not remove the frontend-owned directory.
     let group = Group {
+        oom_group: matches!(version, Version::V2) && feature(&path.join("memory.oom.group"))?,
+        kernel_peak: matches!(version, Version::V1) || feature(&path.join("memory.peak"))?,
         path,
         version,
         owned: false,
         oom_watch: None,
+        observed_peak: AtomicU64::new(0),
     };
     group.verify_limit(maximum)?;
     control(&group.path, "cgroup.procs", getpid().as_raw_nonzero())?;
@@ -513,6 +549,77 @@ pub fn verify_control(parent: &Path) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn v2_fixture(root: &Path, modern: bool) -> Group {
+        for (name, value) in [
+            ("memory.max", "1024"),
+            ("memory.current", "128"),
+            ("memory.swap.max", "0"),
+            ("memory.events", "low 0\nhigh 0\nmax 4\noom 0\n"),
+        ] {
+            fs::write(root.join(name), value).unwrap();
+        }
+        if modern {
+            fs::write(root.join("memory.oom.group"), "1").unwrap();
+            fs::write(root.join("memory.peak"), "256").unwrap();
+        }
+        Group {
+            path: root.to_owned(),
+            version: Version::V2,
+            owned: false, // Synthetic interface parsing, never a kernel cgroup.
+            oom_watch: None,
+            oom_group: feature(&root.join("memory.oom.group")).unwrap(),
+            kernel_peak: feature(&root.join("memory.peak")).unwrap(),
+            observed_peak: AtomicU64::new(0),
+        }
+    }
+
+    #[test]
+    fn legacy_v2_without_oom_group_or_peak_retains_limits_and_oom_evidence() {
+        let temp = tempfile::tempdir().unwrap();
+        let group = v2_fixture(temp.path(), false);
+        group.check(1024).unwrap();
+        let first = group.memory().unwrap();
+        assert!(!first.oom_group);
+        assert_eq!(first.kernel_peak_bytes, None);
+        assert_eq!(first.observed_peak_bytes, 128);
+        assert_eq!(first.limit_events, 4);
+        assert_eq!(first.oom_events, 0);
+        fs::write(temp.path().join("memory.current"), "64").unwrap();
+        assert_eq!(group.memory().unwrap().observed_peak_bytes, 128);
+        fs::write(temp.path().join("memory.events"), "max 5\noom 1\n").unwrap();
+        assert_eq!(group.memory().unwrap().oom_events, 1);
+        let value = serde_json::to_value(first).unwrap();
+        assert!(value["kernel_peak_bytes"].is_null());
+        fs::write(temp.path().join("memory.max"), "1025").unwrap();
+        assert!(group.check(1024).is_err());
+        fs::write(temp.path().join("memory.max"), "1024").unwrap();
+        fs::write(temp.path().join("memory.swap.max"), "1").unwrap();
+        assert!(group.check(1024).is_err());
+        fs::write(temp.path().join("memory.events"), "max 0\n").unwrap();
+        assert!(group.memory().is_err());
+    }
+
+    #[test]
+    fn modern_v2_retains_group_oom_and_real_kernel_peak_requirements() {
+        let temp = tempfile::tempdir().unwrap();
+        let group = v2_fixture(temp.path(), true);
+        group.check(1024).unwrap();
+        assert_eq!(group.memory().unwrap().kernel_peak_bytes, Some(256));
+        fs::write(temp.path().join("memory.oom.group"), "0").unwrap();
+        assert!(group.check(1024).is_err());
+        fs::remove_file(temp.path().join("memory.peak")).unwrap();
+        assert!(group.memory().is_err());
+    }
+
+    #[test]
+    fn missing_optional_memory_interfaces_do_not_admit_redirected_files() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("memory.oom.group");
+        assert!(!feature(&path).unwrap());
+        std::os::unix::fs::symlink("missing", &path).unwrap();
+        assert!(feature(&path).is_err());
+    }
 
     #[test]
     fn v1_oom_notifications_remain_visible_after_the_event_is_drained() {
