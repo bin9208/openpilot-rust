@@ -1,0 +1,115 @@
+{
+  "source_commit": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "models": {
+    "detector": {
+      "revision": "3f0616ffda0c19fc84fc455f988421c0df970e5d",
+      "url": "https://huggingface.co/AutowareFoundation/traffic_light_fine_detector/resolve/3f0616ffda0c19fc84fc455f988421c0df970e5d/tlr_car_ped_yolox_s_batch_1.onnx",
+      "sha256": "1ad633066a1195006f4709f8fa07800dd65a74a814b3efb4c99bcc5a1a7962f6",
+      "bytes": 35794092,
+      "license": "Apache-2.0",
+      "input": "images",
+      "shape": [
+        1,
+        3,
+        416,
+        416
+      ],
+      "output": "output",
+      "output_shape": [
+        1,
+        3549,
+        8
+      ]
+    },
+    "classifier": {
+      "revision": "527c4905afd8f1bfcc03253529a105f7fa5a6d36",
+      "url": "https://huggingface.co/AutowareFoundation/traffic_light_classifier/resolve/527c4905afd8f1bfcc03253529a105f7fa5a6d36/traffic_light_classifier_mobilenetv2_batch_1.onnx",
+      "sha256": "455b71b3b20d3a96aa0e49f32714ba50421f668a2f9b9907c30b1346ac8a3703",
+      "bytes": 8926508,
+      "license": "Apache-2.0",
+      "input": "input",
+      "shape": [
+        1,
+        3,
+        224,
+        224
+      ],
+      "output": "output",
+      "output_shape": [
+        1,
+        11
+      ]
+    }
+  },
+  "onnxruntime": {
+    "version": "1.23.2",
+    "source_commit": "a83fc4d58cb48eb68890dd689f94f28288cf2278",
+    "license": "MIT",
+    "providers": {
+      "x64": {
+        "url": "https://github.com/microsoft/onnxruntime/releases/download/v1.23.2/onnxruntime-linux-x64-1.23.2.tgz",
+        "archive_sha256": "1fa4dcaef22f6f7d5cd81b28c2800414350c10116f5fdd46a2160082551c5f9b",
+        "files": {
+          "README.md": "87f0387d38c0a5e3e448ab3ae3debc38024663ed8e4b2f55c625958764b01e4f",
+          "GIT_COMMIT_ID": "8991e24279baaf64c3f31ad73878a8ad75dfb1dcd129de309f8287c623170c29",
+          "Privacy.md": "9a15f9fd9d4c7b6dfc35f237f461863f84f8f73cf6189e330818a674d3828871",
+          "LICENSE": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c",
+          "VERSION_NUMBER": "48d625eaf5c6c9ce0c6890c697201fd6087c6147773feb8ca9a85e4f8004e79f",
+          "ThirdPartyNotices.txt": "e9e90971a8e75a9a8ac0c6412e29c1202d079998389915aa485f46c816c3b4cc",
+          "include/onnxruntime_c_api.h": "71125e66180a991d65c9bdbad4aa20daaa1f7a48c7a5c0fa5f18f250ac839a02",
+          "include/cpu_provider_factory.h": "0de52d129c718c07ee71a16b4953d8d483df019746a11caad77a0650a2f4ed47",
+          "include/onnxruntime_ep_c_api.h": "b92778f50c36ecdf53d0344e0129a78b306afed653f81bba8a9597e3e6e9546f",
+          "include/onnxruntime_ep_device_ep_metadata_keys.h": "8054d3696514dfda8fcd93d4ec1257837e8ebb43e14d3f7012222d53e66be438",
+          "include/onnxruntime_lite_custom_op.h": "890f4918c1cdb5f8d1180b0c732c263d646d73d947ed69ce96b8047d85ede4c4",
+          "include/onnxruntime_cxx_api.h": "08ae3698d11d90590a0a777ad97e58172b8735fcbe27edcc8a7b94aa018e5de9",
+          "include/onnxruntime_session_options_config_keys.h": "a7ac653a6cce0b03aea2515685a162d2956a158cf88313f22e8157f098fd6f66",
+          "include/provider_options.h": "cb7206ffd06ba31b9f7e5f6089a6206f0c720c10c3adcc61db7f829c86691cfc",
+          "include/onnxruntime_run_options_config_keys.h": "973037c14b0f1af0854ae25cd676776f79dbcfd2a6791f6ee17a5374c2a62550",
+          "include/onnxruntime_cxx_inline.h": "226f883503ade7299f9474018a070dc94091c1541bcc6d419599eea0c2ee578e",
+          "include/onnxruntime_float16.h": "6c4db3d1954b266c4febe413351af86cac922e3448538e7e452e51d646e56a4a",
+          "lib/libonnxruntime.so.1.23.2": "13ab8084954fa4a47c777880180b90810d6020f021441395712b48a75b74c68b",
+          "lib/libonnxruntime_providers_shared.so": "086ec1d5388f64153d9c63470d126693db9a182c8ce236d3a1119068471b8a0d",
+          "include/core/providers/custom_op_context.h": "c1f2a96c0de1978b0f2fbf60bf1b2d50c6412d487c1f5d68ac5ffa8e01b46ee4",
+          "include/core/providers/resource.h": "7ee6117bffd2aad1f6a4865d88c0a2ae39964c757be0693b8569ac7000a1d13c",
+          "lib/pkgconfig/libonnxruntime.pc": "701a96fb428ac5909a7b348ae58d0f4c7cf4239ea5ae40d298f288e0440ae732",
+          "lib/cmake/onnxruntime/onnxruntimeConfig.cmake": "880b8c3ceae1ac013b7442b852ae4f7674a439803a2f8dcb875f5043913e62bc",
+          "lib/cmake/onnxruntime/onnxruntimeTargets-release.cmake": "dc11f1241682c32fad6a7e39283b210127df7a54710176b888924a679c657536",
+          "lib/cmake/onnxruntime/onnxruntimeTargets.cmake": "0b84a062f97cfdb408a8eb17e5a2cc72df2bb171521785ff2f67aae39310da2a",
+          "lib/cmake/onnxruntime/onnxruntimeConfigVersion.cmake": "8a42b1500683c28e37287d47e962975919ba023a7e518563f60aff36f9368074"
+        }
+      },
+      "aarch64": {
+        "url": "https://github.com/microsoft/onnxruntime/releases/download/v1.23.2/onnxruntime-linux-aarch64-1.23.2.tgz",
+        "archive_sha256": "7c63c73560ed76b1fac6cff8204ffe34fe180e70d6582b5332ec094810241e5c",
+        "files": {
+          "README.md": "87f0387d38c0a5e3e448ab3ae3debc38024663ed8e4b2f55c625958764b01e4f",
+          "GIT_COMMIT_ID": "8991e24279baaf64c3f31ad73878a8ad75dfb1dcd129de309f8287c623170c29",
+          "Privacy.md": "9a15f9fd9d4c7b6dfc35f237f461863f84f8f73cf6189e330818a674d3828871",
+          "LICENSE": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c",
+          "VERSION_NUMBER": "48d625eaf5c6c9ce0c6890c697201fd6087c6147773feb8ca9a85e4f8004e79f",
+          "ThirdPartyNotices.txt": "e9e90971a8e75a9a8ac0c6412e29c1202d079998389915aa485f46c816c3b4cc",
+          "include/onnxruntime_c_api.h": "71125e66180a991d65c9bdbad4aa20daaa1f7a48c7a5c0fa5f18f250ac839a02",
+          "include/cpu_provider_factory.h": "0de52d129c718c07ee71a16b4953d8d483df019746a11caad77a0650a2f4ed47",
+          "include/onnxruntime_ep_c_api.h": "b92778f50c36ecdf53d0344e0129a78b306afed653f81bba8a9597e3e6e9546f",
+          "include/onnxruntime_ep_device_ep_metadata_keys.h": "8054d3696514dfda8fcd93d4ec1257837e8ebb43e14d3f7012222d53e66be438",
+          "include/onnxruntime_lite_custom_op.h": "890f4918c1cdb5f8d1180b0c732c263d646d73d947ed69ce96b8047d85ede4c4",
+          "include/onnxruntime_cxx_api.h": "08ae3698d11d90590a0a777ad97e58172b8735fcbe27edcc8a7b94aa018e5de9",
+          "include/onnxruntime_session_options_config_keys.h": "a7ac653a6cce0b03aea2515685a162d2956a158cf88313f22e8157f098fd6f66",
+          "include/provider_options.h": "cb7206ffd06ba31b9f7e5f6089a6206f0c720c10c3adcc61db7f829c86691cfc",
+          "include/onnxruntime_run_options_config_keys.h": "973037c14b0f1af0854ae25cd676776f79dbcfd2a6791f6ee17a5374c2a62550",
+          "include/onnxruntime_cxx_inline.h": "226f883503ade7299f9474018a070dc94091c1541bcc6d419599eea0c2ee578e",
+          "include/onnxruntime_float16.h": "6c4db3d1954b266c4febe413351af86cac922e3448538e7e452e51d646e56a4a",
+          "lib/libonnxruntime.so.1.23.2": "648ffa64fbe027ae27139109410900cf776a030dec2dbbac51053318cc44c286",
+          "lib/libonnxruntime_providers_shared.so": "3b6be288fbfb7dff8770d08a23defdde18e8f7e0f5a2b344a0e5e238c999ea88",
+          "include/core/providers/custom_op_context.h": "c1f2a96c0de1978b0f2fbf60bf1b2d50c6412d487c1f5d68ac5ffa8e01b46ee4",
+          "include/core/providers/resource.h": "7ee6117bffd2aad1f6a4865d88c0a2ae39964c757be0693b8569ac7000a1d13c",
+          "lib/pkgconfig/libonnxruntime.pc": "701a96fb428ac5909a7b348ae58d0f4c7cf4239ea5ae40d298f288e0440ae732",
+          "lib/cmake/onnxruntime/onnxruntimeConfig.cmake": "880b8c3ceae1ac013b7442b852ae4f7674a439803a2f8dcb875f5043913e62bc",
+          "lib/cmake/onnxruntime/onnxruntimeTargets-release.cmake": "dc11f1241682c32fad6a7e39283b210127df7a54710176b888924a679c657536",
+          "lib/cmake/onnxruntime/onnxruntimeTargets.cmake": "0b84a062f97cfdb408a8eb17e5a2cc72df2bb171521785ff2f67aae39310da2a",
+          "lib/cmake/onnxruntime/onnxruntimeConfigVersion.cmake": "8a42b1500683c28e37287d47e962975919ba023a7e518563f60aff36f9368074"
+        }
+      }
+    }
+  }
+}
