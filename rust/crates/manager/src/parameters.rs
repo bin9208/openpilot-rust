@@ -119,6 +119,22 @@ pub fn configure_monitoring(params: &impl Parameters) -> Result<(), Error> {
     Ok(())
 }
 
+/// Convert the retired ATC mode and the former add-on toggle before defaults.
+pub fn migrate_atc(params: &impl Parameters) -> Result<(), Error> {
+    const KEY: &str = "AutoTurnControlRightLaneChange";
+    if params.get("AutoTurnControl")?.as_deref() == Some(b"4") {
+        // Write the add-on first so interruption leaves the migration retryable.
+        if params.get(KEY)?.is_none() {
+            params.put(KEY, b"250")?;
+        }
+        params.put("AutoTurnControl", b"1")?;
+    }
+    if params.get(KEY)?.as_deref() == Some(b"1") {
+        params.put(KEY, b"250")?;
+    }
+    Ok(())
+}
+
 pub fn write_onroad(params: &impl Parameters, started: bool) -> Result<(), Error> {
     params.put_bool("IsOnroad", started)?;
     params.put_bool("IsOffroad", !started)
