@@ -262,6 +262,7 @@ mod tests {
             cam,
             alt: None,
             captures: BTreeMap::new(),
+            values_cache: Default::default(),
         }
     }
     fn receive(inputs: &mut Inputs, now: u64, frame: Option<Frame>) {

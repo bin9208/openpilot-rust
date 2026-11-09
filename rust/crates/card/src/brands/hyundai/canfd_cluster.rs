@@ -200,6 +200,7 @@ pub fn messages(
                 .into_iter()
                 .enumerate()
                 .map(|(index, value)| (format!("BYTE_{}", index + 1), value))
+                .map(|(k, v)| (std::sync::Arc::<str>::from(k), v))
                 .collect();
             result.push(writer.frame("NEW_MSG_4B9", i.bus.cam, &data, None)?);
         }

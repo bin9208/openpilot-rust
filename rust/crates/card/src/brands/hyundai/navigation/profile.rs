@@ -83,7 +83,7 @@ impl Segment {
         let mut raw = 0u64;
         for index in 0..8 {
             let byte = data
-                .get(&format!("BYTE_{}", index + 1))
+                .get(format!("BYTE_{}", index + 1).as_str())
                 .copied()
                 .unwrap_or(0.)
                 .to_u64()

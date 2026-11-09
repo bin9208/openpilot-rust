@@ -15,6 +15,8 @@ pub struct Inputs {
     pub cam: Parser,
     pub alt: Option<Parser>,
     pub captures: BTreeMap<&'static str, (Channel, &'static str)>,
+    /// Per message: the frame timestamp it was built from and its signal map.
+    pub(crate) values_cache: std::cell::RefCell<std::collections::HashMap<(u8, u32), (u64, Values)>>,
 }
 
 impl Inputs {
@@ -59,6 +61,7 @@ impl Inputs {
             cam: Parser::new(dbc, if fd { config.bus.cam } else { 2 }, now),
             alt,
             captures: BTreeMap::new(),
+            values_cache: Default::default(),
         })
     }
 
@@ -132,6 +135,7 @@ impl Inputs {
             .ok_or(Error::Numeric)
     }
 
+    /// Built once per received frame; later calls in the same cycle share the keys.
     pub fn values(&self, channel: Channel, name: &str) -> Result<Values, Error> {
         let parser = self.parser(channel)?;
         let message = parser.dbc.message(name)?;
@@ -139,12 +143,30 @@ impl Inputs {
             .states
             .get(&message.address)
             .ok_or_else(|| Error::Signal(name.into()))?;
-        Ok(message
+        let stamp = state.timestamps.back().copied().unwrap_or(0);
+        let key = (channel as u8, message.address);
+        let mut cache = self.values_cache.borrow_mut();
+        if let Some((cached, values)) = cache.get_mut(&key) {
+            if *cached == stamp {
+                return Ok(values.clone());
+            }
+            // A new frame of the same message: refresh values, keep the shared names.
+            for (signal, value) in message.signals.iter().zip(&state.values) {
+                if let Some(slot) = values.get_mut(signal.name.as_str()) {
+                    *slot = *value;
+                }
+            }
+            *cached = stamp;
+            return Ok(values.clone());
+        }
+        let values: Values = message
             .signals
             .iter()
             .zip(&state.values)
-            .map(|(signal, value)| (signal.name.clone(), *value))
-            .collect())
+            .map(|(signal, value)| (std::sync::Arc::from(signal.name.as_str()), *value))
+            .collect();
+        cache.insert(key, (stamp, values.clone()));
+        Ok(values)
     }
 
     pub fn captured(&self, key: &str) -> Result<Option<Values>, Error> {

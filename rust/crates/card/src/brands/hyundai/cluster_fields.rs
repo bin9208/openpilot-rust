@@ -52,7 +52,10 @@ pub fn normalize_corner(data: &mut Values, ccnc: bool) -> Result<(), Error> {
         let distance = format!("{side}_DETECT_DISTANCE");
         let detect = format!("{side}_DETECT");
         if get(data, &distance)? != 0. && (ccnc || get(data, &detect)? >= 4.) {
-            data.insert(detect, if ccnc { 3. } else { 1. });
+            data.insert(
+                std::sync::Arc::<str>::from(detect),
+                if ccnc { 3. } else { 1. },
+            );
         }
     }
     Ok(())
@@ -145,7 +148,10 @@ pub fn driver_monitoring_alert(data: &mut Values, level: u8, stock: &Values) -> 
         data.insert("ALERTS_2".into(), stock_alert);
         for index in 1..=4 {
             let name = format!("SOUNDS_{index}");
-            data.insert(name.clone(), get(stock, &name)?);
+            data.insert(
+                std::sync::Arc::<str>::from(name.clone()),
+                get(stock, &name)?,
+            );
         }
     }
     if get(data, "ALERTS_2")? == 0. {

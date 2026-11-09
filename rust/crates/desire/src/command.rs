@@ -30,6 +30,8 @@ pub struct CommandReader {
     seen: VecDeque<Vec<u32>>,
     last_check: f64,
     pub is_repeat: bool,
+    /// (mtime, size) of the last parsed file. Every message in it was already consumed.
+    stamp: Option<(i64, i64, u64)>,
 }
 
 impl CommandReader {
@@ -41,6 +43,7 @@ impl CommandReader {
             seen: VecDeque::with_capacity(128),
             last_check: 0.0,
             is_repeat: false,
+            stamp: None,
         }
     }
 
@@ -50,6 +53,16 @@ impl CommandReader {
             return None;
         }
         self.last_check = now;
+        // An unchanged file holds only messages already seen, so no action can result.
+        let stamp = {
+            use std::os::unix::fs::MetadataExt;
+            let meta = fs::metadata(&self.path).ok()?;
+            (meta.mtime(), meta.mtime_nsec(), meta.len())
+        };
+        if self.stamp == Some(stamp) {
+            return None;
+        }
+        self.stamp = Some(stamp);
         let payload = read_json(&self.path)?;
         if !payload.is_object() {
             return None;
