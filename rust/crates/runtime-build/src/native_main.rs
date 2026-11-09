@@ -143,6 +143,17 @@ fn run() -> Result<()> {
                 result.as_ref().err().map(|error| error.to_string()),
             );
             std::fs::rename(journal, config.cache.join("user-resources.jsonl"))?;
+            let out_of_memory = |error: &dyn std::fmt::Display| error.to_string().contains("(OOM)");
+            if result.as_ref().err().is_some_and(|e| out_of_memory(e))
+                || finished.as_ref().err().is_some_and(|e| out_of_memory(e))
+            {
+                std::fs::write(
+                    config
+                        .cache
+                        .join(openpilot_runtime_build::user_build::LOW_MEMORY_MARKER),
+                    b"",
+                )?;
+            }
             let status = result?;
             finished?;
             if !status.success() {

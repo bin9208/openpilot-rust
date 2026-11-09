@@ -17,6 +17,12 @@ use std::{
     process::{Command, Stdio},
 };
 
+/// Left in the cache by the supervising scope when a compile hit the memory cap.
+/// The next attempt uses fewer jobs; Cargo keeps every unit that already finished.
+pub const LOW_MEMORY_MARKER: &str = "user-build-low-memory";
+const NORMAL_JOBS: &str = "4";
+const LOW_MEMORY_JOBS: &str = "2";
+
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 struct Stamp {
     bytes: u64,
@@ -232,6 +238,102 @@ fn previous_targets(
     Ok(targets)
 }
 
+fn merge_library_paths(current: &str, added: &str) -> String {
+    let mut paths: Vec<&str> = current.split(':').collect();
+    for path in added.split(':') {
+        if !paths.contains(&path) {
+            paths.push(path);
+        }
+    }
+    paths.join(":")
+}
+
+fn merge_rust_flags(current: &str, added: &str) -> Result<String> {
+    let mut flags: Vec<String> = Vec::new();
+    for value in [current, added] {
+        let mut words = value.split_whitespace();
+        while let Some(word) = words.next() {
+            let flag = if word == "-C" {
+                format!("-C {}", words.next().ok_or("incomplete RUSTFLAGS entry")?)
+            } else {
+                word.to_owned()
+            };
+            if !flags.contains(&flag) {
+                flags.push(flag);
+            }
+        }
+    }
+    Ok(flags.join(" "))
+}
+
+/// The catalog's groups bound the separately audited generation build. A device
+/// compile shares one Cargo invocation and target: separate groups have different
+/// inputs and RUSTFLAGS, so each one would rebuild the common dependency graph.
+fn unified_recipe(plan: &Plan) -> Result<Option<crate::Recipe>> {
+    let mut unified: Option<crate::Recipe> = None;
+    for recipe in plan.groups.values() {
+        let mut recipe = recipe.clone();
+        recipe
+            .binaries
+            .retain(|name| !matches!(name.as_str(), "seal-runtime-package" | "runtime-elf-audit"));
+        if recipe.binaries.is_empty() {
+            continue;
+        }
+        recipe.validate()?;
+        let Some(merged) = unified.as_mut() else {
+            unified = Some(recipe);
+            continue;
+        };
+        if merged.target != recipe.target {
+            return Err("native build groups must use one actual host target".into());
+        }
+        merged.packages.extend(recipe.packages);
+        merged.binaries.extend(recipe.binaries);
+        merged.features.extend(recipe.features);
+        merged.expected_growth_bytes = merged
+            .expected_growth_bytes
+            .max(recipe.expected_growth_bytes);
+        for (path, value) in recipe.inputs {
+            if merged.inputs.get(&path).is_some_and(|old| old != &value) {
+                return Err(format!("conflicting build input: {}", path.display()).into());
+            }
+            merged.inputs.insert(path, value);
+        }
+        for (tree, receipt) in recipe.input_trees {
+            if merged
+                .input_trees
+                .get(&tree)
+                .is_some_and(|old| old != &receipt)
+            {
+                return Err(format!("conflicting build input tree: {}", tree.display()).into());
+            }
+            merged.input_trees.insert(tree, receipt);
+        }
+        for (key, value) in recipe.environment {
+            let combined = match (merged.environment.get(&key), key.as_str()) {
+                (None, _) => value,
+                (Some(old), "LD_LIBRARY_PATH") => merge_library_paths(old, &value),
+                (Some(old), "RUSTFLAGS") => merge_rust_flags(old, &value)?,
+                (Some(old), _) if old == &value => value,
+                _ => return Err(format!("conflicting build environment: {key}").into()),
+            };
+            merged.environment.insert(key, combined);
+        }
+    }
+    if let Some(merged) = unified.as_mut() {
+        for list in [
+            &mut merged.packages,
+            &mut merged.binaries,
+            &mut merged.features,
+        ] {
+            list.sort();
+            list.dedup();
+        }
+        merged.validate()?;
+    }
+    Ok(unified)
+}
+
 /// Cargo performs dependency/freshness decisions. This path does not call
 /// Prepared::verify, generation::seal, an ELF audit, or capture output objects.
 pub fn compile_plan(
@@ -289,15 +391,13 @@ fn compile_at(
     let mut pending = Vec::new();
     let mut compiled = 0;
     let mut fresh = 0;
-    for (number, (group, recipe)) in plan.groups.iter().enumerate() {
-        let mut recipe = recipe.clone();
-        recipe
-            .binaries
-            .retain(|name| !matches!(name.as_str(), "seal-runtime-package" | "runtime-elf-audit"));
-        if recipe.binaries.is_empty() {
-            continue;
-        }
-        recipe.validate()?;
+    let low_memory = cache.join(LOW_MEMORY_MARKER);
+    let jobs = if low_memory.exists() {
+        LOW_MEMORY_JOBS
+    } else {
+        NORMAL_JOBS
+    };
+    if let Some(recipe) = unified_recipe(plan)? {
         let tools = native_tools::for_build(&recipe, &toolchain)?;
         let native_stamps = tools
             .environment
@@ -324,7 +424,18 @@ fn compile_at(
             .get(&normalized(&recipe)?)
             .cloned()
             .unwrap_or_else(|| cache.join("user-cargo").join(key).join("target"));
-        fs::create_dir_all(target.parent().ok_or("Cargo target parent missing")?)?;
+        let owner = target.parent().ok_or("Cargo target parent missing")?;
+        fs::create_dir_all(owner)?;
+        // Other targets belong to an earlier plan and no longer match any build.
+        let targets = cache.join("user-cargo");
+        if targets.is_dir() {
+            for entry in fs::read_dir(targets)? {
+                let path = entry?.path();
+                if path != owner {
+                    fs::remove_dir_all(path)?;
+                }
+            }
+        }
         let _target_lock = crate::FileLock::exclusive(
             fs::OpenOptions::new()
                 .create(true)
@@ -368,7 +479,7 @@ fn compile_at(
             .env("RUSTC", &rustc)
             .env("RUSTDOC", toolchain.join("rustdoc"))
             .env("CARGO_INCREMENTAL", "0")
-            .env("CARGO_BUILD_JOBS", "2")
+            .env("CARGO_BUILD_JOBS", jobs)
             .env("CARGO_PROFILE_RELEASE_LTO", "false")
             .env("CARGO_PROFILE_RELEASE_CODEGEN_UNITS", "16")
             .env(linker_key, &tools.linker)
@@ -406,7 +517,10 @@ fn compile_at(
         if !recipe.features.is_empty() {
             command.args(["--features", &recipe.features.join(",")]);
         }
-        eprintln!("Compiling {}/{} · {group}", number + 1, plan.groups.len());
+        eprintln!(
+            "Compiling {} executables with {jobs} jobs",
+            recipe.binaries.len()
+        );
         let mut child = command
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())
@@ -448,7 +562,7 @@ fn compile_at(
         }
         let status = child.wait()?;
         if !status.success() || result? != recipe.binaries.len() {
-            return Err(format!("Cargo build failed in {group}: {status}").into());
+            return Err(format!("Cargo build failed: {status}").into());
         }
     }
     let provider = layout.provider_root.canonicalize()?;
@@ -503,6 +617,11 @@ fn compile_at(
     saved.as_file_mut().write_all(b"\n")?;
     saved.as_file_mut().sync_all()?;
     saved.persist(index)?;
+    if let Err(error) = fs::remove_file(&low_memory) {
+        if error.kind() != std::io::ErrorKind::NotFound {
+            return Err(error.into());
+        }
+    }
     eprintln!("Build complete · {compiled} compiled, {fresh} unchanged");
     Ok(Report {
         compiled,
@@ -513,4 +632,55 @@ fn compile_at(
         development_audit_executed: false,
         sealed_generation_created: false,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn recipe(packages: &[&str], binaries: &[&str], environment: Value) -> Value {
+        json!({"schema":1,"target":"aarch64-unknown-linux-gnu","packages":packages,
+            "binaries":binaries,"features":[],"inputs":{},"environment":environment,
+            "expected_growth_bytes":8})
+    }
+
+    fn plan(groups: Value) -> Plan {
+        serde_json::from_value(json!({"schema":1,"groups":groups,
+            "expected_source_growth_bytes":1,"remaining_object_growth_bytes":1}))
+        .unwrap()
+    }
+
+    #[test]
+    fn groups_share_one_build_with_combined_link_paths() {
+        let merged = unified_recipe(&plan(json!({
+            "00": recipe(&["a", "common"], &["one"], json!({"OPENPILOT_CAPNP":"/capnp",
+                "LD_LIBRARY_PATH":"/ffmpeg","RUSTFLAGS":"-C link-arg=-Wl,-rpath-link,/ffmpeg"})),
+            "01": recipe(&["b", "common"], &["two"], json!({"OPENPILOT_CAPNP":"/capnp",
+                "LD_LIBRARY_PATH":"/ffmpeg:/opencv",
+                "RUSTFLAGS":"-C link-arg=-Wl,-rpath-link,/ffmpeg -C link-arg=-Wl,-rpath-link,/opencv"})),
+            "12": recipe(&["audit"], &["seal-runtime-package", "runtime-elf-audit"], json!({})),
+        })))
+        .unwrap()
+        .unwrap();
+        assert_eq!(merged.packages, ["a", "b", "common"]);
+        assert_eq!(merged.binaries, ["one", "two"]);
+        assert_eq!(merged.expected_growth_bytes, 8);
+        assert_eq!(merged.environment["LD_LIBRARY_PATH"], "/ffmpeg:/opencv");
+        assert_eq!(
+            merged.environment["RUSTFLAGS"],
+            "-C link-arg=-Wl,-rpath-link,/ffmpeg -C link-arg=-Wl,-rpath-link,/opencv"
+        );
+    }
+
+    #[test]
+    fn conflicting_compiler_inputs_stop_the_build() {
+        let error = unified_recipe(&plan(json!({
+            "00": recipe(&["a"], &["one"], json!({"OPENPILOT_CAPNP":"/first"})),
+            "01": recipe(&["b"], &["two"], json!({"OPENPILOT_CAPNP":"/second"})),
+        })))
+        .err()
+        .unwrap();
+        assert!(error.to_string().contains("OPENPILOT_CAPNP"));
+    }
 }

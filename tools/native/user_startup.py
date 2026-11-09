@@ -171,8 +171,17 @@ def compile_runtime(args, functions, source, machine, pin):
   log_path = cache/'user-build.log'
   try:
     with runtime.build_cpus(), log_path.open('w+b') as log:
-      output = commands.run(command, env=functions['seed'].ENV, stdout=subprocess.PIPE,
-                            stderr=log, check=True, stderr_limit=None)
+      try:
+        output = commands.run(command, env=functions['seed'].ENV, stdout=subprocess.PIPE,
+                              stderr=log, check=True, stderr_limit=None)
+      except subprocess.CalledProcessError:
+        # The memory cap was reached with parallel compilers. Finished units stay
+        # in Cargo's target, so continue once with fewer jobs instead of failing.
+        if not (cache/'user-build-low-memory').exists():
+          raise
+        runtime.PROGRESS('Compiling changed source · retrying with fewer jobs')
+        output = commands.run(command, env=functions['seed'].ENV, stdout=subprocess.PIPE,
+                              stderr=log, check=True, stderr_limit=None)
   except subprocess.CalledProcessError as error:
     raise RuntimeError(f'Compilation failed; log: {log_path}') from error
   result = json.loads(output.stdout)
