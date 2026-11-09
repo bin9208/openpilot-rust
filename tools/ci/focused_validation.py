@@ -13,7 +13,7 @@ import tomllib
 
 ROOT = Path(__file__).resolve().parents[2]
 HOST_ONLY = {
-    'AGENTS.md', 'tools/ci/focused_validation.py', 'rust/ci/runtime/package.py',
+    'AGENTS.md', 'tools/ci/focused_validation.py',
     'tools/native/publish_inputs.py',
     'rust/crates/dev-tools/src/publish.rs',
     'rust/crates/dev-tools/tests/publish.rs',
@@ -65,7 +65,7 @@ def selected_tests(paths):
   suites = {'test_focused_validation.py'}
   for path in paths:
     name = Path(path).stem
-    if path.startswith('tools/ci/tests/test_') and path.endswith('.py'):
+    if path.startswith('tools/ci/tests/test_') and path.endswith('.py') and (ROOT / path).is_file():
       suites.add(Path(path).name)
     if path.startswith('tools/native/'):
       if name in ('source_entry', 'source_runtime', 'build_memory', 'build_space'):

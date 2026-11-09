@@ -24,7 +24,8 @@ pub enum Error {
 /// launcher/manager. This does not authenticate an arbitrary caller's digest.
 pub struct VerifiedManifest {
     root: PathBuf,
-    manifest: Manifest,
+    files: Vec<Artifact>,
+    source_commit: String,
     digest: String,
 }
 impl VerifiedManifest {
@@ -39,6 +40,9 @@ impl VerifiedManifest {
             ));
         }
         let root = root.canonicalize()?;
+        if let Ok(commit) = std::fs::read(root.join("rust/.device-built")) {
+            return Self::device_build(root, &commit, expected);
+        }
         let mut bytes = Vec::new();
         File::open(root.join("rust/runtime-manifest.json"))?
             .take((4 << 20) + 1)
@@ -54,7 +58,39 @@ impl VerifiedManifest {
         manifest.verify(&root, &[])?;
         Ok(Self {
             root,
-            manifest,
+            files: manifest.files,
+            source_commit: manifest.source_commit,
+            digest: expected.into(),
+        })
+    }
+    /// A device build has no package manifest; its fixed model files are hashed here.
+    fn device_build(root: PathBuf, commit: &[u8], expected: &str) -> Result<Self, Error> {
+        if format!("{:x}", Sha256::digest(commit)) != expected {
+            return Err(Error::Configuration(
+                "device build differs from verified launcher identity".into(),
+            ));
+        }
+        let mut files = Vec::new();
+        let mut pending = vec![PathBuf::from("rust/bin/signal-qcom")];
+        while let Some(directory) = pending.pop() {
+            for entry in std::fs::read_dir(root.join(&directory))? {
+                let entry = entry?;
+                let path = directory.join(entry.file_name());
+                if entry.file_type()?.is_dir() {
+                    pending.push(path);
+                } else {
+                    files.push(Artifact {
+                        sha256: format!("{:x}", Sha256::digest(std::fs::read(entry.path())?)),
+                        path,
+                        executable: false,
+                    });
+                }
+            }
+        }
+        Ok(Self {
+            root,
+            files,
+            source_commit: String::from_utf8_lossy(commit).trim().into(),
             digest: expected.into(),
         })
     }
@@ -62,7 +98,7 @@ impl VerifiedManifest {
         &self.digest
     }
     pub fn source_commit(&self) -> &str {
-        &self.manifest.source_commit
+        &self.source_commit
     }
     /// Read one bounded artifact snapshot against the already admitted hash.
     pub fn read_artifact(&self, relative: &Path, limit: u64) -> Result<Vec<u8>, Error> {
@@ -95,7 +131,6 @@ impl VerifiedManifest {
             ));
         }
         let artifact = self
-            .manifest
             .files
             .iter()
             .find(|artifact| artifact.path == relative)

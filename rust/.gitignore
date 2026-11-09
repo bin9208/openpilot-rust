@@ -1,6 +1,7 @@
 /target/
 /bin/
 /runtime-manifest.json
+/.device-built
 /.runtime-bootstrap/
 /.runtime-packages/
 /.runtime-active
