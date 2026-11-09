@@ -4,7 +4,7 @@ use std::{
     io::{self, Write},
     os::unix::fs::{symlink, MetadataExt, OpenOptionsExt},
     path::{Path, PathBuf},
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, OnceLock},
     time::{Duration, Instant},
 };
 
@@ -12,6 +12,17 @@ use std::{
 const DIRECTORY_CHECK: Duration = Duration::from_millis(10);
 /// Values written in place do not touch the directory; re-read them this often.
 const VALUE_LIFETIME: Duration = Duration::from_secs(1);
+
+/// Handles on the same namespace share one cache, so a process opening several
+/// Params handles checks the directory once per DIRECTORY_CHECK, not once per handle.
+fn shared_cache(directory: &Path) -> Arc<Mutex<Cache>> {
+    static CACHES: OnceLock<Mutex<HashMap<PathBuf, Arc<Mutex<Cache>>>>> = OnceLock::new();
+    let mut caches = CACHES
+        .get_or_init(Mutex::default)
+        .lock()
+        .unwrap_or_else(|poison| poison.into_inner());
+    Arc::clone(caches.entry(directory.to_owned()).or_default())
+}
 
 #[derive(Default)]
 struct Cache {
@@ -107,8 +118,8 @@ impl Params {
         let directory = root.join(prefix);
         let params = Self {
             root,
+            cache: shared_cache(&directory),
             directory,
-            cache: Arc::default(),
         };
         let _lock = params.lock()?;
         if !params.directory.exists() {
