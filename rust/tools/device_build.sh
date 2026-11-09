@@ -117,7 +117,10 @@ fi
 export PATH="$sdk/rust/bin:$sdk/capnp/usr/bin:$PATH"
 export CARGO_HOME=$store/cargo-home CARGO_TARGET_DIR=$store/target CARGO_INCREMENTAL=0
 export CARGO_PROFILE_RELEASE_LTO=false CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16 CARGO_PROFILE_RELEASE_DEBUG=0
-export CC=/usr/bin/gcc CXX=/usr/bin/g++ AR=/usr/bin/ar RANLIB=/usr/bin/ranlib
+export OPENPILOT_BUILD_STORE=$store
+export CC=/usr/bin/gcc CXX=$root/rust/tools/device_cxx.sh AR=/usr/bin/ar RANLIB=/usr/bin/ranlib
+# Collect more often; generated code does not change.
+export CXXFLAGS='--param ggc-min-expand=20 --param ggc-min-heapsize=32768'
 export HOST_CC=$CC HOST_CXX=$CXX HOST_AR=$AR HOST_RANLIB=$RANLIB
 export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=/usr/bin/aarch64-linux-gnu-gcc-13
 export LIBCLANG_PATH=/usr/lib/llvm-18/lib OPENPILOT_CAPNP=$sdk/capnp/usr/bin/capnp
@@ -171,7 +174,7 @@ compile() {
 }
 
 built=
-for jobs in 8 4 2; do
+for jobs in 6 4 3 2; do
   if compile "$jobs"; then
     built=1
     break
