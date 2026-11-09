@@ -200,6 +200,11 @@ impl Controller {
             command.torque
         })?);
         output.set_steering_angle_deg(float32(command.angle)?);
+        output.set_stop_object_active(
+            self.stopping
+                .as_ref()
+                .is_some_and(|stopping| stopping.stop_object_active),
+        );
         output.set_accel(float32(command.accel)?);
         self.frame += 1;
         Ok(ApplyOutput { actuators, can })

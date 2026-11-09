@@ -1,6 +1,6 @@
 use super::{
     fd_stopping::apply_stopping,
-    stopping::CanfdStopping,
+    stopping::{CanfdStopping, ENTRY_SPEED},
     wire::{boolean, get, set, values, CanWriter, Values},
     Error,
 };
@@ -23,6 +23,10 @@ pub struct AccInput {
     pub carrot_cruise: u8,
     pub carrot_accel: f64,
     pub lead: [f64; 4],
+    #[serde(default)]
+    pub signal_stop_object: bool,
+    #[serde(default)]
+    pub has_lead: bool,
 }
 
 pub struct SccState<'a> {
@@ -36,6 +40,7 @@ pub struct SccState<'a> {
     pub brake_hold: bool,
     pub parking_brake: bool,
     pub can_valid: bool,
+    pub can_timeout: bool,
     pub drive: bool,
     pub available: bool,
     pub standstill: bool,
@@ -52,12 +57,50 @@ pub fn jerk_limit(accel: f64, previous: f64, limits: [f64; 2]) -> f64 {
     )
 }
 
+/// A low-speed signal-stop CAN object, never a radar/planner observation.
+/// Returns whether the final, already-interlocked packet contains the object.
+fn apply_signal_stop_object(data: &mut Values, state: &SccState<'_>, input: &AccInput) -> Result<bool, Error> {
+    let [fl, fr, rl, rr] = state.wheels;
+    let speeds = [state.v_ego, state.v_ego_raw, fl, fr, rl, rr];
+    if !input.signal_stop_object
+        || get(data, "ACCMode")? != 1.
+        || get(data, "StopReq")? != 1.
+        || !state.can_valid
+        || state.can_timeout
+        || !state.drive
+        || state.gas
+        || state.brake
+        || state.brake_hold
+        || state.parking_brake
+        || !speeds.iter().all(|value| value.is_finite())
+        || speeds.iter().any(|value| value.abs() > ENTRY_SPEED)
+        || input.has_lead
+    {
+        return Ok(false);
+    }
+    // A stationary object has zero absolute speed, not zero relative speed while
+    // ego creeps. This is intentionally local to the outgoing SCC object fields.
+    set(
+        data,
+        &[
+            ("ACC_ObjDist", 3.),
+            ("ACC_ObjLatPos", 0.),
+            ("ACC_ObjRelSpd", -state.v_ego),
+            ("HUD_LEAD_INFO", 2.),
+        ],
+    );
+    Ok(true)
+}
+
 pub fn camera_acc(
     writer: &mut CanWriter,
     state: &SccState<'_>,
-    controller: Option<&mut CanfdStopping>,
+    mut controller: Option<&mut CanfdStopping>,
     input: &AccInput,
 ) -> Result<(Option<Frame>, f64), Error> {
+    if let Some(controller) = controller.as_deref_mut() {
+        controller.stop_object_active = false;
+    }
     let Some(original) = state.original else {
         if let Some(controller) = controller {
             controller.reset();
@@ -156,8 +199,19 @@ pub fn camera_acc(
     apply_stopping(
         &mut data,
         state,
-        (controller, &stopping_input, jerk_u, false),
+        (controller.as_deref_mut(), &stopping_input, jerk_u, false),
     )?;
+    if let Some(controller) = controller {
+        // State-only fallback for no-lead stops (OEM SCC_ObjSta). The requested
+        // signal-stop object additionally supplies range and speed.
+        if get(&data, "ACCMode")? == 1.
+            && get(&data, "StopReq")? == 1.
+            && get(&data, "HUD_LEAD_INFO")? == 0.
+        {
+            data.insert("HUD_LEAD_INFO".into(), 2.);
+        }
+        controller.stop_object_active = apply_signal_stop_object(&mut data, state, input)?;
+    }
     let value = get(&data, "aReqValue")?;
     Ok((
         Some(writer.frame("SCC_CONTROL", input.bus, &data, None)?),

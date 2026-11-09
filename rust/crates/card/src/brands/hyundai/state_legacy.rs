@@ -155,6 +155,7 @@ pub fn update(state: &mut State, mut ret: car_state::Builder<'_>, now: u64) -> R
                     .inputs
                     .signal(cruise_channel, "FCA11", "FCA_Status", now)?
                     == 3.;
+            ret.set_stock_scc_fault(fault);
             if fault {
                 warning = false;
                 braking = false;

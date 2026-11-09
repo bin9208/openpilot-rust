@@ -61,6 +61,28 @@ pub(crate) fn write(
     });
     hud.set_lead_radar(i16::from(lead.radar));
     hud.set_lead_d_path(lead.path as f32);
+    // A low-speed signal-stop CAN object, never a radar/planner observation.
+    const STOP_OBJECT_SCOPE: u32 = (1 << 13) | (1 << 3); // HyundaiFlags CANFD | CAMERA_SCC
+    hud.set_signal_stop_object(
+        input.stop_object_inputs
+            && controls.config.brand == "hyundai"
+            && controls.config.flags & STOP_OBJECT_SCOPE == STOP_OBJECT_SCOPE
+            && controls.config.openpilot_long
+            && command.enabled
+            && command.longitudinal
+            && input.car.can_valid
+            && !input.car.can_timeout
+            && input.car.drive
+            && !(input.car.gas
+                || input.car.brake
+                || input.car.parking_brake
+                || input.car.brake_hold)
+            && input.longitudinal.stop
+            && matches!(input.longitudinal.x_state, 3 | 5)
+            && !input.longitudinal.has_lead
+            && !lead.status
+            && !input.radar.lead_two,
+    );
     let desire = if input.model.desire.len() > 4 {
         (1..5).find(|i| input.model.desire[*i] > 0.1).unwrap_or(0)
     } else {

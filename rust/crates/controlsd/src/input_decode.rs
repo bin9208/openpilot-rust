@@ -34,6 +34,10 @@ pub fn decode(state: &State, now: f64) -> Result<Inputs, Error> {
         steer_torque: f64::from(car.get_steering_torque()),
         steering_pressed: car.get_steering_pressed(),
         can_valid: car.get_can_valid(),
+        can_timeout: car.get_can_timeout(),
+        drive: matches!(car.get_gear_shifter(), Ok(GearShifter::Drive)),
+        parking_brake: car.get_parking_brake(),
+        brake_hold: car.get_brake_hold_active(),
         driving_gear: !matches!(
             car.get_gear_shifter(),
             Ok(GearShifter::Neutral
@@ -193,6 +197,13 @@ pub fn decode(state: &State, now: f64) -> Result<Inputs, Error> {
         torque_checks: state.all_checks(&["liveTorqueParameters"])?,
         model_checks: state.all_checks(&["modelV2"])?,
         carrot_fresh,
+        stop_object_inputs: state.all_checks(&["longitudinalPlan", "radarState"])?
+            && (0. ..=0.2).contains(
+                &((state.frame() - state.topic("longitudinalPlan")?.receive_frame) as f64 * 0.01),
+            )
+            && (0. ..=0.2).contains(
+                &((state.frame() - state.topic("radarState")?.receive_frame) as f64 * 0.01),
+            ),
         frame: state.frame(),
         plan_age: (state.frame() - state.topic("longitudinalPlan")?.receive_frame) as f64 * 0.01,
         long_time: state.topic("longitudinalPlan")?.log_mono_time,

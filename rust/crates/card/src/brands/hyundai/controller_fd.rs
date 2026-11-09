@@ -139,6 +139,9 @@ pub fn messages(
             interlock: cs.get_brake_hold_active() || cs.get_parking_brake(),
             button_name: config.button_message(),
             lane_changing: blink_hold,
+            scc_main_ready: cs.get_can_valid()
+                && cs.get_gear_shifter()? == car_state::GearShifter::Drive
+                && !cs.get_brake_pressed(),
             corner_radar: c.settings.corner,
             debug: c.settings.debug,
             leads: &model.leads,
@@ -182,6 +185,7 @@ pub fn messages(
                 brake_hold: cs.get_brake_hold_active(),
                 parking_brake: cs.get_parking_brake(),
                 can_valid: cs.get_can_valid(),
+                can_timeout: cs.get_can_timeout(),
                 drive: cs.get_gear_shifter()? == car_state::GearShifter::Drive,
                 available: cruise.get_available(),
                 standstill: cs.get_standstill(),
@@ -204,6 +208,8 @@ pub fn messages(
                 carrot_cruise: c.jerk.carrot_cruise,
                 carrot_accel: c.jerk.carrot_accel,
                 lead: lead::scc_fields(&model.leads, (&model.x, &model.y), Some(lateral))?,
+                signal_stop_object: cc.get_hud_control()?.get_signal_stop_object(),
+                has_lead: model.leads.iter().any(|lead| lead.status),
             };
             if camera {
                 let (frame, value) =

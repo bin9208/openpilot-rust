@@ -1,5 +1,5 @@
 use super::{
-    canfd_cluster::{ClusterInput, ClusterMessages},
+    canfd_cluster::{keep_stock_scc_main, ClusterInput, ClusterMessages},
     wire::{get, values, CanWriter},
     Error,
 };
@@ -48,15 +48,16 @@ pub fn alt2_request(
         if lfa_off && !i.hud.frame.is_multiple_of(200) && i.hud.frame % 200 < 12 {
             lfa = 1.;
         }
-        if i.hud.enabled && !i.interlock && lfa == 0. {
+        if (i.hud.enabled || keep_stock_scc_main(i, source)) && !i.interlock && lfa == 0. {
             let pulse = i.hud.frame % 200 > 20 && i.hud.frame % 200 <= 26 && i.speed > 3.;
             if !i.main_mode {
                 button = if pulse { 8. } else { 0. };
-            } else if [0., 4.].contains(&i.acc_mode) {
+            } else if i.hud.enabled && [0., 4.].contains(&i.acc_mode) {
                 button = if pulse { 2. } else { 0. };
-            } else if source
-                .scc
-                .is_some_and(|data| data.get("InfoDisplay") == Some(&4.))
+            } else if i.hud.enabled
+                && source
+                    .scc
+                    .is_some_and(|data| data.get("InfoDisplay") == Some(&4.))
                 && !i.stopping
             {
                 button = if i.hud.frame % 30 > 10 && i.hud.frame % 30 <= 16 {

@@ -71,7 +71,13 @@ pub fn main(state: &mut State, now: u64) -> Result<u8, Error> {
             if state.main_enabled { "True" } else { "False" }
         ));
     }
-    if state.config.longitudinal && state.main_mode && !state.manual_main_off {
+    // CameraSCC MAIN can be requested automatically for cluster objects. Driver
+    // intent comes from AutoEngage initialization and the physical buttons above.
+    if state.config.longitudinal
+        && state.config.flags & f::CAMERA_SCC == 0
+        && state.main_mode
+        && !state.manual_main_off
+    {
         state.main_enabled = true;
     }
     Ok(previous)
