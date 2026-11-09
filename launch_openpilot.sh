@@ -10,6 +10,7 @@ if [[ $(uname -m) == aarch64 ]]; then
       echo 'Jetlink early USB power setup failed; the native launcher will retry after installation.' >&2
     fi
   fi
-  bash "$RUST_LAUNCH_ROOT/rust/tools/ensure_runtime.sh" --root "$RUST_LAUNCH_ROOT" || exit $?
+  bash "$RUST_LAUNCH_ROOT/rust/tools/device_build.sh" || exit $?
 fi
+export LD_LIBRARY_PATH="$RUST_LAUNCH_ROOT/rust/bin/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 exec "$RUST_LAUNCH_ROOT/rust/bin/openpilot-launch" --root "$RUST_LAUNCH_ROOT" "$@"

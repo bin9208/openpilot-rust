@@ -47,6 +47,12 @@ fn verify_package(repository: &std::path::Path) -> Result<(), Error> {
 }
 
 fn verified_package_identity(repository: &std::path::Path) -> Result<String, Error> {
+    // Compiled on this device by rust/tools/device_build.sh, like the original
+    // SCons build: the source commit is the identity and there is no package.
+    if let Ok(commit) = fs::read(repository.join("rust/.device-built")) {
+        use sha2::Digest;
+        return Ok(format!("{:x}", sha2::Sha256::digest(commit)));
+    }
     let (manifest, digest) = Manifest::read_with_digest(repository)?;
     manifest.verify_identity(repository)?;
     manifest.verify(
