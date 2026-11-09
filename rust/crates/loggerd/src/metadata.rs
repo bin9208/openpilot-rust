@@ -235,13 +235,5 @@ fn hardware_commands(device: DeviceType) -> Vec<(String, Vec<u8>)> {
         "loggerd implementation".into(),
         b"openpilot-loggerd Rust".to_vec(),
     ));
-    commands.push((
-        "loggerd source commit".into(),
-        env!("LOGGERD_SOURCE_COMMIT").as_bytes().to_vec(),
-    ));
-    commands.push((
-        "loggerd source tree".into(),
-        env!("LOGGERD_SOURCE_TREE").as_bytes().to_vec(),
-    ));
     commands
 }

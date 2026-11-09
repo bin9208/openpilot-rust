@@ -37,10 +37,3 @@ name = "openpilot-controlsd"
 path = "src/main.rs"
 required-features = ["native"]
 
-[[example]]
-name = "controlsd_trace"
-required-features = ["native"]
-
-[[example]]
-name = "controlsd_peer"
-required-features = ["native"]

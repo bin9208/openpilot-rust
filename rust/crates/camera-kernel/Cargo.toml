@@ -21,14 +21,3 @@ thiserror = "2"
 [dev-dependencies]
 serde_json = "1"
 
-[[example]]
-name = "kernel_master"
-required-features = ["native-skip-miri"]
-
-[[example]]
-name = "kernel_operations"
-required-features = ["native-skip-miri"]
-
-[[example]]
-name = "stress_parse_trace"
-required-features = ["native-skip-miri"]

@@ -198,6 +198,20 @@ pub fn decode(state: &State, now: f64) -> Result<Inputs, Error> {
         torque_checks: state.all_checks(&["liveTorqueParameters"])?,
         model_checks: state.all_checks(&["modelV2"])?,
         carrot_fresh,
+        // Only export a current, enabled DM warning (including AlwaysOnDM).
+        driver_monitoring_alert: {
+            let dm = service!(state, "driverMonitoringState", DriverMonitoringState);
+            if !state.all_checks(&["driverMonitoringState"])? || dm.get_dm2_disabled() {
+                0
+            } else {
+                match dm.get_alert_level() {
+                    Ok(log_capnp::driver_monitoring_state::AlertLevel::One) => 1,
+                    Ok(log_capnp::driver_monitoring_state::AlertLevel::Two) => 2,
+                    Ok(log_capnp::driver_monitoring_state::AlertLevel::Three) => 3,
+                    _ => 0,
+                }
+            }
+        },
         center_to_front_ratio,
         stop_object_inputs: state.all_checks(&["longitudinalPlan", "radarState"])?
             && (0. ..=0.2).contains(

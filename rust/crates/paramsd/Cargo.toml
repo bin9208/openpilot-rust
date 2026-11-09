@@ -37,19 +37,8 @@ cxx-build = "1.0"
 
 [dev-dependencies]
 
-[[example]]
-name = "paramsd_trace"
-required-features = ["solver"]
-
 [[bin]]
 name = "openpilot-paramsd"
 path = "src/main.rs"
 required-features = ["native"]
 
-[[example]]
-name = "paramsd_loop"
-required-features = ["solver"]
-
-[[example]]
-name = "paramsd_peer"
-required-features = ["native"]

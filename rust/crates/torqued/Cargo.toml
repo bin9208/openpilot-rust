@@ -39,10 +39,3 @@ name = "openpilot-torqued"
 path = "src/main.rs"
 required-features = ["native-skip-miri"]
 
-[[example]]
-name = "torque_trace"
-required-features = ["native-skip-miri"]
-
-[[example]]
-name = "torque_loop"
-required-features = ["native-skip-miri"]

@@ -56,10 +56,3 @@ name = "openpilot-carrot-man"
 path = "src/main.rs"
 required-features = ["native-skip-miri"]
 
-[[example]]
-name = "carrot_man_trace"
-required-features = ["native-skip-miri"]
-
-[[example]]
-name = "carrot_man_owned"
-required-features = ["native-skip-miri"]

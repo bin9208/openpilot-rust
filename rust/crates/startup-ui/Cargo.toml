@@ -53,38 +53,3 @@ name = "openpilot-text-window"
 path = "src/bin/text_window.rs"
 required-features = ["native"]
 
-[[example]]
-name = "startup_ui_render"
-required-features = ["native"]
-
-[[example]]
-name = "startup_ui_children"
-required-features = ["native"]
-
-[[example]]
-name = "egl_trace"
-required-features = ["native"]
-
-[[example]]
-name = "fps_trace"
-required-features = ["native"]
-
-[[example]]
-name = "diagnostic_render"
-required-features = ["native"]
-
-[[example]]
-name = "startup_recovery_render"
-required-features = ["native"]
-
-[[example]]
-name = "overlay_gpu"
-required-features = ["native"]
-
-[[example]]
-name = "recording_boundary"
-required-features = ["native"]
-
-[[example]]
-name = "recording_pipeline"
-required-features = ["native"]

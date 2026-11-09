@@ -39,28 +39,8 @@ sha2 = { version = "0.10", optional = true }
 openpilot-msgq = { path = "../msgq" }
 tempfile = "3"
 
-[[example]]
-name = "plannerd_solver_trace"
-required-features = ["native-skip-miri"]
-
-[[example]]
-name = "plannerd_owner_trace"
-required-features = ["native-skip-miri"]
-
 [[bin]]
 name = "openpilot-plannerd"
 path = "src/main.rs"
 required-features = ["native-skip-miri"]
 
-[[example]]
-name = "plannerd_runtime_trace"
-required-features = ["native-skip-miri"]
-
-[[example]]
-name = "signal_context_trace"
-required-features = ["native-skip-miri"]
-
-[[example]]
-name = "signal_live_owner_trace"
-path = "src/validation/signal_live_owner.rs"
-required-features = ["signal-validation"]

@@ -25,6 +25,3 @@ unsafe_op_in_unsafe_fn = "deny"
 all = "deny"
 pedantic = "deny"
 
-[[test]]
-name = "virtual_devices"
-required-features = ["fixture-inspection"]

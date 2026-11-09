@@ -66,18 +66,3 @@ unsafe_code = "forbid"
 all = "deny"
 pedantic = "deny"
 
-[[example]]
-name = "cluster_media_decode_fixture"
-required-features = ["native-media"]
-
-[[example]]
-name = "cluster_vidc_fixture"
-required-features = ["native-media"]
-
-[[example]]
-name = "cluster_media_hardware_fixture"
-required-features = ["native-media"]
-
-[[example]]
-name = "cluster_vidc_encoder_fixture"
-required-features = ["native-media"]

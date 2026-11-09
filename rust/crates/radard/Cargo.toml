@@ -47,7 +47,3 @@ name = "openpilot-radard"
 path = "src/main.rs"
 required-features = ["native-skip-miri"]
 
-[[bin]]
-name = "openpilot-radar-replay"
-path = "src/bin/radar-replay.rs"
-required-features = ["native-skip-miri"]

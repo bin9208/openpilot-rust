@@ -87,19 +87,3 @@ path = "src/bin/carrot_command.rs"
 name = "openpilot-vision-test"
 path = "src/bin/vision_test.rs"
 
-[[example]]
-name = "carrot-server-policy"
-path = "examples/policy.rs"
-
-[[example]]
-name = "carrot-server-http-slice"
-path = "examples/http_slice.rs"
-
-[[example]]
-name = "carrot-server-popular-values"
-path = "examples/popular_values.rs"
-
-[[test]]
-name = "staged_updates"
-path = "tests/staged_updates.rs"
-harness = false

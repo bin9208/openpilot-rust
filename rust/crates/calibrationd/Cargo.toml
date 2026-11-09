@@ -34,10 +34,3 @@ name = "openpilot-calibrationd"
 path = "src/main.rs"
 required-features = ["native-skip-miri"]
 
-[[example]]
-name = "calibration_float"
-required-features = ["native-skip-miri"]
-
-[[example]]
-name = "calibration_loop"
-required-features = ["native-skip-miri"]

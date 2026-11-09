@@ -48,6 +48,7 @@ pub(crate) fn write(
             .map_err(|_| Error::Contract("HUD distance bars out of range"))?,
     );
     hud.set_visual_alert(input.selfdrive.visual_alert.try_into()?);
+    hud.set_driver_monitoring_alert(input.driver_monitoring_alert);
     let lead = &input.radar.lead;
     hud.set_lead_distance(if lead.status {
         lead.distance as f32

@@ -12,6 +12,3 @@ native-skip-miri = ["dep:libloading"]
 libloading = { version = "0.8", optional = true }
 thiserror = "2"
 
-[[example]]
-name = "lifecycle"
-required-features = ["native-skip-miri"]

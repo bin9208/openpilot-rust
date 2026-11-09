@@ -43,6 +43,3 @@ name = "openpilot-carrot-navi"
 path = "src/main.rs"
 required-features = ["native"]
 
-[[example]]
-name = "carrot-navi-wire"
-required-features = ["native"]
