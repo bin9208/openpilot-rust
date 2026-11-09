@@ -58,6 +58,12 @@ pub fn desire_input(
             right_lane_line: car.get_right_lane_line().into(),
             left_blindspot: car.get_left_blindspot(),
             right_blindspot: car.get_right_blindspot(),
+            blinker_lever: car.get_blinker_lever(),
+            blinker_lamp: car.get_blinker_lamp(),
+            stalk_counts: [
+                car.get_left_blinker_stalk_count(),
+                car.get_right_blinker_stalk_count(),
+            ],
         },
         model: Model {
             lane_lines: lanes
@@ -101,6 +107,10 @@ pub fn apply_desire(
         helper.lane_change_direction,
     ))?);
     meta.set_desire_log(&helper.desire_log);
+    meta.set_lane_change_blinker_hold(log_capnp::LaneChangeDirection::try_from(u16::from(
+        helper.blinker_hold_direction,
+    ))?);
+    meta.set_lever_turn(helper.lever_turn);
     meta.set_lane_width_left(helper.left.lane_width as f32);
     meta.set_lane_width_right(helper.right.lane_width as f32);
     meta.set_distance_to_road_edge_left(helper.left.dist_to_edge as f32);

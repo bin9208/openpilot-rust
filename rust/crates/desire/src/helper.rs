@@ -1,4 +1,8 @@
 use crate::{
+    lever::{
+        lever_maneuver, LaneCrossing, LeverChoice, LeverForcedTurn, LeverRequestWait,
+        LEVER_REQUEST_WAIT_S, STALK_QUEUE_GUARD_S,
+    },
     side::SideState,
     types::{
         maximum, minimum, Config, Input, InvalidModel, Maneuver, Navigation, State, DT, MIN_SPEED,
@@ -38,6 +42,26 @@ pub struct DesireHelper {
     pub desire_log: String,
     pub lane_change_available_left: bool,
     pub lane_change_available_right: bool,
+    #[serde(skip)]
+    stalk_counts: Option<[u8; 2]>,
+    #[serde(skip)]
+    queued_lane_change: u8,
+    #[serde(skip)]
+    finishing_timer: f64,
+    #[serde(skip)]
+    queued_wait: f64,
+    #[serde(skip)]
+    lever_wait: LeverRequestWait,
+    #[serde(skip)]
+    lever_forced_turn: LeverForcedTurn,
+    #[serde(skip)]
+    crossing: LaneCrossing,
+    /// modelV2.meta.laneChangeBlinkerHold
+    #[serde(skip)]
+    pub blinker_hold_direction: u8,
+    /// modelV2.meta.leverTurn: the turn desire comes from a latched lever.
+    #[serde(skip)]
+    pub lever_turn: bool,
 }
 
 impl Default for DesireHelper {
@@ -73,11 +97,35 @@ impl Default for DesireHelper {
             desire_log: String::new(),
             lane_change_available_left: false,
             lane_change_available_right: false,
+            stalk_counts: None,
+            queued_lane_change: 0,
+            finishing_timer: 0.0,
+            queued_wait: 0.0,
+            lever_wait: LeverRequestWait::default(),
+            lever_forced_turn: LeverForcedTurn::default(),
+            crossing: LaneCrossing::default(),
+            blinker_hold_direction: 0,
+            lever_turn: false,
         }
     }
 }
 
 impl DesireHelper {
+    /// Side of a lever press since the last update. The lamp cannot show a press while
+    /// already flashing; the counters can, and never miss a press between updates.
+    fn stalk_press(&mut self, counts: [u8; 2]) -> u8 {
+        let Some(last) = self.stalk_counts.replace(counts) else {
+            return 0;
+        };
+        if counts[0] != last[0] {
+            1
+        } else if counts[1] != last[1] {
+            2
+        } else {
+            0
+        }
+    }
+
     fn atc_blinker(
         &mut self,
         navigation: &Navigation,
@@ -208,9 +256,26 @@ impl DesireHelper {
             self.turn_disable_count = self.turn_disable_count.saturating_sub(1);
         }
         let driver = u8::from(car.left_blinker) + 2 * u8::from(car.right_blinker);
-        let driver_changed = driver != self.driver_blinker_state;
+        let mut driver_changed = driver != self.driver_blinker_state;
         self.driver_blinker_state = driver;
-        let driver_enabled = matches!(driver, 1 | 2) && self.config.need_torque >= 0;
+        let mut driver_enabled = matches!(driver, 1 | 2) && self.config.need_torque >= 0;
+        let previous_state = self.lane_change_state;
+        let stalk_press = self.stalk_press(car.stalk_counts);
+        let lever = car.blinker_lever;
+        let forced_turn = self.lever_forced_turn.update(lever, car.blinker_lamp);
+        if self.lever_wait.update(
+            self.config.lever_wait,
+            stalk_press,
+            lever,
+            driver,
+            self.lane_change_state,
+            self.config.delay_tenths * 0.1,
+        ) {
+            // One-touch request timed out: ignore the lamp until it goes dark.
+            driver_enabled = false;
+            driver_changed = false;
+        }
+        let mut lever_decided_turn = false;
         let remote = command(input.lateral_active && car.can_valid && !below_speed && !trailer);
         let (atc, atc_enabled) = self.atc_blinker(&input.navigation, driver, remote.as_deref());
         let enabled = driver_enabled || atc_enabled;
@@ -266,7 +331,7 @@ impl DesireHelper {
             self.turn_direction = 0;
             self.maneuver_type = Maneuver::None;
         } else {
-            let new_type = match side.filter(|_| enabled) {
+            let mut new_type = match side.filter(|_| enabled) {
                 Some(side) => classify(
                     input,
                     side,
@@ -276,6 +341,18 @@ impl DesireHelper {
                 ),
                 None => Maneuver::None,
             };
+            // BlinkerLatchedTurn: the driver's lever replaces the speed/lane-line guess.
+            let (lever_type, lever_undecided) = if driver_enabled && side.is_some() {
+                lever_maneuver(lever, car.v_ego, self.config.latched_turn, forced_turn)
+            } else {
+                (None, false)
+            };
+            match lever_type {
+                Some(LeverChoice::Turn) => new_type = Maneuver::Turn,
+                Some(LeverChoice::LaneChange) => new_type = Maneuver::LaneChange,
+                None => {}
+            }
+            lever_decided_turn = lever_type == Some(LeverChoice::Turn);
             if self.maneuver_type == Maneuver::LaneChange
                 && new_type == Maneuver::Turn
                 && !matches!(
@@ -303,7 +380,9 @@ impl DesireHelper {
                     State::Off => {
                         if let Some(side) = side.filter(|_| {
                             enabled
-                                && (!self.prev_desire_enabled || (driver_enabled && driver_changed))
+                                && (!self.prev_desire_enabled
+                                    || (driver_enabled
+                                        && (driver_changed || stalk_press == blinker)))
                                 && !below_speed
                         }) {
                             self.lane_change_state = State::PreLaneChange;
@@ -316,6 +395,9 @@ impl DesireHelper {
                     State::PreLaneChange => {
                         if let Some(side) = side {
                             self.lane_change_direction = if blinker == 1 { 1 } else { 2 };
+                            if self.next_lane_change && driver_enabled && stalk_press == blinker {
+                                self.next_lane_change = false;
+                            }
                             let torque = car.steering_pressed
                                 && if blinker == 1 {
                                     car.steering_torque > 0.0
@@ -365,7 +447,7 @@ impl DesireHelper {
                                                 || block_released)))
                                         && (side.lane_change_available || line_release)
                                 };
-                                if gate && start {
+                                if gate && start && !lever_undecided {
                                     self.lane_change_state = State::Starting;
                                 }
                             }
@@ -375,19 +457,37 @@ impl DesireHelper {
                         }
                     }
                     State::Starting => {
+                        // A press before the centre crossed the line re-lights this
+                        // change's lamp and is ignored, never a second request.
+                        let since = self
+                            .crossing
+                            .update(&input.model.lane_lines, self.lane_change_direction == 1);
+                        if stalk_press != 0 && since >= 0.0 {
+                            self.queued_lane_change = stalk_press;
+                        }
                         self.lane_change_ll_prob =
                             maximum(self.lane_change_ll_prob - 2.0 * DT, 0.0);
                         if input.lane_change_prob < 0.02 && self.lane_change_ll_prob < 0.01 {
                             self.lane_change_state = State::Finishing;
+                            self.finishing_timer = 0.0;
                         }
                     }
                     State::Finishing => {
+                        self.finishing_timer += DT;
+                        if stalk_press != 0
+                            && (self.crossing.since >= 0.0
+                                || self.finishing_timer >= STALK_QUEUE_GUARD_S)
+                        {
+                            self.queued_lane_change = stalk_press;
+                        }
                         self.lane_change_ll_prob = minimum(self.lane_change_ll_prob + DT, 1.0);
                         if self.lane_change_ll_prob > 0.99 {
                             self.lane_change_direction = 0;
                             if enabled {
                                 self.lane_change_state = State::PreLaneChange;
-                                self.next_lane_change = true;
+                                self.next_lane_change =
+                                    !(driver_enabled && self.queued_lane_change == blinker);
+                                self.queued_wait = 0.0;
                             } else {
                                 self.lane_change_state = State::Off;
                             }
@@ -412,6 +512,28 @@ impl DesireHelper {
             self.lane_change_state = State::Off;
             self.blinker_ignore = true;
         }
+        if matches!(self.lane_change_state, State::Off | State::PreLaneChange) {
+            self.crossing = LaneCrossing::default();
+        }
+        if self.lane_change_state == State::PreLaneChange && self.queued_lane_change != 0 {
+            self.queued_wait += DT;
+        }
+        if self.lane_change_state == State::Off
+            || (self.lane_change_state == State::Starting
+                && previous_state == State::PreLaneChange)
+            || (self.lane_change_state == State::PreLaneChange
+                && (self.queued_wait >= LEVER_REQUEST_WAIT_S
+                    || self.queued_lane_change != blinker))
+        {
+            self.queued_lane_change = 0;
+        }
+        let hold = self.lever_wait.update_hold(self.lane_change_state, blinker);
+        self.blinker_hold_direction = if self.queued_lane_change != 0 {
+            self.queued_lane_change
+        } else {
+            hold
+        };
+        self.lever_turn = lever_decided_turn && self.turn_direction != 0;
         self.desire = if self.turn_direction != 0 {
             self.lane_change_direction = self.turn_direction;
             self.turn_direction

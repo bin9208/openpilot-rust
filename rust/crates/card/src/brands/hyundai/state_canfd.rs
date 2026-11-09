@@ -123,6 +123,13 @@ pub fn update(state: &mut State, mut ret: car_state::Builder<'_>, now: u64) -> R
         let blink = state.blinkers.lamp(50, lamps[0], lamps[1]);
         ret.set_left_blinker(blink[0]);
         ret.set_right_blinker(blink[1]);
+        ret.set_blinker_lamp(if lamps[0] {
+            1
+        } else if lamps[1] {
+            2
+        } else {
+            0
+        });
     }
     if state.config.bsm {
         if let Some(channel) = state.bsm_channel {

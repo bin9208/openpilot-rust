@@ -26,6 +26,9 @@ pub struct Config {
     pub bsd: i32,
     pub line_check: i32,
     pub delay_tenths: f64,
+    /// BlinkerLatchedTurn in m/s, 0 = off.
+    pub latched_turn: f64,
+    pub lever_wait: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -44,6 +47,9 @@ pub struct Car {
     pub right_lane_line: i32,
     pub left_blindspot: bool,
     pub right_blindspot: bool,
+    pub blinker_lever: u8,
+    pub blinker_lamp: u8,
+    pub stalk_counts: [u8; 2],
 }
 
 impl Default for Car {
@@ -62,6 +68,9 @@ impl Default for Car {
             right_lane_line: 0,
             left_blindspot: false,
             right_blindspot: false,
+            blinker_lever: 0,
+            blinker_lamp: 0,
+            stalk_counts: [0, 0],
         }
     }
 }
