@@ -4107,6 +4107,142 @@
           }
         }
       ]
+    },
+    {
+      "event": 132,
+      "name": "pandaCanFault",
+      "definitions": [
+        {
+          "category": "permanent",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "CAN Controller Fault: Check Connections",
+              "alert_text_2": "",
+              "alert_status": 0,
+              "alert_size": 1,
+              "priority": "lower",
+              "visual_alert": 0,
+              "audible_alert": 0,
+              "duration": 20,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        },
+        {
+          "category": "immediateDisable",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "TAKE CONTROL IMMEDIATELY",
+              "alert_text_2": "CAN Controller Fault",
+              "alert_status": 2,
+              "alert_size": 3,
+              "priority": "highest",
+              "visual_alert": 2,
+              "audible_alert": 5,
+              "duration": 400,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        },
+        {
+          "category": "noEntry",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "openpilot Unavailable",
+              "alert_text_2": "CAN Controller Fault: Check Connections",
+              "alert_status": 0,
+              "alert_size": 2,
+              "priority": "low",
+              "visual_alert": 0,
+              "audible_alert": 3,
+              "duration": 300,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "event": 133,
+      "name": "stockSccFault",
+      "definitions": [
+        {
+          "category": "permanent",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "Front Safety System Fault: Check Vehicle",
+              "alert_text_2": "",
+              "alert_status": 0,
+              "alert_size": 1,
+              "priority": "lower",
+              "visual_alert": 0,
+              "audible_alert": 0,
+              "duration": 20,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        },
+        {
+          "category": "immediateDisable",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "TAKE CONTROL IMMEDIATELY",
+              "alert_text_2": "Front Safety System Fault",
+              "alert_status": 2,
+              "alert_size": 3,
+              "priority": "highest",
+              "visual_alert": 2,
+              "audible_alert": 5,
+              "duration": 400,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        },
+        {
+          "category": "noEntry",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "openpilot Unavailable",
+              "alert_text_2": "Front Safety System Fault: Check Vehicle",
+              "alert_status": 0,
+              "alert_size": 2,
+              "priority": "low",
+              "visual_alert": 0,
+              "audible_alert": 3,
+              "duration": 300,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "event": 134,
+      "name": "teslaTrafficStopWarning",
+      "definitions": []
+    },
+    {
+      "event": 131,
+      "name": "teslaTrafficStopTakeover",
+      "definitions": []
     }
   ],
   "mici": [
@@ -8211,6 +8347,142 @@
           }
         }
       ]
+    },
+    {
+      "event": 132,
+      "name": "pandaCanFault",
+      "definitions": [
+        {
+          "category": "permanent",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "CAN Controller Fault: Check Connections",
+              "alert_text_2": "",
+              "alert_status": 0,
+              "alert_size": 1,
+              "priority": "lower",
+              "visual_alert": 0,
+              "audible_alert": 0,
+              "duration": 20,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        },
+        {
+          "category": "immediateDisable",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "TAKE CONTROL IMMEDIATELY",
+              "alert_text_2": "CAN Controller Fault",
+              "alert_status": 2,
+              "alert_size": 3,
+              "priority": "highest",
+              "visual_alert": 2,
+              "audible_alert": 5,
+              "duration": 400,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        },
+        {
+          "category": "noEntry",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "openpilot Unavailable",
+              "alert_text_2": "CAN Controller Fault: Check Connections",
+              "alert_status": 0,
+              "alert_size": 2,
+              "priority": "low",
+              "visual_alert": 0,
+              "audible_alert": 3,
+              "duration": 300,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "event": 133,
+      "name": "stockSccFault",
+      "definitions": [
+        {
+          "category": "permanent",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "Front Safety System Fault: Check Vehicle",
+              "alert_text_2": "",
+              "alert_status": 0,
+              "alert_size": 1,
+              "priority": "lower",
+              "visual_alert": 0,
+              "audible_alert": 0,
+              "duration": 20,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        },
+        {
+          "category": "immediateDisable",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "TAKE CONTROL IMMEDIATELY",
+              "alert_text_2": "Front Safety System Fault",
+              "alert_status": 2,
+              "alert_size": 3,
+              "priority": "highest",
+              "visual_alert": 2,
+              "audible_alert": 5,
+              "duration": 400,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        },
+        {
+          "category": "noEntry",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "openpilot Unavailable",
+              "alert_text_2": "Front Safety System Fault: Check Vehicle",
+              "alert_status": 0,
+              "alert_size": 2,
+              "priority": "low",
+              "visual_alert": 0,
+              "audible_alert": 3,
+              "duration": 300,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "event": 134,
+      "name": "teslaTrafficStopWarning",
+      "definitions": []
+    },
+    {
+      "event": 131,
+      "name": "teslaTrafficStopTakeover",
+      "definitions": []
     }
   ],
   "dm2_event_mapping": {

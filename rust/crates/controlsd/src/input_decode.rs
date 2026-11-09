@@ -175,6 +175,15 @@ pub fn decode(state: &State, now: f64) -> Result<Inputs, Error> {
         override_long: service!(state, "onroadEvents", OnroadEvents)
             .iter()
             .any(|event| event.get_override_longitudinal()),
+        vehicle_fault: service!(state, "onroadEvents", OnroadEvents)
+            .iter()
+            .any(|event| {
+                matches!(
+                    event.get_name(),
+                    Ok(log_capnp::onroad_event::EventName::PandaCanFault
+                        | log_capnp::onroad_event::EventName::StockSccFault)
+                )
+            }),
         monitoring_disabled: service!(state, "driverMonitoringState", DriverMonitoringState)
             .get_dm2_disabled(),
         distracted: service!(state, "driverMonitoringState", DriverMonitoringState)

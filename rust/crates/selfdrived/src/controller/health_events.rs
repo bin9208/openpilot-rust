@@ -162,6 +162,46 @@ impl Controller {
         } else if !cs.get_can_valid() {
             self.events.add(E::CanError, false);
         }
+        let pandas_topic = state.topic("pandaStates")?;
+        let pandas_time = pandas_topic.log_mono_time as f64 * 1e-9;
+        let mut pandas = Vec::new();
+        for panda in views.pandas()?.iter() {
+            let faults: Vec<_> = panda.get_faults()?.iter().collect();
+            let bus = |state: log_capnp::panda_state::panda_can_state::Reader<'_>, name| {
+                crate::vehicle_faults::CanSample {
+                    error_passive: state.get_error_passive(),
+                    bus_off: state.get_bus_off(),
+                    total_error_count: state.get_total_error_cnt(),
+                    interrupt_rate_fault: faults
+                        .iter()
+                        .any(|fault| fault.as_ref().ok() == Some(&name)),
+                }
+            };
+            use log_capnp::panda_state::FaultType as Fault;
+            pandas.push(crate::vehicle_faults::PandaSample {
+                uptime: panda.get_uptime(),
+                buses: [
+                    bus(panda.get_can_state0()?, Fault::InterruptRateCan1),
+                    bus(panda.get_can_state1()?, Fault::InterruptRateCan2),
+                    bus(panda.get_can_state2()?, Fault::InterruptRateCan3),
+                ],
+            });
+        }
+        if self.vehicle_faults.update_pandas(
+            &pandas,
+            pandas_time,
+            state.all_checks(&["pandaStates"])?,
+        ) {
+            self.events.add(E::PandaCanFault, false);
+        }
+        let scc_time = cs.get_radar_input()?.get_receive_mono_time() as f64 * 1e-9;
+        if self.vehicle_faults.update_scc(
+            cs.get_stock_scc_fault(),
+            scc_time,
+            cs.get_can_valid() && !cs.get_can_timeout(),
+        ) {
+            self.events.add(E::StockSccFault, false);
+        }
         let jetlink = views.model()?.get_jetlink()?;
         if jetlink.get_loss_latched()
             || (jetlink.get_source()? == log_capnp::jetlink_frame_status::Source::Jetlink

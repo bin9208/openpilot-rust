@@ -125,6 +125,7 @@ pub struct Inputs {
     pub output_curvature: f64,
     pub delay: f64,
     pub override_long: bool,
+    pub vehicle_fault: bool,
     pub distracted: bool,
     pub monitoring_disabled: bool,
     pub assistance_valid: bool,

@@ -7,7 +7,7 @@ use openpilot_selfdrived::state::EventType;
 fn both_hardware_catalogs_decode_with_all_callbacks_and_schema_enums() {
     for mici in [false, true] {
         let catalog = Catalog::load(mici).unwrap();
-        assert_eq!(catalog.definitions().count(), 130);
+        assert_eq!(catalog.definitions().count(), 134);
         for entry in catalog.definitions() {
             assert!(!entry.name.is_empty());
             assert_eq!(catalog.get(entry.event).unwrap().name, entry.name);

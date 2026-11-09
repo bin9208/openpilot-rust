@@ -130,6 +130,7 @@ impl Controller {
         &mut self,
         cs: car_state::Reader<'_>,
         state: &State,
+        effects: &mut impl Effects,
     ) -> Result<(), Error> {
         let views = Views { state };
         if state.topic("carrotMan")?.alive {
@@ -142,6 +143,15 @@ impl Controller {
                 } else if kind.contains("prepare") {
                 } else if kind.contains("turn") && !self.atc_type_previous.contains("turn") {
                     self.events.add(E::AudioTurn, false);
+                    let direction = match kind {
+                        "turn left" => Some(log_capnp::LaneChangeDirection::Left),
+                        "turn right" => Some(log_capnp::LaneChangeDirection::Right),
+                        _ => None,
+                    };
+                    if let Some(direction) = direction {
+                        self.atc_turn_start = (effects.monotonic() * 1e9) as u64;
+                        self.atc_turn_direction = direction;
+                    }
                 }
             }
             self.atc_type_previous = kind.to_owned();

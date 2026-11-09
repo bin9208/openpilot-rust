@@ -146,9 +146,12 @@ impl Controls {
             && !cs.fault_temporary
             && !cs.fault_permanent
             && ((cs.standstill && standstill) || (!cs.standstill && !below));
-        let lateral = self.suspend.update(cs, lateral, params)? && lateral_ready;
-        let longitudinal =
-            input.selfdrive.enabled && !input.override_long && self.config.openpilot_long;
+        let lateral =
+            self.suspend.update(cs, lateral, params)? && lateral_ready && !input.vehicle_fault;
+        let longitudinal = input.selfdrive.enabled
+            && !input.override_long
+            && !input.vehicle_fault
+            && self.config.openpilot_long;
         if !lateral {
             self.lateral.reset();
         }
