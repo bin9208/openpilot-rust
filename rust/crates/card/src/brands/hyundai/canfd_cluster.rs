@@ -80,8 +80,16 @@ pub fn messages(
             let mut data = original.clone();
             let driver_pressed = get(original, "LFA_BTN")? != 0.
                 || get(original, "CRUISE_BUTTONS")? != 0.
-                || original.get("ADAPTIVE_CRUISE_MAIN_BTN").copied().unwrap_or(0.) != 0.
-                || original.get("NORMAL_CRUISE_MAIN_BTN").copied().unwrap_or(0.) != 0.;
+                || original
+                    .get("ADAPTIVE_CRUISE_MAIN_BTN")
+                    .copied()
+                    .unwrap_or(0.)
+                    != 0.
+                || original
+                    .get("NORMAL_CRUISE_MAIN_BTN")
+                    .copied()
+                    .unwrap_or(0.)
+                    != 0.;
             data.insert("NORMAL_CRUISE_MAIN_BTN".into(), 0.);
             if keep_stock_scc_main(i, source)
                 && !i.hud.enabled

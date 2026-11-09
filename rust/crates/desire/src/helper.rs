@@ -519,11 +519,9 @@ impl DesireHelper {
             self.queued_wait += DT;
         }
         if self.lane_change_state == State::Off
-            || (self.lane_change_state == State::Starting
-                && previous_state == State::PreLaneChange)
+            || (self.lane_change_state == State::Starting && previous_state == State::PreLaneChange)
             || (self.lane_change_state == State::PreLaneChange
-                && (self.queued_wait >= LEVER_REQUEST_WAIT_S
-                    || self.queued_lane_change != blinker))
+                && (self.queued_wait >= LEVER_REQUEST_WAIT_S || self.queued_lane_change != blinker))
         {
             self.queued_lane_change = 0;
         }

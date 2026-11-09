@@ -161,7 +161,10 @@ pub fn evaluate(state: &mut Track, input: Evaluation<'_, '_>) -> Result<Estimate
     let radar_pair_entry = paired_inward
         && cross.is_some_and(|front| {
             let front_projection = frame.path.project(front.d_rel, front.y_rel);
-            let span = match (state.front_observations.back(), state.front_observations.front()) {
+            let span = match (
+                state.front_observations.back(),
+                state.front_observations.front(),
+            ) {
                 (Some(last), Some(first)) => last.time_s - first.time_s,
                 _ => 0.,
             };
@@ -182,12 +185,15 @@ pub fn evaluate(state: &mut Track, input: Evaluation<'_, '_>) -> Result<Estimate
             {
                 return false;
             }
-            let front_motion =
-                motion(&state.front_observations, LONG_MOTION_WINDOW_S, |value| value.d_path);
+            let front_motion = motion(&state.front_observations, LONG_MOTION_WINDOW_S, |value| {
+                value.d_path
+            });
             // A shared shift of the predicted path affects both dPath histories,
             // so check the actual lateral displacement of each body return as well.
             let corner_body = motion(&state.observations, MAX_HISTORY_S, |value| value.y_rel);
-            let front_body = motion(&state.front_observations, MAX_HISTORY_S, |value| value.y_rel);
+            let front_body = motion(&state.front_observations, MAX_HISTORY_S, |value| {
+                value.y_rel
+            });
             minimum(corner_body.inward_progress, front_body.inward_progress) >= TARGET_HALF_WIDTH_M
                 && front_motion.inward_progress >= front_noise(front.d_rel)
                 && front_motion.net_fraction >= 0.65

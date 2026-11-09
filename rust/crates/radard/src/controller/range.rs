@@ -214,18 +214,19 @@ impl<P: crate::predictor::CutOutPredictor> Controller<P> {
                 self._vision_transition_since_s = 0.;
             }
             Some(current) => {
-                let continuous = self._vision_transition_previous.as_ref().is_some_and(
-                    |(previous_s, lead)| {
-                        let dt = time - previous_s;
-                        (0. ..=RADAR_MOTION_MAX_TIME_SKEW_S).contains(&dt)
-                            && (current.d_rel - (lead.d_rel + lead.v_rel * dt)).abs()
-                                <= MOVING_FRONT_RANGE_MAX_POSITION_ERROR_M
-                            && (current.y_rel - lead.y_rel).abs()
-                                <= MOVING_FRONT_RANGE_MAX_LATERAL_ERROR_M
-                            && (current.v_lead - lead.v_lead).abs()
-                                <= MOVING_FRONT_RANGE_MAX_SPEED_JUMP_MPS
-                    },
-                );
+                let continuous =
+                    self._vision_transition_previous
+                        .as_ref()
+                        .is_some_and(|(previous_s, lead)| {
+                            let dt = time - previous_s;
+                            (0. ..=RADAR_MOTION_MAX_TIME_SKEW_S).contains(&dt)
+                                && (current.d_rel - (lead.d_rel + lead.v_rel * dt)).abs()
+                                    <= MOVING_FRONT_RANGE_MAX_POSITION_ERROR_M
+                                && (current.y_rel - lead.y_rel).abs()
+                                    <= MOVING_FRONT_RANGE_MAX_LATERAL_ERROR_M
+                                && (current.v_lead - lead.v_lead).abs()
+                                    <= MOVING_FRONT_RANGE_MAX_SPEED_JUMP_MPS
+                        });
                 if !continuous {
                     self._vision_transition_since_s = time;
                 }

@@ -75,7 +75,12 @@ fn stationary_pause(
     cs: &car_state::Reader<'_>,
     sd: &selfdrive_state::Reader<'_>,
 ) -> Result<bool, Error> {
-    let services = ["carState", "selfdriveState", "carControl", "longitudinalPlan"];
+    let services = [
+        "carState",
+        "selfdriveState",
+        "carControl",
+        "longitudinalPlan",
+    ];
     for name in services {
         let topic = state.topic(name)?;
         if !topic.seen || !fresh(now, topic.log_mono_time as f64 / 1e9) {
@@ -126,7 +131,9 @@ fn stationary_pause(
     }
     let radar = read!(state, "radarState", RadarState);
     let errors = radar.get_radar_errors()?;
-    if errors.get_can_error() || errors.get_radar_fault() || errors.get_wrong_config()
+    if errors.get_can_error()
+        || errors.get_radar_fault()
+        || errors.get_wrong_config()
         || errors.get_radar_unavailable_temporary()
     {
         return Ok(false);

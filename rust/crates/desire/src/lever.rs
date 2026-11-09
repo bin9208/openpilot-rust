@@ -184,9 +184,18 @@ mod tests {
     #[test]
     fn plain_latch_is_a_lane_change_and_gesture_is_a_turn() {
         assert_eq!(lever_maneuver(1, 5., 0., false), (None, false));
-        assert_eq!(lever_maneuver(1, 20., 10., false), (Some(LeverChoice::LaneChange), false));
-        assert_eq!(lever_maneuver(1, 5., 10., false), (Some(LeverChoice::LaneChange), true));
-        assert_eq!(lever_maneuver(2, 5., 10., true), (Some(LeverChoice::Turn), false));
+        assert_eq!(
+            lever_maneuver(1, 20., 10., false),
+            (Some(LeverChoice::LaneChange), false)
+        );
+        assert_eq!(
+            lever_maneuver(1, 5., 10., false),
+            (Some(LeverChoice::LaneChange), true)
+        );
+        assert_eq!(
+            lever_maneuver(2, 5., 10., true),
+            (Some(LeverChoice::Turn), false)
+        );
         let mut gesture = LeverForcedTurn::default();
         assert!(!gesture.update(LEVER_ONE_TOUCH, 1));
         assert!(!gesture.update(LEVER_ONE_TOUCH, 0));

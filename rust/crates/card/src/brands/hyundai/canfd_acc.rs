@@ -59,7 +59,11 @@ pub fn jerk_limit(accel: f64, previous: f64, limits: [f64; 2]) -> f64 {
 
 /// A low-speed signal-stop CAN object, never a radar/planner observation.
 /// Returns whether the final, already-interlocked packet contains the object.
-fn apply_signal_stop_object(data: &mut Values, state: &SccState<'_>, input: &AccInput) -> Result<bool, Error> {
+fn apply_signal_stop_object(
+    data: &mut Values,
+    state: &SccState<'_>,
+    input: &AccInput,
+) -> Result<bool, Error> {
     let [fl, fr, rl, rr] = state.wheels;
     let speeds = [state.v_ego, state.v_ego_raw, fl, fr, rl, rr];
     if !input.signal_stop_object
