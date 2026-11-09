@@ -147,11 +147,16 @@ impl Controls {
             && !cs.fault_temporary
             && !cs.fault_permanent
             && ((cs.standstill && standstill) || (!cs.standstill && !below));
-        let lateral =
-            self.suspend.update(cs, lateral, params)? && lateral_ready && !input.vehicle_fault;
+        // AlwaysLateral must also stop while manager drains workers for an impact reboot.
+        let impact_reboot = params.boolean("ImpactDashcamReboot")?;
+        let lateral = self.suspend.update(cs, lateral, params)?
+            && lateral_ready
+            && !input.vehicle_fault
+            && !impact_reboot;
         let longitudinal = input.selfdrive.enabled
             && !input.override_long
             && !input.vehicle_fault
+            && !impact_reboot
             && self.config.openpilot_long;
         if !lateral {
             self.lateral.reset();
@@ -245,7 +250,7 @@ impl Controls {
             },
         )?;
         let mut command = Command {
-            enabled: input.selfdrive.enabled,
+            enabled: input.selfdrive.enabled && !impact_reboot,
             lateral,
             longitudinal,
             left: input.model.lane_change && input.model.lane_left,
