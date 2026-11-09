@@ -73,6 +73,7 @@ impl CarrotPlanner {
             self.user_stop_distance = -1.;
         }
         if self.soft_hold_active > 0 {
+            self.signal_stop_owned = false;
             self.x_state = XState::E2eStopped;
             if matches!(previous_traffic, TrafficState::Off | TrafficState::Red)
                 && self.traffic_state == TrafficState::Green

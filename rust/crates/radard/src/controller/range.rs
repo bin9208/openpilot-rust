@@ -3,7 +3,9 @@ use crate::{
     math::{maximum, minimum},
     model::VisionLead,
     path::Path,
+    point::Point,
     primary::{constants::*, source::position_continuous, VisionMatch},
+    Lead,
 };
 
 pub fn central_vision(vision: Option<VisionLead>, path: &Path) -> bool {
@@ -185,5 +187,109 @@ impl<P: crate::predictor::CutOutPredictor> Controller<P> {
             .is_some_and(|since| {
                 time - since >= CORROBORATED_STATIONARY_VISION_RANGE_MISMATCH_HOLD_S
             })
+    }
+}
+
+impl<P: crate::predictor::CutOutPredictor> Controller<P> {
+    pub(super) fn reset_vision_transition(&mut self) {
+        self._vision_transition_radar = None;
+        self._vision_transition_previous = None;
+        self._vision_transition_since_s = 0.;
+    }
+
+    /// Retain a measured front lead until its visual replacement is coherent.
+    pub(super) fn confirm_vision_transition(
+        &mut self,
+        matched: Option<VisionMatch>,
+        vision_lead: Option<&Lead>,
+        points: &[Point],
+        path: &Path,
+        time: f64,
+    ) -> Option<VisionMatch> {
+        // Count camera time even while the ordinary matcher still accepts radar,
+        // using the published visual velocity with the model ego-speed correction.
+        match vision_lead {
+            None => {
+                self._vision_transition_previous = None;
+                self._vision_transition_since_s = 0.;
+            }
+            Some(current) => {
+                let continuous = self._vision_transition_previous.as_ref().is_some_and(
+                    |(previous_s, lead)| {
+                        let dt = time - previous_s;
+                        (0. ..=RADAR_MOTION_MAX_TIME_SKEW_S).contains(&dt)
+                            && (current.d_rel - (lead.d_rel + lead.v_rel * dt)).abs()
+                                <= MOVING_FRONT_RANGE_MAX_POSITION_ERROR_M
+                            && (current.y_rel - lead.y_rel).abs()
+                                <= MOVING_FRONT_RANGE_MAX_LATERAL_ERROR_M
+                            && (current.v_lead - lead.v_lead).abs()
+                                <= MOVING_FRONT_RANGE_MAX_SPEED_JUMP_MPS
+                    },
+                );
+                if !continuous {
+                    self._vision_transition_since_s = time;
+                }
+                self._vision_transition_previous = Some((time, current.clone()));
+            }
+        }
+        let mut point = None;
+        if let Some((previous_s, previous)) = self._vision_transition_radar.take() {
+            let dt = time - previous_s;
+            let speed_jump = if previous.v_lead.abs() <= STATIONARY_MAX_ABS_VLEAD_MPS {
+                STATIONARY_FRONT_ANCHOR_MAX_SPEED_JUMP_MPS
+            } else {
+                MOVING_FRONT_RANGE_MAX_SPEED_JUMP_MPS
+            };
+            point = points
+                .iter()
+                .find(|candidate| {
+                    candidate.source == previous.source && candidate.track_id == previous.track_id
+                })
+                .filter(|candidate| {
+                    candidate.measured
+                        && (0. ..=RADAR_MOTION_MAX_TIME_SKEW_S).contains(&dt)
+                        && 0.5 < candidate.d_rel
+                        && candidate.d_rel < 180.
+                        && (candidate.d_rel - (previous.d_rel + previous.v_rel * dt)).abs()
+                            <= MOVING_FRONT_RANGE_MAX_POSITION_ERROR_M
+                        && (candidate.y_rel - (previous.y_rel + previous.yv_rel * dt)).abs()
+                            <= MOVING_FRONT_RANGE_MAX_LATERAL_ERROR_M
+                        && (candidate.v_lead - previous.v_lead).abs() <= speed_jump
+                        && (candidate.v_lead > STATIONARY_MAX_ABS_VLEAD_MPS
+                            || self.primary_matcher.stationary_identity.as_ref()
+                                == Some(&candidate.identity()))
+                        && path.project(candidate.d_rel, candidate.y_rel).d_path.abs()
+                            <= RADAR_VISION_FALLBACK_MAX_ABS_DPATH_M
+                });
+        }
+        let Some(point) = point
+            .filter(|_| matched.is_none() && vision_lead.is_some() && self.enable_radar_tracks > 0)
+            .cloned()
+        else {
+            if let Some(found) = matched.as_ref().filter(|found| {
+                self.enable_radar_tracks > 0
+                    && found.point.source == "frontRadar"
+                    && found.point.measured
+                    && found.d_path.abs() <= RADAR_VISION_FALLBACK_MAX_ABS_DPATH_M
+            }) {
+                self._vision_transition_radar = Some((time, found.point.clone()));
+            }
+            return matched;
+        };
+        // Both histories are current. A visual jump restarts confirmation while
+        // the retained radar supplies its latest measured distance and kinematics.
+        if time - self._vision_transition_since_s >= VISION_TRANSITION_CONFIRM_S - 1e-6 {
+            self._vision_transition_previous = None;
+            self._vision_transition_since_s = 0.;
+            return None;
+        }
+        let d_path = path.project(point.d_rel, point.y_rel).d_path;
+        self._vision_transition_radar = Some((time, point.clone()));
+        Some(VisionMatch {
+            point,
+            probability: 0.,
+            score: 0.,
+            d_path,
+        })
     }
 }

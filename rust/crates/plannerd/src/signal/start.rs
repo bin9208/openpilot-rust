@@ -45,6 +45,11 @@ pub struct Guard {
     last_now: f64,
     cooldown: f64,
 }
+/// A stopped-car veto owns only the stop/creep phase, up to 5 km/h.
+pub fn departed_signal_stop(speed: f64) -> bool {
+    speed.is_finite() && speed.abs() > 5. / 3.6
+}
+
 impl Default for Guard {
     fn default() -> Self {
         Self {
@@ -105,6 +110,9 @@ fn separate(red: [f64; 4], a: [f64; 4], b: [f64; 4]) -> bool {
         && red[1] >= a[3].max(b[3]) + 2. * (a[3] - a[1]).max(b[3] - b[1])
 }
 impl Guard {
+    pub(crate) fn holding(&self) -> bool {
+        self.hold
+    }
     /// The lead-follow exception did not emit a refusal; retain red memory so
     /// a disappearing lead can restore the veto and its one-shot warning.
     pub(crate) fn clear_unemitted_warning(&mut self) {
@@ -396,6 +404,17 @@ impl Guard {
                 f64::INFINITY
             };
             return decision(false, "driver_gas");
+        }
+        // Lead following can bypass the effective veto while retaining this latch.
+        // Retire it once outside stop/creep scope. None of this grants green rights.
+        if departed_signal_stop(speed) {
+            self.reset();
+            self.last_now = if now.is_finite() {
+                now
+            } else {
+                f64::NEG_INFINITY
+            };
+            return decision(false, "departed_stop");
         }
         if !now.is_finite() || now < self.last_now {
             self.pending.clear();

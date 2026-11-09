@@ -155,6 +155,46 @@ pub fn evaluate(state: &mut Track, input: Evaluation<'_, '_>) -> Result<Estimate
         state.paired_motion_support_until_s = f64::NEG_INFINITY;
     }
     let paired_inward_supported = now <= state.paired_motion_support_until_s;
+    // A close entrant can be well established by both radars before the camera
+    // switches from the original lead. Require the moving front return to converge
+    // beyond its lateral noise floor and both bodies to remain ahead at the crossing.
+    let radar_pair_entry = paired_inward
+        && cross.is_some_and(|front| {
+            let front_projection = frame.path.project(front.d_rel, front.y_rel);
+            let span = match (state.front_observations.back(), state.front_observations.front()) {
+                (Some(last), Some(first)) => last.time_s - first.time_s,
+                _ => 0.,
+            };
+            let ahead = overlap_time.is_some_and(|time| {
+                0. < time
+                    && time <= 1.90
+                    && point.d_rel + minimum(relative_speed, recent_v_rel_min) * time > 0.5
+                    && front.d_rel + front.v_rel * time > 0.5
+            });
+            if !(point.measured
+                && front.measured
+                && point.v_rel < 0.
+                && point.d_rel <= CROSS_SENSOR_SLOT_HANDOFF_MAX_DREL_M
+                && front.v_lead > MIN_MOVING_VLEAD_MPS
+                && side * front_projection.d_path > 0.
+                && ahead
+                && span >= 0.50)
+            {
+                return false;
+            }
+            let front_motion =
+                motion(&state.front_observations, LONG_MOTION_WINDOW_S, |value| value.d_path);
+            // A shared shift of the predicted path affects both dPath histories,
+            // so check the actual lateral displacement of each body return as well.
+            let corner_body = motion(&state.observations, MAX_HISTORY_S, |value| value.y_rel);
+            let front_body = motion(&state.front_observations, MAX_HISTORY_S, |value| value.y_rel);
+            minimum(corner_body.inward_progress, front_body.inward_progress) >= TARGET_HALF_WIDTH_M
+                && front_motion.inward_progress >= front_noise(front.d_rel)
+                && front_motion.net_fraction >= 0.65
+                && front_motion.consistency >= 0.85
+                && front_motion.inward_rate >= MIN_INWARD_RATE_MPS
+                && reported_inward(front, front_projection, frame.yaw_rate) >= MIN_INWARD_RATE_MPS
+        });
     let ambiguous = point.corner()
         && cross.is_some_and(|front| {
             front.source == "frontRadar"
@@ -163,6 +203,7 @@ pub fn evaluate(state: &mut Track, input: Evaluation<'_, '_>) -> Result<Estimate
                 && recent_abs_yaw_max >= PAIRED_OUTER_BODY_RANGE_CHECK_MIN_ABS_YAW_RATE_RAD_S
                 && !vision_supported
                 && !paired_inward_supported
+                && !radar_pair_entry
                 && !current_overlap
                 && front.y_rel.abs() > 2.15
                 && (point.d_rel - front.d_rel).abs() > PAIRED_OUTER_BODY_MAX_DREL_DELTA_M
@@ -171,6 +212,7 @@ pub fn evaluate(state: &mut Track, input: Evaluation<'_, '_>) -> Result<Estimate
         state.outer_body_ambiguous_until_s = now + CROSS_SENSOR_ALIAS_HOLD_S;
     } else if vision_supported
         || paired_inward_supported
+        || radar_pair_entry
         || current_overlap
         || cross.is_some_and(|front| front.y_rel.abs() <= 2.15)
     {
@@ -518,7 +560,7 @@ pub fn evaluate(state: &mut Track, input: Evaluation<'_, '_>) -> Result<Estimate
         && if point.source == "frontRadar" {
             front_entry
         } else {
-            corner_entry || close_entry || direct_entry || bracket_support
+            corner_entry || close_entry || direct_entry || bracket_support || radar_pair_entry
         };
     let confirmation = if close_entry || body_entry || front_history {
         0.

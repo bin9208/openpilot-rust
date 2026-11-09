@@ -126,6 +126,7 @@ pub struct CarrotPlanner {
     pub prepare_decision: Option<crate::signal::prepare::Decision>,
     pub prepare_control_active: bool,
     start_guard: crate::signal::start::Guard,
+    signal_stop_owned: bool,
     stop_prepare: crate::signal::prepare::Prepare,
 }
 
@@ -192,6 +193,7 @@ impl CarrotPlanner {
             prepare_decision: None,
             prepare_control_active: false,
             start_guard: crate::signal::start::Guard::default(),
+            signal_stop_owned: false,
             stop_prepare: crate::signal::prepare::Prepare::default(),
         })
     }

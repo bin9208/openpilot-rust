@@ -184,7 +184,8 @@ impl LongitudinalPlanner {
                 dt: self.dt,
                 prepare_active: carrot.prepare_decision.as_ref().is_some_and(|d| d.active),
                 control_active: carrot.prepare_control_active,
-                hold: carrot.start_decision.as_ref().is_some_and(|d| d.hold),
+                hold: !crate::signal::start::departed_signal_stop(car.v_ego)
+                    && carrot.start_decision.as_ref().is_some_and(|d| d.hold),
                 reset,
                 gas: car.gas_pressed,
                 brake: car.brake_pressed,

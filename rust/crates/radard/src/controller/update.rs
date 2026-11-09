@@ -173,6 +173,16 @@ impl<P: crate::predictor::CutOutPredictor> Controller<P> {
         } else {
             self.scc_primary_fallback_matcher.reset();
         }
+        let vision_candidate = vision
+            .filter(|_| self.enable_radar_tracks <= 0 || central_vision(vision, &path))
+            .map(|vision| lead::from_vision(&vision, &path, [v_ego, model.ego_speed(v_ego)]));
+        let matched = self.confirm_vision_transition(
+            matched,
+            vision_candidate.as_ref(),
+            &points,
+            &path,
+            time,
+        );
         let mut lead_one = if let Some(matched) = &matched {
             Some(self.radar_lead(
                 &matched.point,
@@ -181,9 +191,7 @@ impl<P: crate::predictor::CutOutPredictor> Controller<P> {
                 matched.score,
             )?)
         } else {
-            vision
-                .filter(|_| self.enable_radar_tracks <= 0 || central_vision(vision, &path))
-                .map(|vision| lead::from_vision(&vision, &path, [v_ego, model.ego_speed(v_ego)]))
+            vision_candidate
         };
         let stopping_corner =
             if self.enable_radar_tracks > 0 && self.motion_sensor == "corner" && lead_one.is_none()

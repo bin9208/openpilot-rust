@@ -102,6 +102,12 @@ pub struct Controller<P: CutOutPredictor = Predictor> {
     pub _stationary_range_last_point: Option<Point>,
     pub _stationary_range_last_time_s: Option<f64>,
     pub _stationary_range_anchor_time_s: Option<f64>,
+    #[serde(skip)]
+    pub _vision_transition_radar: Option<(f64, Point)>,
+    #[serde(skip)]
+    pub _vision_transition_previous: Option<(f64, Lead)>,
+    #[serde(skip)]
+    pub _vision_transition_since_s: f64,
 }
 
 fn serialize_associator<S: serde::Serializer>(
@@ -161,6 +167,9 @@ impl<P: CutOutPredictor> Controller<P> {
             _stationary_range_last_point: None,
             _stationary_range_last_time_s: None,
             _stationary_range_anchor_time_s: None,
+            _vision_transition_radar: None,
+            _vision_transition_previous: None,
+            _vision_transition_since_s: 0.,
         }
     }
     fn reset_motion_pipeline(&mut self) {
@@ -182,6 +191,7 @@ impl<P: CutOutPredictor> Controller<P> {
         self.trajectory_cutout.reset();
         self.lead_dynamics.reset();
         self.trajectory_cutin.reset();
+        self.reset_vision_transition();
         self.reset_range_mismatch();
         self._moving_range_last_point = None;
         self._moving_range_last_time_s = None;
