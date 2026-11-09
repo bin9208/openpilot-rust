@@ -6,7 +6,7 @@
   "rust_base": "b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a",
   "source_repo": "https://github.com/ajouatom/openpilot",
   "source_branch": "carrot-wip",
-  "source_commit": "163c000e05641adea88e9221094d45c90c3e186d",
+  "source_commit": "0436c7f0a7c9741f55bbb175f68c53d0df0c85d5",
   "common_ancestor": "43203371004e035bdb70a00a8dad29a4b657c6c3",
   "coverage_complete": false,
   "commits": [
@@ -15280,454 +15280,37 @@
   "scope": "Only upstream changed runtime behavior and necessary compatibility; development/build/test-tool conversion is owned by separate #296 session. Baseline API parity and broad full-project tests are not gates.",
   "previous_source_commit": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
   "latest_refresh": {
-    "issue": 374,
-    "to": "163c000e05641adea88e9221094d45c90c3e186d",
-    "commits": 22,
-    "runtime_status": "implemented_focused_validation_in_progress",
-    "scope": "Final upstream runtime deltas and omitted genuine QCOM signal artifacts; dev-md only. No #296 tool conversion or device testing.",
-    "path_coverage": [
-      {
-        "path": "AGENTS.md",
-        "disposition": "reference_only",
-        "evidence": "Reference/design or user docs; docs/user edits not authorized. Native behavior and localized catalog recorded in docs/naver/dev-md-refresh-20261018.md."
-      },
-      {
-        "path": "SConstruct",
-        "disposition": "native_equivalent",
-        "evidence": "Existing Cargo/native CXX build owns production paths; compile HUD-only cleanup adapter with affected AGNOS compiler and seal in runtime package. No SCons/Python runtime restoration."
-      },
-      {
-        "path": "docs/hud_low_memory_reboot_20261016.md",
-        "disposition": "reference_only",
-        "evidence": "Reference/design or user docs; docs/user edits not authorized. Native behavior and localized catalog recorded in docs/naver/dev-md-refresh-20261018.md."
-      },
-      {
-        "path": "docs/hud_memory_followup_20261017.md",
-        "disposition": "reference_only",
-        "evidence": "Reference/design or user docs; docs/user edits not authorized. Native behavior and localized catalog recorded in docs/naver/dev-md-refresh-20261018.md."
-      },
-      {
-        "path": "docs/hud_memory_retry_20261017.md",
-        "disposition": "reference_only",
-        "evidence": "Reference/design or user docs; docs/user edits not authorized. Native behavior and localized catalog recorded in docs/naver/dev-md-refresh-20261018.md."
-      },
-      {
-        "path": "docs/hud_native_cleanup_20261016.md",
-        "disposition": "reference_only",
-        "evidence": "Reference/design or user docs; docs/user edits not authorized. Native behavior and localized catalog recorded in docs/naver/dev-md-refresh-20261018.md."
-      },
-      {
-        "path": "docs/locationd_cpu_20261017.md",
-        "disposition": "reference_only",
-        "evidence": "Reference/design or user docs; docs/user edits not authorized. Native behavior and localized catalog recorded in docs/naver/dev-md-refresh-20261018.md."
-      },
-      {
-        "path": "docs/memory_scope_followup_20261018.md",
-        "disposition": "reference_only",
-        "evidence": "Reference/design or user docs; docs/user edits not authorized. Native behavior and localized catalog recorded in docs/naver/dev-md-refresh-20261018.md."
-      },
-      {
-        "path": "docs/proclog_memory_20261018.md",
-        "disposition": "reference_only",
-        "evidence": "Reference/design or user docs; docs/user edits not authorized. Native behavior and localized catalog recorded in docs/naver/dev-md-refresh-20261018.md."
-      },
-      {
-        "path": "docs/s3_disconnect_followup_20261018.md",
-        "disposition": "reference_only",
-        "evidence": "Reference/design or user docs; docs/user edits not authorized. Native behavior and localized catalog recorded in docs/naver/dev-md-refresh-20261018.md."
-      },
-      {
-        "path": "docs/s3_h264_release_20261016.md",
-        "disposition": "reference_only",
-        "evidence": "Reference/design or user docs; docs/user edits not authorized. Native behavior and localized catalog recorded in docs/naver/dev-md-refresh-20261018.md."
-      },
-      {
-        "path": "docs/s3_wifi_memory_20261016.md",
-        "disposition": "reference_only",
-        "evidence": "Reference/design or user docs; docs/user edits not authorized. Native behavior and localized catalog recorded in docs/naver/dev-md-refresh-20261018.md."
-      },
-      {
-        "path": "docs/signal_central_selection_20261017.md",
-        "disposition": "reference_only",
-        "evidence": "Reference/design or user docs; docs/user edits not authorized. Native behavior and localized catalog recorded in docs/naver/dev-md-refresh-20261018.md."
-      },
-      {
-        "path": "docs/signal_drive_review_20261017.md",
-        "disposition": "reference_only",
-        "evidence": "Reference/design or user docs; docs/user edits not authorized. Native behavior and localized catalog recorded in docs/naver/dev-md-refresh-20261018.md."
-      },
-      {
-        "path": "docs/signal_drive_review_20261018.md",
-        "disposition": "reference_only",
-        "evidence": "Reference/design or user docs; docs/user edits not authorized. Native behavior and localized catalog recorded in docs/naver/dev-md-refresh-20261018.md."
-      },
-      {
-        "path": "docs/signal_lead_handover_20261017.md",
-        "disposition": "reference_only",
-        "evidence": "Reference/design or user docs; docs/user edits not authorized. Native behavior and localized catalog recorded in docs/naver/dev-md-refresh-20261018.md."
-      },
-      {
-        "path": "docs/signal_speed_brake_lamps_20261016.md",
-        "disposition": "reference_only",
-        "evidence": "Reference/design or user docs; docs/user edits not authorized. Native behavior and localized catalog recorded in docs/naver/dev-md-refresh-20261018.md."
-      },
-      {
-        "path": "docs/user/en/settings.md",
-        "disposition": "reference_only",
-        "evidence": "Reference/design or user docs; docs/user edits not authorized. Native behavior and localized catalog recorded in docs/naver/dev-md-refresh-20261018.md."
-      },
-      {
-        "path": "docs/user/ko/settings.md",
-        "disposition": "reference_only",
-        "evidence": "Reference/design or user docs; docs/user edits not authorized. Native behavior and localized catalog recorded in docs/naver/dev-md-refresh-20261018.md."
-      },
-      {
-        "path": "docs/vehicle_can_gps_20261018.md",
-        "disposition": "reference_only",
-        "evidence": "Reference/design or user docs; docs/user edits not authorized. Native behavior and localized catalog recorded in docs/naver/dev-md-refresh-20261018.md."
-      },
-      {
-        "path": "opendbc_repo/opendbc/car/car.capnp",
-        "disposition": "ported",
-        "evidence": "card/brands/hyundai/vehicle_gps; schema/DBC checked profile; 1600 original/native transitions, native registration and unit boundaries."
-      },
-      {
-        "path": "opendbc_repo/opendbc/car/hyundai/carstate.py",
-        "disposition": "ported",
-        "evidence": "Native CANFD parser/state update checks the verified DBC profile and publishes VehicleGps with unchanged CAN validity policy; three-sample continuity, freeze, heading and bus timeout tests."
-      },
-      {
-        "path": "opendbc_repo/opendbc/car/hyundai/tests/test_vehicle_gps.py",
-        "disposition": "ported",
-        "evidence": "card/brands/hyundai/vehicle_gps; schema/DBC checked profile; 1600 original/native transitions, native registration and unit boundaries."
-      },
-      {
-        "path": "opendbc_repo/opendbc/car/hyundai/vehicle_gps.py",
-        "disposition": "ported",
-        "evidence": "card/brands/hyundai/vehicle_gps; schema/DBC checked profile; 1600 original/native transitions, native registration and unit boundaries."
-      },
-      {
-        "path": "opendbc_repo/opendbc/dbc/generator/hyundai/hyundai_canfd.dbc",
-        "disposition": "ported",
-        "evidence": "card/brands/hyundai/vehicle_gps; schema/DBC checked profile; 1600 original/native transitions, native registration and unit boundaries."
-      },
-      {
-        "path": "opendbc_repo/opendbc/dbc/hyundai_canfd_generated.dbc",
-        "disposition": "ported",
-        "evidence": "card/brands/hyundai/vehicle_gps; schema/DBC checked profile; 1600 original/native transitions, native registration and unit boundaries."
-      },
-      {
-        "path": "openpilot/cereal/custom.capnp",
-        "disposition": "ported",
-        "evidence": "carrot-man four bounded sources with original fix times; native input/wire integration; 24 original changed-method publication comparisons and source policy units. GPS diagnostics append at native tags43..46 preserving existing33..42."
-      },
-      {
-        "path": "openpilot/common/params_keys.h",
-        "disposition": "ported",
-        "evidence": "Localized catalog and persistent default-OFF LeadBrakeLights parameter; H264 firmware text."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/carrot_functions.py",
-        "disposition": "ported",
-        "evidence": "Native planner finite positive strict stop+2m lead exception, red memory preserved, signal-only notices suppressed while any lead exists; final veto consumes effective start decision. Retired moving assist remains inactive as final signal-mode policy."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/carrot_navi_control.py",
-        "disposition": "ported",
-        "evidence": "carrot-man four bounded sources with original fix times; native input/wire integration; 24 original changed-method publication comparisons and source policy units. GPS diagnostics append at native tags43..46 preserving existing33..42."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/carrot_serv.py",
-        "disposition": "ported",
-        "evidence": "carrot-man four bounded sources with original fix times; native input/wire integration; 24 original changed-method publication comparisons and source policy units. GPS diagnostics append at native tags43..46 preserving existing33..42."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/cluster/SConscript",
-        "disposition": "ported",
-        "evidence": "Native authenticated S3 capability/codec, 3-slot reference backpressure propagated through Stream/Remote, close cancellation/deadline, discovery-before-allocation and Wi-Fi startup path; encoder->graphics->transport close ordering. Native focused tests and exact firmware source."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/cluster/cluster_graphics_cleanup.py",
-        "disposition": "ported_native",
-        "evidence": "HUD-only globally loaded bounded GBM adapter for exact f62d902f native raylib provider; 100 owned+100 borrowed native retry mock lifecycles pass; hash/startup order gate; no manager/main-UI interposition."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/cluster/cluster_h264_pipeline.py",
-        "disposition": "ported",
-        "evidence": "Native authenticated S3 capability/codec, 3-slot reference backpressure propagated through Stream/Remote, close cancellation/deadline, discovery-before-allocation and Wi-Fi startup path; encoder->graphics->transport close ordering. Native focused tests and exact firmware source."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/cluster/cluster_profile.py",
-        "disposition": "native_equivalent",
-        "evidence": "No Python GC in Rust owner; RAII releases session-owned state; explicit glibc malloc_trim outside frame loop at initialization/teardown. Native child exec does not inherit Python heap. Do not claim allocator retention is solved by free alone."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/cluster/cluster_renderer.py",
-        "disposition": "ported",
-        "evidence": "Native authenticated S3 capability/codec, 3-slot reference backpressure propagated through Stream/Remote, close cancellation/deadline, discovery-before-allocation and Wi-Fi startup path; encoder->graphics->transport close ordering. Native focused tests and exact firmware source."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/cluster/cluster_usb_display.py",
-        "disposition": "ported",
-        "evidence": "Native authenticated S3 capability/codec, 3-slot reference backpressure propagated through Stream/Remote, close cancellation/deadline, discovery-before-allocation and Wi-Fi startup path; encoder->graphics->transport close ordering. Native focused tests and exact firmware source."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/cluster/cluster_wifi_display.py",
-        "disposition": "ported",
-        "evidence": "Native authenticated S3 capability/codec, 3-slot reference backpressure propagated through Stream/Remote, close cancellation/deadline, discovery-before-allocation and Wi-Fi startup path; encoder->graphics->transport close ordering. Native focused tests and exact firmware source."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/cluster/cluster_wifi_protocol.py",
-        "disposition": "ported",
-        "evidence": "Native authenticated S3 capability/codec, 3-slot reference backpressure propagated through Stream/Remote, close cancellation/deadline, discovery-before-allocation and Wi-Fi startup path; encoder->graphics->transport close ordering. Native focused tests and exact firmware source."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/cluster/gbm_cleanup.c",
-        "disposition": "ported_native",
-        "evidence": "HUD-only globally loaded bounded GBM adapter for exact f62d902f native raylib provider; 100 owned+100 borrowed native retry mock lifecycles pass; hash/startup order gate; no manager/main-UI interposition."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/cluster/main.py",
-        "disposition": "ported",
-        "evidence": "Native authenticated S3 capability/codec, 3-slot reference backpressure propagated through Stream/Remote, close cancellation/deadline, discovery-before-allocation and Wi-Fi startup path; encoder->graphics->transport close ordering. Native focused tests and exact firmware source."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/cluster_autorun.py",
-        "disposition": "ported",
-        "evidence": "Native authenticated S3 capability/codec, 3-slot reference backpressure propagated through Stream/Remote, close cancellation/deadline, discovery-before-allocation and Wi-Fi startup path; encoder->graphics->transport close ordering. Native focused tests and exact firmware source."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/cluster_run.py",
-        "disposition": "ported",
-        "evidence": "Native authenticated S3 capability/codec, 3-slot reference backpressure propagated through Stream/Remote, close cancellation/deadline, discovery-before-allocation and Wi-Fi startup path; encoder->graphics->transport close ordering. Native focused tests and exact firmware source."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/gps_sources.py",
-        "disposition": "ported",
-        "evidence": "carrot-man four bounded sources with original fix times; native input/wire integration; 24 original changed-method publication comparisons and source policy units. GPS diagnostics append at native tags43..46 preserving existing33..42."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/lead_brake_lights.py",
-        "disposition": "ported",
-        "evidence": "Native signal-observer bounded default-OFF detector/worker and ui-application cached reader. 1000 source/native pixel/temporal transitions; lazy OFF/busy/stale/bounded-output tests."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/tests/test_carrot_navi_serv.py",
-        "disposition": "ported",
-        "evidence": "carrot-man four bounded sources with original fix times; native input/wire integration; 24 original changed-method publication comparisons and source policy units. GPS diagnostics append at native tags43..46 preserving existing33..42."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/tests/test_cluster_autorun.py",
-        "disposition": "ported",
-        "evidence": "Native authenticated S3 capability/codec, 3-slot reference backpressure propagated through Stream/Remote, close cancellation/deadline, discovery-before-allocation and Wi-Fi startup path; encoder->graphics->transport close ordering. Native focused tests and exact firmware source."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/tests/test_cluster_gc_lifecycle.py",
-        "disposition": "native_equivalent",
-        "evidence": "No Python GC in Rust owner; RAII releases session-owned state; explicit glibc malloc_trim outside frame loop at initialization/teardown. Native child exec does not inherit Python heap. Do not claim allocator retention is solved by free alone."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/tests/test_cluster_graphics_cleanup.py",
-        "disposition": "ported_native",
-        "evidence": "HUD-only globally loaded bounded GBM adapter for exact f62d902f native raylib provider; 100 owned+100 borrowed native retry mock lifecycles pass; hash/startup order gate; no manager/main-UI interposition."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/tests/test_cluster_graphics_shutdown.py",
-        "disposition": "ported_tests",
-        "evidence": "Final runtime contract covered by focused native capability/codec, cancellation/timeout/CPU wait, Stream+Remote retention, startup/teardown and native GBM mock lifecycles. No Python runtime tests installed on device."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/tests/test_cluster_performance_safeguards.py",
-        "disposition": "ported_tests",
-        "evidence": "Final runtime contract covered by focused native capability/codec, cancellation/timeout/CPU wait, Stream+Remote retention, startup/teardown and native GBM mock lifecycles. No Python runtime tests installed on device."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/tests/test_cluster_usb_display_settings.py",
-        "disposition": "ported_tests",
-        "evidence": "Final runtime contract covered by focused native capability/codec, cancellation/timeout/CPU wait, Stream+Remote retention, startup/teardown and native GBM mock lifecycles. No Python runtime tests installed on device."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/tests/test_cluster_wifi_h264.py",
-        "disposition": "ported_tests",
-        "evidence": "Final runtime contract covered by focused native capability/codec, cancellation/timeout/CPU wait, Stream+Remote retention, startup/teardown and native GBM mock lifecycles. No Python runtime tests installed on device."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/tests/test_gps_source_integration.py",
-        "disposition": "ported",
-        "evidence": "carrot-man four bounded sources with original fix times; native input/wire integration; 24 original changed-method publication comparisons and source policy units. GPS diagnostics append at native tags43..46 preserving existing33..42."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/tests/test_gps_sources.py",
-        "disposition": "ported",
-        "evidence": "carrot-man four bounded sources with original fix times; native input/wire integration; 24 original changed-method publication comparisons and source policy units. GPS diagnostics append at native tags43..46 preserving existing33..42."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/tests/test_lead_brake_lights.py",
-        "disposition": "ported",
-        "evidence": "Native signal-observer bounded default-OFF detector/worker and ui-application cached reader. 1000 source/native pixel/temporal transitions; lazy OFF/busy/stale/bounded-output tests."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/tests/test_signal_lead_alerts.py",
-        "disposition": "ported",
-        "evidence": "Native planner finite positive strict stop+2m lead exception, red memory preserved, signal-only notices suppressed while any lead exists; final veto consumes effective start decision. Retired moving assist remains inactive as final signal-mode policy."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/tests/test_signal_lead_handover.py",
-        "disposition": "ported",
-        "evidence": "Native planner finite positive strict stop+2m lead exception, red memory preserved, signal-only notices suppressed while any lead exists; final veto consumes effective start decision. Retired moving assist remains inactive as final signal-mode policy."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/tests/test_signal_prepare_lead_distance.py",
-        "disposition": "ported",
-        "evidence": "Native planner finite positive strict stop+2m lead exception, red memory preserved, signal-only notices suppressed while any lead exists; final veto consumes effective start decision. Retired moving assist remains inactive as final signal-mode policy."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot/tests/test_signal_start_guard.py",
-        "disposition": "ported",
-        "evidence": "Native planner finite positive strict stop+2m lead exception, red memory preserved, signal-only notices suppressed while any lead exists; final veto consumes effective start decision. Retired moving assist remains inactive as final signal-mode policy."
-      },
-      {
-        "path": "openpilot/selfdrive/carrot_settings.json",
-        "disposition": "ported",
-        "evidence": "Localized catalog and persistent default-OFF LeadBrakeLights parameter; H264 firmware text."
-      },
-      {
-        "path": "openpilot/selfdrive/modeld/signal_neural_shadow.py",
-        "disposition": "ported",
-        "evidence": "Native cadence max(0,.05-wall,2*cpu-wall), checked borrowed NV12 planes, owned RGB storage, frame-ID recheck, optional brake work after signal publication. Genuine FP32 A630 models separately produced/admitted49+35 kernels."
-      },
-      {
-        "path": "openpilot/selfdrive/modeld/signal_tracking_shadow.py",
-        "disposition": "ported",
-        "evidence": "Native cadence max(0,.05-wall,2*cpu-wall), checked borrowed NV12 planes, owned RGB storage, frame-ID recheck, optional brake work after signal publication. Genuine FP32 A630 models separately produced/admitted49+35 kernels."
-      },
-      {
-        "path": "openpilot/selfdrive/modeld/tests/test_signal_tracking_shadow.py",
-        "disposition": "ported",
-        "evidence": "Native cadence max(0,.05-wall,2*cpu-wall), checked borrowed NV12 planes, owned RGB storage, frame-ID recheck, optional brake work after signal publication. Genuine FP32 A630 models separately produced/admitted49+35 kernels."
-      },
-      {
-        "path": "openpilot/system/proclogd.py",
-        "disposition": "native_equivalent",
-        "evidence": "runtime-core/procfs Collector caches by PID/start_ticks, verifies identity twice and retains only current seen set; reused_pid_with_same_name_refreshes_metadata_and_smaps and exited_process_cache_is_evicted_even_if_identity_returns. exec-owned native children have independent heaps."
-      },
-      {
-        "path": "openpilot/system/tests/test_proclog_smaps.py",
-        "disposition": "native_equivalent",
-        "evidence": "Existing procfs PID/start identity double-read, prune and reuse tests; no unbounded metadata cache, native child exec owns its heap."
-      },
-      {
-        "path": "tools/carrot_route_vault/viewer.py",
-        "disposition": "out_of_runtime_scope",
-        "evidence": "Analysis/NAS/wiki/development tooling remains separate #296 or server track; no vehicle radar algorithm delta."
-      },
-      {
-        "path": "tools/docs/wiki_settings/tests/test_generate.py",
-        "disposition": "out_of_runtime_scope",
-        "evidence": "Analysis/NAS/wiki/development tooling remains separate #296 or server track; no vehicle radar algorithm delta."
-      },
-      {
-        "path": "tools/esp32s3_display/INSTALL_KO.md",
-        "disposition": "out_of_runtime_scope",
-        "evidence": "Firmware source/link in this runtime track; browser installer/release publishing and provisioning development-tool conversion remain #296. Native capability probing preserves old firmware JPEG fallback."
-      },
-      {
-        "path": "tools/esp32s3_display/README.md",
-        "disposition": "out_of_runtime_scope",
-        "evidence": "Firmware source/link in this runtime track; browser installer/release publishing and provisioning development-tool conversion remain #296. Native capability probing preserves old firmware JPEG fallback."
-      },
-      {
-        "path": "tools/esp32s3_display/firmware/CMakeLists.txt",
-        "disposition": "ported_native",
-        "evidence": "Exact external ESP-IDF native source; 1.2.0 Xtensa link and original LED assertions pass; no flashing."
-      },
-      {
-        "path": "tools/esp32s3_display/firmware/main/CMakeLists.txt",
-        "disposition": "ported_native",
-        "evidence": "Exact external ESP-IDF native source; 1.2.0 Xtensa link and original LED assertions pass; no flashing."
-      },
-      {
-        "path": "tools/esp32s3_display/firmware/main/Kconfig.projbuild",
-        "disposition": "ported_native",
-        "evidence": "Exact external ESP-IDF native source; 1.2.0 Xtensa link and original LED assertions pass; no flashing."
-      },
-      {
-        "path": "tools/esp32s3_display/firmware/main/network.c",
-        "disposition": "ported_native",
-        "evidence": "Exact external ESP-IDF native source; 1.2.0 Xtensa link and original LED assertions pass; no flashing."
-      },
-      {
-        "path": "tools/esp32s3_display/firmware/main/provision.c",
-        "disposition": "ported_native",
-        "evidence": "Exact external ESP-IDF native source; 1.2.0 Xtensa link and original LED assertions pass; no flashing."
-      },
-      {
-        "path": "tools/esp32s3_display/firmware/main/status_led.c",
-        "disposition": "ported_native",
-        "evidence": "Exact external ESP-IDF native source; 1.2.0 Xtensa link and original LED assertions pass; no flashing."
-      },
-      {
-        "path": "tools/esp32s3_display/firmware/main/status_led.h",
-        "disposition": "ported_native",
-        "evidence": "Exact external ESP-IDF native source; 1.2.0 Xtensa link and original LED assertions pass; no flashing."
-      },
-      {
-        "path": "tools/esp32s3_display/firmware/main/status_led_policy.h",
-        "disposition": "ported_native",
-        "evidence": "Exact external ESP-IDF native source; 1.2.0 Xtensa link and original LED assertions pass; no flashing."
-      },
-      {
-        "path": "tools/esp32s3_display/firmware/main/usb_bridge.c",
-        "disposition": "ported_native",
-        "evidence": "Exact external ESP-IDF native source; 1.2.0 Xtensa link and original LED assertions pass; no flashing."
-      },
-      {
-        "path": "tools/esp32s3_display/installer/index.html",
-        "disposition": "out_of_runtime_scope",
-        "evidence": "Firmware source/link in this runtime track; browser installer/release publishing and provisioning development-tool conversion remain #296. Native capability probing preserves old firmware JPEG fallback."
-      },
-      {
-        "path": "tools/esp32s3_display/package_release.py",
-        "disposition": "out_of_runtime_scope",
-        "evidence": "Firmware source/link in this runtime track; browser installer/release publishing and provisioning development-tool conversion remain #296. Native capability probing preserves old firmware JPEG fallback."
-      },
-      {
-        "path": "tools/esp32s3_display/tests/test_status_led.c",
-        "disposition": "ported_native",
-        "evidence": "Exact external ESP-IDF native source; 1.2.0 Xtensa link and original LED assertions pass; no flashing."
-      },
-      {
-        "path": "tools/memory_analysis/capture_device_memory.py",
-        "disposition": "out_of_runtime_scope",
-        "evidence": "Analysis/NAS/wiki/development tooling remains separate #296 or server track; no vehicle radar algorithm delta."
-      },
-      {
-        "path": "tools/signal_analysis/lead_brake_detector.py",
-        "disposition": "ported",
-        "evidence": "Native signal-observer bounded default-OFF detector/worker and ui-application cached reader. 1000 source/native pixel/temporal transitions; lazy OFF/busy/stale/bounded-output tests."
-      },
-      {
-        "path": "tools/signal_analysis/replay_signal_central.py",
-        "disposition": "reference_only",
-        "evidence": "Offline central-selection experiment is not enabled in final upstream runtime; keep reference only."
-      },
-      {
-        "path": "tools/signal_analysis/signal_central_selection.py",
-        "disposition": "reference_only",
-        "evidence": "Offline central-selection experiment is not enabled in final upstream runtime; keep reference only."
-      },
-      {
-        "path": "tools/signal_analysis/test_signal_assist_planner.py",
-        "disposition": "reference_only",
-        "evidence": "Offline test harness, relevant lead handover covered by native owner tests; no radar detector/lead selection change."
-      },
-      {
-        "path": "tools/signal_analysis/test_signal_central_selection.py",
-        "disposition": "reference_only",
-        "evidence": "Offline central-selection experiment is not enabled in final upstream runtime; keep reference only."
-      }
+    "from": "163c000e05641adea88e9221094d45c90c3e186d",
+    "to": "0436c7f0a7c9741f55bbb175f68c53d0df0c85d5",
+    "commits": 487,
+    "runtime_status": "partial; boot checked, driving not tested",
+    "ported": [
+      "data, schema, params, web taken as files",
+      "vehicle_faults",
+      "signal stop departure",
+      "radar vision transition",
+      "radar_pair_entry cut-in",
+      "hyundai stockSccFault",
+      "camera SCC MAIN",
+      "signal stop object",
+      "dm2d stationary pause",
+      "ATC parameter migration",
+      "lever rules (base-era gap)",
+      "CenterToFrontRatio"
     ],
-    "from": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8"
+    "pending": [
+      "boundary/model/manual indicators and AutoBlinkerControl",
+      "hyundai_spas with Panda safety and firmware",
+      "navigation package (mapsd, renderer, tiles, route source)",
+      "assistant voice services",
+      "tesla signals and traffic stop",
+      "pedal interceptor",
+      "b1_monitor",
+      "jetlink/eGPU changes",
+      "ui stop_object and b1 badge",
+      "carrot_assistant speed",
+      "memory_trace"
+    ]
   },
   "coverage_note": "coverage_complete remains false for the historical whole-file inventory. It is not a count of missing changed-runtime ports. Latest refresh dispositions cover all 64 changed source paths; no claim of whole-project API parity or device acceptance.",
   "refresh_history": [
@@ -15804,6 +15387,39 @@
         "tools/modeld/build_md_v3_package.py"
       ],
       "record": "docs/naver/dev-md-latest-refresh.md"
+    },
+    {
+      "from": "163c000e05641adea88e9221094d45c90c3e186d",
+      "to": "0436c7f0a7c9741f55bbb175f68c53d0df0c85d5",
+      "commits": 487,
+      "runtime_status": "partial; boot checked, driving not tested",
+      "ported": [
+        "data, schema, params, web taken as files",
+        "vehicle_faults",
+        "signal stop departure",
+        "radar vision transition",
+        "radar_pair_entry cut-in",
+        "hyundai stockSccFault",
+        "camera SCC MAIN",
+        "signal stop object",
+        "dm2d stationary pause",
+        "ATC parameter migration",
+        "lever rules (base-era gap)",
+        "CenterToFrontRatio"
+      ],
+      "pending": [
+        "boundary/model/manual indicators and AutoBlinkerControl",
+        "hyundai_spas with Panda safety and firmware",
+        "navigation package (mapsd, renderer, tiles, route source)",
+        "assistant voice services",
+        "tesla signals and traffic stop",
+        "pedal interceptor",
+        "b1_monitor",
+        "jetlink/eGPU changes",
+        "ui stop_object and b1 badge",
+        "carrot_assistant speed",
+        "memory_trace"
+      ]
     }
   ]
 }
