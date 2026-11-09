@@ -167,6 +167,10 @@ struct OnroadEvent @0xc4fa6047f024e718 {
     # Native allocation: source e8e152db uses @126, already jetlinkLost here.
     # Source-log adapters must map semantic names instead of copying raw ordinals.
     driverMonitorFallback @130;
+    teslaTrafficStopWarning @134;
+    teslaTrafficStopTakeover @131;
+    pandaCanFault @132;
+    stockSccFault @133;
 
     soundsUnavailableDEPRECATED @47;
   }
@@ -828,6 +832,10 @@ struct SelfdriveState {
   personality @11 :LongitudinalPersonality;
   distanceTraveled @13 :Float32;
 
+  # Latched cue from the audioTurn event, not the priority-selected alert sound.
+  atcTurnStartMonoTime @14 :UInt64;
+  atcTurnDirection @15 :LaneChangeDirection;
+
   enum OpenpilotState @0xdbe58b96d2d1ac61 {
     disabled @0;
     preEnabled @1;
@@ -1119,6 +1127,22 @@ struct ModelDataV2 {
     laneChangeAvailableRight @19 :Bool;
     laneChangeBlinkerHold @20 :LaneChangeDirection;  # carrot: hold this turn signal while a lever-requested change waits or is queued
     leverTurn @21 :Bool;  # carrot: the turn desire comes from a latched lever (BlinkerLatchedTurn)
+    autoTurnSignal @22 :LaneChangeDirection;  # ATC-originated maneuver only; no steering request
+    autoTurnSignalLaneChange @23 :Bool;
+    autoTurnSignalDirection @24 :LaneChangeDirection;
+    autoTurnSignalRequestId @25 :UInt64;
+    manualLaneIndicator @26 :LaneChangeDirection;  # Lamp only; its feedback is excluded from driver lane requests.
+    manualLaneIndicatorMonoTime @27 :UInt64;
+    observedIndicator @28 :LaneChangeDirection; # Lamp-only observation; never steering admission.
+    observedIndicatorMonoTime @29 :UInt64;
+    observedIndicatorSource @30 :Text;
+    indicatorIsolationMask @31 :UInt8;
+    indicatorJournalMonoTime @32 :UInt64;
+    indicatorPrepareDirection @33 :LaneChangeDirection; # Display only; never an actuation request.
+    indicatorPrepareSource @34 :Text;
+    assistantLaneSignalId @35 :Text; # Set only after ordinary lane-change admission; direction is laneChangeDirection.
+    assistantLaneSignalRoute @36 :Text; # Empty outside voice maneuvers, otherwise ordinary, native or the selected adapter instance.
+
 
     deprecated :group {
       brakeDisengageProb @2 :Float32;
@@ -1531,6 +1555,7 @@ struct ProcLog {
     memPssAnon @18 :UInt64;    # Pss_Anon — private anonymous (heap, stack)
     memPssShmem @19 :UInt64;   # Pss_Shmem — proportional MSGQ/tmpfs share
     memPssMonoTime @20 :UInt64; # scan start in monotonic ns; 0 means unavailable (also older logs)
+    memPrivateDirty @21 :UInt64; # bytes from the same completed scan; absent in older logs
   }
 
   struct CPUTimes {
@@ -2368,6 +2393,7 @@ struct LiveParametersData {
   angleOffsetAverageValid @18 :Bool = true;
   steerRatioValid @19 :Bool = true;
   stiffnessFactorValid @20 :Bool = true;
+  centerToFrontRatio @21 :Float32;  # Applied geometry; 0 in legacy messages.
 
 
   struct FilterState {
@@ -2563,6 +2589,7 @@ struct NavInstruction {
 
 struct NavRoute {
   coordinates @0 :List(Coordinate);
+  carrotRouteId @1 :UInt64;  # stable across route heartbeats; changes on source/geometry replacement
 
   struct Coordinate {
     latitude @0 :Float32;

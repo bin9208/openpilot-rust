@@ -45,6 +45,7 @@ class CanfdStopping:
     self.reset()
 
   def reset(self):
+    self.stop_object_active = False
     self.phase = StopPhase.idle
     self.reason = "inactive"
     self.retried = False
