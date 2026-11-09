@@ -3407,6 +3407,7 @@ dependencies = [
  "cxx",
  "cxx-build",
  "openpilot-cereal",
+ "openpilot-control-policy",
  "openpilot-locationd",
  "openpilot-logging",
  "openpilot-managed-entry",

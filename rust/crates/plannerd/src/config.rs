@@ -27,6 +27,7 @@ impl Config {
                 wheelbase: f64::from(cp.get_wheelbase()),
                 center_to_front: f64::from(cp.get_center_to_front()),
                 mass: f64::from(cp.get_mass()),
+                tire_stiffness_front: f64::from(cp.get_tire_stiffness_front()),
                 tire_stiffness_rear: f64::from(cp.get_tire_stiffness_rear()),
             },
             radar_unavailable: cp.get_radar_unavailable(),

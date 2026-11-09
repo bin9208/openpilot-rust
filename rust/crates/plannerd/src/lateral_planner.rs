@@ -20,6 +20,7 @@ pub struct Vehicle {
     pub wheelbase: f64,
     pub center_to_front: f64,
     pub mass: f64,
+    pub tire_stiffness_front: f64,
     pub tire_stiffness_rear: f64,
 }
 
@@ -29,9 +30,12 @@ pub struct Input<'a> {
     pub curvature: f64,
     pub curve_speed: f64,
     pub atc_active: bool,
+    pub center_to_front_ratio: f64,
 }
 
 pub struct LateralPlanner {
+    geometry: openpilot_control_policy::geometry::LateralGeometry,
+    mass: f64,
     factor1: f64,
     factor2: f64,
     last_warning: f64,
@@ -85,6 +89,13 @@ impl LateralPlanner {
         let mut mpc = LateralMpc::load(directory)?;
         mpc.reset([0.; 4])?;
         Ok(Self {
+            geometry: openpilot_control_policy::geometry::LateralGeometry::new(
+                vehicle.wheelbase,
+                vehicle.center_to_front,
+                vehicle.tire_stiffness_front,
+                vehicle.tire_stiffness_rear,
+            ),
+            mass: vehicle.mass,
             factor1,
             factor2,
             last_warning: 0.,
@@ -117,6 +128,13 @@ impl LateralPlanner {
         parameters: &mut impl Parameters,
         clock: &mut impl FnMut() -> f64,
     ) -> Result<bool, Error> {
+        if self.geometry.update(input.center_to_front_ratio) {
+            self.factor1 = self.geometry.wheelbase - self.geometry.center_to_front;
+            self.factor2 = divide(
+                self.geometry.center_to_front * self.mass,
+                self.geometry.wheelbase * self.geometry.stiffness_rear,
+            )?;
+        }
         self.params_countdown -= 1;
         if self.params_countdown <= 0 {
             self.params_countdown = 10;

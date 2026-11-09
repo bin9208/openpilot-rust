@@ -14,6 +14,7 @@ public:
   Snapshot snapshot() const;
   void reset(rust::Slice<const double> x, rust::Slice<const double> covariance, double time);
   void pause(double time);
+  void set_globals(rust::Slice<const double> values);
   Estimate observe(double time, int kind, rust::Slice<const double> values, rust::Slice<const double> noise);
 private:
   std::unique_ptr<EKFS::EKFSym> filter;

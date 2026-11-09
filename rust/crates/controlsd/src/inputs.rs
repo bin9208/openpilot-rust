@@ -139,6 +139,7 @@ pub struct Inputs {
     pub model_checks: bool,
     pub carrot_fresh: bool,
     pub stop_object_inputs: bool,
+    pub center_to_front_ratio: f64,
     pub plan_age: f64,
     pub frame: i64,
     pub long_time: u64,

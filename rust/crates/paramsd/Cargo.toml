@@ -15,6 +15,7 @@ native = ["solver", "openpilot-messaging/native", "dep:openpilot-msgq", "dep:ope
 unsafe_code = "deny"
 
 [dependencies]
+openpilot-control-policy = { path = "../control-policy", default-features = false }
 openpilot-managed-entry = { path = "../managed-entry" }
 openpilot-runtime-core = { path = "../runtime-core" }
 serde_json = { version = "1", features = ["raw_value", "float_roundtrip"] }

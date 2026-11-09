@@ -123,6 +123,7 @@ impl Controls {
             params.float("SteerRatioRate")?,
             params.float("CustomSR")?,
         );
+        self.vm.update_geometry(input.center_to_front_ratio);
         self.vm.update(maximum(live.stiffness, 0.1), ratio);
         let angle = (cs.steer_angle - live.offset).to_radians();
         self.curvature = -self.vm.curvature(angle, cs.speed, live.roll)?;

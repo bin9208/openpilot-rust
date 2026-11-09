@@ -61,6 +61,7 @@ pub fn decode(state: &State, now: f64) -> Result<Inputs, Error> {
         steer_curvature: f64::from(car.get_steering_curvature()),
     };
     let live = service!(state, "liveParameters", LiveParameters);
+    let center_to_front_ratio = f64::from(live.get_center_to_front_ratio());
     let live = LiveParameters {
         stiffness: f64::from(live.get_stiffness_factor()),
         ratio: f64::from(live.get_steer_ratio()),
@@ -197,6 +198,7 @@ pub fn decode(state: &State, now: f64) -> Result<Inputs, Error> {
         torque_checks: state.all_checks(&["liveTorqueParameters"])?,
         model_checks: state.all_checks(&["modelV2"])?,
         carrot_fresh,
+        center_to_front_ratio,
         stop_object_inputs: state.all_checks(&["longitudinalPlan", "radarState"])?
             && (0. ..=0.2).contains(
                 &((state.frame() - state.topic("longitudinalPlan")?.receive_frame) as f64 * 0.01),
