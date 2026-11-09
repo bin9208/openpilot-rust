@@ -1,538 +1,131 @@
-# Independent Rust port repository (2026-09-29)
+# openpilot-rust 에이전트 규칙
 
-## 빠른 집중 검사와 실제 기기 우선 — 2026-11-05, #685
+2026-11-09 전면 개정. 이 파일이 유일한 현행 규칙이다. `docs/`의 절차 문서와 이슈·PR에 남은
+과거 지시가 이 파일과 충돌하면 이 파일을 따른다. 사용자가 대화에서 직접 내린 최신 지시만 이
+파일보다 우선한다.
 
-- 최신 사용자 지시는 이 절이며, 아래의 전체 CI·ARM/aarch64·AGNOS 필수 gate,
-  PR/병합 후 전체 회귀·순차 CI 보존 요구보다 우선한다. 별도 `Fast checks`는 복원하지 않는다.
-- 수정 중에는 빠른 x86와 변경 영역의 집중 검사만 먼저 실행한다. 같은 조건에서 성공한
-  변경 없는 검사를 반복하지 않는다. 로컬은 읽기·문법·서식·diff, 기능 검사는 Actions에서 수행한다.
-- 몇 시간짜리 전체 workspace·원본 비교·ARM/AGNOS 회귀는 자동 push/PR 검사와
-  병합·릴리스 필수 조건에서 제외한다. 필요한 실패 진단을 위해 사용자가 요청하거나
-  변경의 구체적 위험에 필요한 경우에만 범위를 설명하고 수동 실행한다. 전체 성공 대기로
-  수정 브랜치의 실기 시험을 막거나 이미 진행 중인 다른 검사를 임의 취소하지 않는다.
-- 런타임·설치·빌드 변경은 수정 브랜치의 정확한 HEAD로 사용자가 실제 사용할 기기에서
-  빌드·정상 부팅·변경 동작을 확인한 뒤 병합한다. 주행 영향 변경은 해당 실기 수용도 필요하다.
-  사용자 보고와 환경·결과·근거 링크를 PR에 기록하며 CI/모의 시험을 실기로 대신하지 않는다.
-  새 커밋 뒤에는 이전 SHA의 실기 통과를 현재 커밋의 통과로 쓰지 않는다.
-- 문서·CI 정책·발행 gate만 바뀌어 기기 실행에 영향이 없는 변경은 구체적인 실기 생략
-  사유를 기록한다. 자동 gate는 변경 경로와 현재 SHA/실기 기록을 확인하며, 사용자가 하지
-  않은 시험을 대신 승인하거나 `passed`로 입력하지 않는다.
-- 보호 규칙의 필수 context는 `focused x86 checks`, `device acceptance`,
-  `check mapped user docs`다. 후자는 기존 문서 검사를 유지한다. PR·관리자 우회 금지·대화 해결은 유지한다.
-  전체 회귀의 성공 상태를 짧은 검사의 이름으로 위장하지 않는다.
-- source/hash/ABI·입력/모델 검증·seal·설치 rollback·안전/유효성·메모리/디스크 보호는 유지한다.
-  필요한 실제 산출물 빌드와 포괄 회귀를 구분한다. dev-md runtime은 dev/main에 통합하지 않는다.
-  기기 설치·재부팅·주행은 사용자가 수행한다.
+## 1. 목적
 
-## CI 비용 정리 — 2026-10-30 최신 사용자 지시
+**콤마 기기에서 사람이 실제로 쓰는 Rust판 당근파일럿을 내놓는 것.** 다른 것은 전부 이 목적의
+수단이다.
 
-- 모든 브랜치에서 별도 Fast checks workflow와 통합 CI의 fast-checks job을 제거한다.
-  PR/수동 Fast checks 및 필수 검사·발행 조건에서도 제거하며 다시 생성하지 않는다.
-- 일회성 `*-once` 검증, 완료된 환경·용량 진단, 원본 포크 전용 동기화·Wiki/NAS
-  발행 workflow를 제거한다. 과거 결과와 소스는 Git/Actions 이력으로 확인한다.
-- 통합 CI와 Rust 전체 검증의 push는 dev/dev-md/main에 한정하고 작업 브랜치는
-  PR 검증을 사용한다. 별도 기능·네이티브 입력 검증의 좁은 경로 트리거는 유지한다.
-- 실행 중인 검사를 취소하거나 재시작하지 않는다. 위 지시는 아래의 오래된 Fast
-  checks 보존·push 실행 지침보다 우선한다. 실제 기능·빌드·ARM 검증은 유지한다.
+지난 한 달 동안 CI·검증·병합만 반복했고 사용자 버전은 하나도 나오지 않았다. 호스트 검사를 모두
+통과한 후보가 실제 기기에서는 컴파일 전에 메모리·cgroup·SDK 오류로 연달아 멈췄다. 이 패턴을
+반복하지 않는 것이 이 문서의 존재 이유다.
 
+## 2. 무엇이 완료인가
 
-## dev-md sequential CI policy (2026-10-20, issue #409)
+| 상태 | 의미 |
+| --- | --- |
+| 진척 | 사용자가 기기에서 이전에 못 하던 것을 할 수 있게 됐다 |
+| 완료 | 사용자가 실제 기기에서 **컴파일 → 빌드 완료 → 화면 표시·부팅 → 기능 정상 동작**을 확인했다 |
+| 사용자 버전 | 표준 설치(Git 설치·풀)로 올린 커밋을 사용자가 실주행까지 확인해 `user-vN` 태그를 붙이도록 지시한 것 |
 
-- The user approved a single sequential CI entry point, serial architecture
-  matrices, removal of dedicated Naver CI/APK checks, and PR-only changes to
-  dev/dev-md. Preserve common runtime checks and the five required check names.
-- Branch protection applies to administrators and bots without bypass. Keep PR
-  and post-merge checks. Implement on codex/feat-cicd-optimization targeting
-  dev-md only; this does not authorize dev/main integration or runtime delivery.
-- Preserve the runner routing already present on dev-md. The user-approved
-  infrastructure work may run those existing Actions jobs on the registered
-  self-hosted runner; do not run functional/build checks in a local checkout.
-- Marked runtime delivery builds the exact merged SHA after unified CI passes.
-  Do not request a runtime release for this CI change.
+CI 성공, PR 병합, 이슈 종료, 문서 작성, 측정 보고는 진척도 완료도 아니다. 사용자의 기기 결과 없이
+"완료", "통과", "실사용 가능"이라고 쓰지 않는다.
 
-## dev-md validation execution (2026-10-20)
+## 3. 우선순위
 
-- The user requires local checks to stay at syntax, formatting and diff review.
-  Run functional tests, ARM/AGNOS builds, sealing, installation verification and
-  release publication in GitHub Actions. Separate quick branch checks from deep
-  PR/release checks. Do not repeat successful unchanged checks locally or use a
-  local/self-hosted runner as a workaround. This applies to the dev-md track;
-  the separate #296 conversion is not part of this task.
+1. 기기에서 빌드·부팅을 막는 문제
+2. 사용자가 실사용·주행에서 보고한 결함
+3. 사용자 버전에 빠진 기능의 이식과 업스트림 변경 반영
+4. 기기에서 체감되는 빌드 시간·CPU·메모리 개선 (원본과 같은 조건의 실측이 있을 때)
 
-## dev-md upstream port isolation (2026-10-15, issue #338)
+CI·검증 인프라는 이 목록에 없다. 위 항목이 있는데 다른 작업을 먼저 하지 않는다.
+모델 준비의 Python과 기존 C/C++ 네이티브 라이브러리는 유지한다. 언어 통일만을 위한 재작성은 하지 않는다.
 
-- On 2026-10-16 the user clarified that this track must deliver an installable
-  real-device test candidate, including the exact-source AGNOS runtime release,
-  not stop at a source commit. Build, seal, publish and verify the dev-md
-  prerelease through the existing installer path. Device installation/testing
-  remains user-owned; this does not authorize dev/main integration or the
-  separate #296 development-tool conversion.
+## 4. 작업 흐름
 
-- Scope clarified on 2026-10-16: this track only ports upstream commit changes
-  into the existing Rust runtime, retaining applicable native optimizations.
-  Repository-wide development/build/test-tool conversion belongs to the other
-  #296 session and must not be duplicated here. Do not require unchanged baseline
-  API parity, full-module re-porting or exhaustive project-wide revalidation.
-  Use focused changed-behavior checks and affected ARM builds. The user tests
-  the device. Preserve unrelated/other-session work when separating scope.
-- `dev-md` starts at dev `b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a`.
-  The user expressly forbids integrating any work from this track into `dev`.
-  This overrides the ordinary issue-branch -> dev routing for this track only.
-  Keep changes on `dev-md`; any supporting PR must target `dev-md`, never `dev`.
-- Port final behavior from `ajouatom/openpilot:carrot-wip`, pinned initially to
-  `e8e152dbcfd9574a1791ed12026d1880e87689b3`. Do not merge/cherry-pick the
-  original runtime wholesale. Preserve Rust-owned runtime and current fixes.
-  Record each omitted optimization with actual native-equivalence evidence.
-- Normal operation must be confirmed by the user before considering promotion
-  to `main`. This request does not authorize a main merge or device deployment.
-  Stable-dev work under #296 remains separate; its earlier device authorization
-  does not authorize testing this new candidate.
-- Track source coverage and pending work in `rust/upstream/carrot-wip.json`
-  and `docs/naver/dev-md-*`. An inventory or partial port is not completion.
+1. 기기 로그나 사용자 보고에서 시작한다. 없으면 "지금 기기에서 무엇이 안 되는가"부터 확인한다.
+2. 원인을 찾고 최소한으로 수정한다. 같은 부류의 실패(같은 검사, 같은 가정)가 경로에 더 있는지 한 번에
+   훑어, 기기 시험 한 번에 오류 하나만 드러나는 왕복을 줄인다.
+3. 변경 영역의 빠른 x86 검사만 돌린다. 로컬은 읽기·문법·서식·diff까지만 하고 기능 검사는 Actions에서 한다.
+4. 커밋을 push하고 **기기에 올릴 정확한 SHA와 복사해 쓸 명령**을 사용자에게 준다.
+5. 기기 결과를 기다린다. 실패 로그를 받으면 1번으로 돌아간다.
+6. 사용자가 기기 통과를 알린 뒤에만 PR에 결과를 적고 병합한다.
 
-- On 2026-10-14 the user selected Astra for the parent agent and explicitly
-  required GPT-6.1 Sol for all separately launched sub-agents. Specify
-  `gpt-6.1-sol` when delegating; hand off prior agents rather than silently
-  inheriting the parent's model.
+작업 세션은 **기기에 올릴 수 있는 SHA** 또는 **무엇 때문에 못 올리는지 한 문장**으로 끝낸다.
 
-- On 2026-10-14, after the first user drive, the user explicitly required
-  continuing through all tests and normal device boot, all-module functional
-  optimization/bug review, and removal of remaining Python source. A follow-up
-  explicitly includes development/build/test tools in the Rust conversion.
-  The connected offroad device may be inspected, updated with a verified complete
-  source-matched runtime, and rebooted to verify normal startup, recording and
-  upload. This supersedes the older no-connect/no-test restriction for this task;
-  driving acceptance remains user-owned. Do not stop merely after creating a PR
-  or queuing CI. Track the full work and outstanding evidence in issue #296.
+## 5. 금지 사항
 
-- User clarified the delivery gate on 2026-09-30: complete the entire project-owned
-  runtime conversion before asking for the first device test. The dev candidate
-  must run through normal startup and the existing log upload path, allowing
-  comparison against the original runtime. Isolated probes and individual daemon
-  ports are intermediate engineering evidence, not a device-test handoff.
-- Continue the approved full-runtime design autonomously through its implementation
-  stages. Do not connect to or test the user's C3X; the user performs the first
-  device comparison after the complete runtime candidate is ready. Keep unported
-  components and native external dependencies explicit in the inventory.
+사용자가 그 작업을 직접 지시한 경우가 아니면 하지 않는다.
 
-- The user required prevention of disk exhaustion on 2026-09-30. Check available
-  space before each local build, dependency install or large artifact copy. Keep
-  at least 25 GiB free plus the operation's estimated growth; when below that
-  floor, stop new build work and recover at least 35 GiB before resuming. Prefer
-  bounded package builds with incremental compilation disabled and reuse a
-  coordinated target cache. On 2026-10-09 the user explicitly authorized deleting
-  old Rust-port records, archived validation artifacts and all unused build
-  caches without another approval or preservation/compression step. This
-  supersedes earlier instructions to retain historical local evidence. Preserve
-  source changes and files needed by current implementation/validation; retain
-  concise results in the existing tracked records instead of old binary copies.
-  Prioritize the complete runtime candidate, then user testing and refinement.
+- 새 workflow·필수 검사·러너·캐시 체계 추가, CI 병렬화·속도 개선
+- receipt·seal·provenance·oracle·ABI 감사·원본 바이트 동등 증명 등 새 검증 장치 추가
+- 몇 시간짜리 전체 workspace·ARM/AGNOS·원본 비교 회귀 실행, 그 결과를 기다리기
+- 제품 동작과 무관한 QA·fixture·검사기 자체의 실패 수정. 필수 체크(`focused x86 checks`,
+  `device acceptance`, `check mapped user docs`)가 깨져 병합이 막힐 때만 고친다
+- CI 실패나 작은 의문마다 이슈 만들기. 이슈는 사용자에게 보이는 결함과 빠진 기능에만 만든다
+- 긴 감사 보고서, 일정 추정, 이슈 재분류, 작업 기록 문서 늘리기
+- 상태 확인용 자동화·주기 실행(heartbeat) 만들기, Actions 결과 반복 폴링
+- 정상 시작 경로에 검증 추가. 실사용 기기는 변경분만 컴파일하고 바로 시작한다. 컴파일 사이나 뒤에
+  전체 SDK·입력·산출물 재검증, seal, ABI 감사, 여러 묶음 보관을 넣지 않는다
 
-- This checkout belongs to bin9208/openpilot-rust. Never push to bin9208/openpilot or ajouatom/openpilot.
-- User explicitly authorized isolated Rust development here. Work from dev on issue branches; PRs target dev. Older carrot-wip synchronization instructions below are historical source context and do not authorize synchronization from this repository.
-- Track the full runtime port in issue #1, M0 in #2, and isolated CI in #3. Retain original licensing and source provenance.
-- Read docs/rust-port/design.md, m0-plan.md and validation.md. Do not describe isolated libraries or host tests as a complete Rust runtime or measured CPU savings.
-- Preserve inherited fast checks, integration gate and check mapped user docs. Add rust checks and rust aarch64 build as PR requirements.
-- Do not activate inherited sync/publish workflows, change production daemon selection, or deploy generic host/cross-build artifacts to a vehicle as part of M0.
-- Experimental CLI user behavior is documented in paired docs/user/ko/rust-port.md and docs/user/en/rust-port.md.
+CI나 검증이 작업을 막으면 우회로를 짓지 말고 사용자에게 한 문단으로 알린다.
+같은 실패를 두 번 고쳐도 해결되지 않으면 멈추고 사용자에게 보고한다.
 
-# Fork-specific workflow (bin9208/openpilot)
+## 6. 브랜치
 
-- The owner's 2026-09-24 fork policy overrides historical upstream branch rules below.
-- Keep `carrot-wip` an exact fast-forward-only mirror of `ajouatom/openpilot:carrot-wip`.
-  Never commit Naver changes or workflow files to that branch.
-- The 2026-09-29 branch policy supersedes the old default-branch policy: use `dev`
-  for integration and `main` for release. Create issue-scoped `codex/feat-*` or
-  `codex/fix-*` branches from `dev`; never implement directly on either protected branch.
-- Read `docs/development_workflow.md` at task start. Require fast push checks,
-  pre-merge build/integration checks, and separate post-merge checks. Preserve old branches.
-- Do not close issues before their acceptance criteria are met; CI/build success and
-  user device/drive acceptance are separate states. Reopen regressions; file new issues
-  for independent defects. Record exact SHA, Actions URLs, failures and remaining work.
-- Create/update a GitHub issue for each task or discovered defect. Keep design and
-  evidence links in `docs/naver/` as a second record; see `docs/naver/WORKFLOW.md`.
-- Use GitHub Actions for repeatable validation and inspect exact-SHA results before
-  closing issues. Local syntax/diff checks are enough before cloud execution unless
-  a failure needs local reproduction. Device/drive acceptance cannot be replaced by CI.
-- Keep raw captures, keys and original APKs outside Git. Use the D-drive workspace
-  and D-drive build/cache folders. Do not resurrect retired branches from the old fork.
+저장소는 `bin9208/openpilot-rust`만 쓴다. `bin9208/openpilot`, `ajouatom/openpilot`에는 push하지 않는다.
 
-# Repository memory
+| 브랜치 | 내용 |
+| --- | --- |
+| `dev` | 운전자 모니터링(DM)이 작동하지 않는 사용자 전용 테스트 브랜치 |
+| `dev-md` | 운전자 모니터링까지 전부 작동하는 버전 |
 
-- On 2026-09-24, the user requested AGNOS updates without per-update approval:
-  automatically download/install, wait and retry transient network failures,
-  then reboot and continue normal startup. Both startup UIs now start the
-  updater without consulting saved confirmation. Keep Wi-Fi setup accessible
-  during retries, prevent duplicate workers, and retain image verification,
-  inactive-slot installation and fatal-error handling. This does not change
-  the required OS image/version or authorize weakening startup compatibility.
-  See docs/cinque_v3_integration_20260919.md for behavior and validation limits.
+**이 체크아웃의 기준 브랜치는 `dev-md`다.** 이 브랜치의 PR은 `dev-md`만 대상으로 한다. 새 작업은 사용자의 지시나 기기 보고가 있을 때 시작하고, 없으면 무엇을 할지 먼저 묻는다.
 
-- On 2026-09-24, the user requested cleanup of accumulated root `.tmp_*`
-  analysis work. Local archives and an index are under
-  `.analysis/archive/2026-09-24/`; they are private, ignored working data,
-  not Git-tracked documentation or a remote backup. Use
-  `.analysis/scratch/<date>-<task>/` for new temporary analysis, captures,
-  dependency installs and Wiki staging instead of new root `.tmp_*` paths.
-  At task completion, retain useful findings/reproduction evidence with an
-  index in `.analysis/archive/`, then remove reproducible caches and scratch.
-  Keep durable conclusions in the relevant tracked investigation document.
-  Archived scripts may contain old relative paths; restore their original
-  layout in scratch and adjust paths before running them. For radar lead
-  validation, pass `--cache-dir .analysis/scratch/radar-validation-cache`
-  explicitly to avoid the tool's legacy root cache default. Never include
-  local captures, settings snapshots or credentials in commits.
+**두 브랜치의 작업은 절대 섞지 않는다.**
 
-- On 2026-09-24, parked C4 exposure A/B/A on original bt1 reproduced isolated
-  driver-camera gaps of 95.671/95.653 ms when switching OS04C10 exposure
-  2298 -> 2309. CSID hardware timestamps also gap by 95.677/95.656 ms;
-  both other streams stay near 50 ms. Four historical isolated wide gaps have
-  the same near-limit exposure-byte crossing and three-frame command offset.
-  Grouping exposure/gain writes with manual delayed group-0 launch completed
-  600 s / 12,000 frames per camera without a >75 ms gap (maximum57.112 ms).
-  A separate brightness trial verified commands affect actual image statistics.
-  Camera-only A/B/A had stale model IPC and does not establish model validity;
-  a separate 600 s normal-AE/DM/eGPU run after reboot had 12,000 camera/model/
-  pose/DM messages each, no invalidity or model skips, camera max57.540 ms and
-  accelerometer/gyro max ages34.973/35.796 ms. DisableDM restored to2. Parked C4
-  validation does not establish loaded driving or C3 behavior.
-  No thresholds, exposure limits, priorities or model behavior are weakened.
-  This hazard predates September19; the recent frequency change and BT causality
-  remain unproved. f8d--3 is a distinct low-exposure IFE error-signalled fence,
-  not a wait timeout, and is not shown fixed by grouping. Radar work did not
-  spike before either incident type. The bt2 OS trial remains separate and has
-  not been installed. See docs/os04c10_exposure_investigation.md.
+- 두 브랜치 사이의 merge·rebase·cherry-pick·PR을 하지 않는다. 다른 쪽 커밋을 조상으로 가진 브랜치도 금지다.
+- 다른 쪽에도 같은 수정이 필요해 보이면 알리기만 한다. 사용자가 지시하면 그때 그 브랜치에서 따로 작업한다.
+- 작업 시작 전과 PR 생성 전에 현재 브랜치와 PR base를 확인한다. 어느 쪽 작업인지 불분명하면 묻는다.
+- `dev`나 `dev-md`에 직접 push하지 않는다. 작업 브랜치는 `codex/dev-<이슈>-<설명>`, `codex/md-<이슈>-<설명>`으로 짓는다.
 
-- On 2026-09-23, Ioniq 5 C4 `00000594--abf5912e57--7` on 1fbfe331 reproduced
-  a 102.044 ms wide-camera BOOT_TS gap with consecutive raw-derived frame and
-  request IDs, one skipped model input and about 304 ms invalid pose inputs.
-  BOOT_TS is sampled in kernel SOF handling, not an independent sensor clock;
-  do not claim a physical sensor or UI cause from this log. Separately, startup
-  expected a 25 ms driver offset although bundled Panda still drives all FSIN
-  channels in phase from TIM1. Driver staggered_sof is now false, retaining
-  the strict startup tolerance and all runtime validity/scheduling policies.
-  Passive SOF/receive timing logs are bounded to one per second per camera.
-  The startup fix is not a demonstrated fix for the later driving gap; C3/C4
-  target validation remains required. See docs/camera_sof_gap_20260923.md.
+## 7. 동시 작업 한도
 
-- On 2026-09-23, Group1 video/CAN comparisons showed reversed front lateral
-  coordinates on one Tucson and one Sportage, but normal left/right on a
-  Staria; another Sportage was inconclusive. Do not infer upside-down mounting
-  or automatically invert a whole model/group. The user approved RadarTrackFlip:
-  default normal, manually invert frontRadar yRel/yvRel per vehicle at the next
-  onroad start. Preserve SCC/corner/vision and scheduling. liveTracks records
-  radarTrackFlipped; replay must avoid double inversion and preserve recorded
-  leads. NAS recorded/normal/flipped choices are analysis-only. See
-  docs/radar_track_flip.md for offline verification and vehicle-validation limits.
+- 브랜치별로 진행 중인 작업 PR은 하나, worktree도 하나다. 새 작업은 이전 작업을 끝내거나 사용자가 보류시킨 뒤 시작한다.
+- 서브에이전트는 사용자가 요청할 때만 띄우고, 그때는 `gpt-6.1-sol`을 지정한다.
+- 끝난 worktree와 임시 파일은 그 세션에서 지운다. 임시 작업은 `.analysis/scratch/<날짜>-<작업>/`에서 한다.
+- 진행 중 사용자의 질문은 답하고 작업을 이어 간다. 멈추라고 하면 멈춘다.
 
-- On 2026-09-23, the user approved the parked display-placement candidate:
-  onroad main UI core6 and USB cluster core7, both SCHED_OTHER/nice19;
-  offroad both return to cores0..3 before big-core power saving. This supersedes
-  the UI-little placement below. Keep camera/control/model/radar priorities and
-  placement unchanged. Apply the display policy to all workers, including the
-  software encoder child. USB render/encode/controller rate is fixed at10 FPS,
-  or5 while UsbGpuActive; removed ClusterHudLiveFps/ClusterHudCoreMode and legacy
-  FPS/core environment overrides must not restore custom placement/rates.
-  DM-enabled parked UI6/cluster7 measured core2/6/7 means61.7/77.6/85.2%, UI19.77Hz,
-  road/wide max48.73/49.02ms, no camera/model/DM gaps or pose/CAN invalidity.
-  Core7 still briefly reached100%; C3, loaded driving and actual ignition-off
-  hotplug remain unvalidated. Isolated device syscalls verified nice19 and
-  core6/7-to-little restoration for threads and a child under comma credentials.
-  See docs/camera_core5_trial.md for comparisons and limits.
+## 8. 기기와 안전
 
-- On 2026-09-22, the user reported near-idle core6 and busy cores4/5 after
-  camera reservation and requested balanced placement. Whole-core /proc/stat
-  and deviceState, including background work, confirmed core4 about91%.
-  Earlier selected-process CPU sums did not establish total core headroom.
-  New parked C4 A/B/A trials place controlsd/selfdrived together on core6
-  FIFO53 with camerad SCHED_OTHER. Keep planner/radarcan core4 FIFO51,
-  card core5 FIFO53, radard core5 FIFO51, model/DM core7, and UI little/normal.
-  This supersedes the camera-exclusive and control-core4 placements below.
-  Both-controls trial core4/5/6/7 means were59/63/54/48%; camera road/wide max
-  rose to47.261/49.151ms while planner work max fell to8.613ms and radar input
-  age max to13.360ms. No model/pose/CAN failure occurred. Core4 still briefly
-  reached100%; parked timing is not proof of loaded driving or C3 behavior.
-  Follow-up temporarily enabled DM:90s yielded1804 valid DM frames with no
-  DM/driving-model skips or pose/CAN failures, whole-core means61/71/46/69%,
-  road/wide max51.370/52.838ms. DisableDM was restored to2 afterwards.
-  Preserve priorities and validity thresholds. See docs/camera_core5_trial.md.
+- 설치·재부팅·주행은 사용자가 한다. 기기 접속은 사용자가 그 대화에서 허락한 범위에서만 한다.
+- 기기 복구를 초기화나 컴퓨터 연결로 떠넘기지 않는다. 빌드 전부터 원본 spinner로 단계·오류를 보여 주고,
+  6999 복구는 컴파일 성공 전에 열려 실패 뒤에도 쓸 수 있어야 한다.
+- 제어·판단 동작의 안전·유효성 정책(pose 유효성, Panda safety, 우선순위, 임계값)을 진척을 위해 약화하지 않는다.
+  검증을 줄인다는 규칙은 빌드·개발 절차에 적용되며 주행 안전 동작에는 적용되지 않는다.
+- 주행에 영향을 주는 변경은 사용자의 주행 결과가 있어야 완료다. 새 커밋에 이전 SHA의 기기 결과를 쓰지 않는다.
+- 사용자가 하지 않은 시험을 `passed`로 적지 않는다. 기기에 영향 없는 변경만 `Device-Test-Not-Needed`에 사유를 적는다.
+- 원시 로그, 영상, 키, 설정 스냅샷, 원본 APK는 Git에 넣지 않는다.
 
-- On 2026-09-22, after three parked C4 grouping comparisons, the user approved
-  leaving camerad/camera IRQ on core6, moving card to core5 FIFO53 with radard
-  FIFO51, and moving planner to core4 FIFO51 with radarcan below the unchanged
-  controlsd/selfdrived FIFO53. This supersedes the card/planner placements in
-  earlier entries. Camera/UI remain SCHED_OTHER; model/DM stay on core7.
-  The selected 60-second trial reduced road/wide maximum ages to 36.889/37.335ms
-  but increased planner maximum work from about 8ms to 19ms and radar input
-  maximum age from about 15ms to 25ms. No CAN/pose/model-gap failure occurred.
-  DM was disabled; loaded driving, DM-enabled behavior and C3 are unvalidated.
-  Core6 is reserved by application placement, not free of all kernel/IRQ work.
-  Preserve pose limits and radar semantics. See docs/camera_core5_trial.md.
+## 9. 보고와 기록
 
-- On 2026-09-22, parked Ioniq 5 C4 follow-up reproduced a 91.961ms road-camera
-  delay, model input frame gap and invalid odometry/pose inputs with ftrace off;
-  IMU ages stayed below 34ms. Live boot args isolate only cores6..7. Kernel
-  tracing on core5 verified ready-camera scheduling delays behind normal
-  proclogd/kswapd work and FIFO planner/radard. The high-reclaim trace also had
-  diagnostic tmpfs overhead; do not treat its frequency as an unperturbed result.
-  The camera/IRQ core5 trial below is rolled back to core6, retaining UI on
-  cores0..3 and camera/UI SCHED_OTHER. A short 5/6/5 parked comparison reduced
-  core6's observed tail/runqueue wait but added about 3ms mean camera age.
-  A nice=-10 trial did not materially improve mean/p99; keep nice0. Preserve
-  other process placements and pose limits. This is a measured mitigation, not
-  proof of a driving fix, C3 benefit or the cause of earlier SOF/IFE faults.
-  See docs/camera_core5_trial.md for evidence and limitations.
+사용자에게는 짧게 한국어로 보고한다. 명령어·식별자·경로·SHA는 원문을 유지한다.
 
-- On 2026-09-22, PV5 follow-up `0000022a--99e06b0cc0--17` disproved
-  interpreting A-CAN 0x380 bit 6 falling as camera passage: roughly 4.7 s
-  notification pulses ended while MapSource=2 and a 30 km/h camera still
-  had 139 m of tracked distance. Do not use that edge or byte value 0x04 as
-  proof of passage. Retain a matched PV5 camera only while fresh messages
-  confirm the same MapSource=2 enforcement limit. End/change/invalidity or
-  more than one second of message loss clears current and queued cameras;
-  cached profiles cannot reinsert them. Queued previews alone never authorize
-  PV5 camera control. Consume a completed camera's unchanged map warning;
-  a new warning without a new matched profile uses a separate virtual distance.
-  PV5 does not decode current-route/position 0x4B9/0x4B4: do not claim that
-  generic route-reset code detects its departure. If stock enforcement remains
-  unchanged after a turn, this cancellation cannot detect that turn independently.
-  Follow-up replay reconstructs initial targets from logged distances because
-  the preceding segment is unavailable; current cancellation drops those old
-  previews and uses the warning's virtual distance at the reported pulse end.
-  Cancellation/recovery/completion tests are synthetic, not vehicle validation.
-  Earlier bit-transition tests did not establish physical passage semantics.
+```text
+기기에서 달라지는 것: ...
+시험할 SHA / 명령: ...
+아직 안 되는 것: ...
+사용자에게 필요한 것: ...
+```
 
-- On 2026-09-21, after Ioniq 5 C4 `00000f90--96d7dcd525--4` reproduced a
-  101 ms wide-camera SOF gap, the user authorized a CPU-placement trial:
-  main UI uses cores0..3 with SCHED_OTHER (core0 bootstrap), camerad and its
-  camera IRQ targets move from core6 to core5. card remains core6 FIFO53;
-  planner/radard remain core5 FIFO51 and camera keeps normal scheduling.
-  Preserve the UI's verified SCHED_OTHER contract and pose validity limits.
-  This supersedes the camera/UI placements described in older observations,
-  not radar isolation or cluster affinity. No C3/C4 vehicle benefit is yet
-  validated; do not claim same-core contention caused the camera fault.
-  See docs/camera_core5_trial.md for scope, trade-offs and validation.
+기록은 해당 이슈·PR의 짧은 댓글이면 충분하다. 사용자 문서(`docs/user/`)는 요청이 있거나 설정을 추가·변경·제거할
+때만 고치고, 설정 변경은 한·영 가이드와 Wiki 설명을 함께 맞춘다.
 
-- On 2026-09-21, ID.4 replay showed that adding CP.radarDelay (0.8 s) to
-  distance alignment could switch the selected lead to a farther CAN object.
-  The user approved zero extra distance projection for VW MEB. Use the shared
-  radar_motion/timing.py policy in runtime and NAS replay; preserve measured
-  camera/publication skew. Do not also zero CP.radarDelay: its ego-history
-  compensation and velocity/acceleration effects have not been recalibrated.
-  Other platforms retain their existing delay. See
-  docs/meb_radar_distance_alignment.md for scope and regression evidence.
+이 파일은 사용자가 직접 요청할 때만 고치며 32KiB(Codex 읽기 한도)보다 훨씬 짧게 유지한다. 날짜별 지시를 위에
+덧붙이지 말고 해당 규칙을 고쳐 쓴다. 작업 브랜치를 갱신하다 `AGENTS.md`가 충돌하면 기준 브랜치 쪽을 택한다.
 
-- On 2026-09-21, K9 C4 logs reproduced locationd timing-check invalidity from
-  repeated IMU timestamps over 100 ms old. Historical captures first showed
-  these failures after the September 19 update, despite unchanged HUD 10 FPS,
-  cores 1..4 and FIFO 10. The user authorized normal SCHED_OTHER scheduling for
-  cluster autorun/render workers so sensord FIFO 1 and other realtime work
-  take precedence. Keep legacy ClusterHudPriority/environment overrides from
-  restoring FIFO; retain FPS and core selection. This is a contention mitigation,
-  not a proved fix for the OS/runtime regression. Do not weaken pose validity
-  thresholds or claim vehicle validation from desktop tests. Official 521db4c
-  changes initial gyro-bias covariance, not the observed sensor timestamp delays.
+## 10. 과거 지식
 
-- On 2026-09-21 the user authorized radar optimization and preprocessing
-  isolation to reduce card/camerad contention on core6, with mandatory radar
-  regression validation. RadarInterface/liveTracks now belong to radarcan on
-  core4 FIFO51 (below controlsd/selfdrived FIFO53); card remains core6 FIFO53,
-  model-driven radard/planner core5. Preserve carState.radarInput batch metadata
-  and non-conflated CAN/ego joining: using an arbitrary latest ego sample breaks
-  delay/filter cadence. Keep planner's existing fast liveTracks path during this
-  first isolation step. See docs/radar_process_isolation.md for equivalence,
-  corpus failures and limits. C3/C4 device timing/camera improvements are NOT
-  yet validated. Never present same-core contention as a proved IFE root cause
-  or desktop speedup as a vehicle result. Radar changes also require NAS replay
-  deployment and actual result verification below.
+옛 규칙은 지시가 아닌 참고 자료다. 차량 로그·rlog 해석, NAS 경로, 레이더 재생 서비스, 카메라·CPU 배치 실험,
+네비 동작, 설정 Wiki 작성법이 필요할 때 읽는다. 옛 파일의 CI·검증 의무는 복원하지 않는다.
 
-- On 2026-09-20, EV9 `3eef70e8fb92485c` (tizi/C3 family) reproduced Cinque v3
-  dropped-frame odometry invalidity even with `xiaoge_data` stopped. Raw-image
-  upload averaged 24.75 ms and model execution 50.69 ms; C4 `07b62e389ed26c81`
-  used the same artifact at 13.94 ms upload / 39.73 ms execution. Old TG code
-  warped on QCOM before transferring model-sized images, whereas generic v3
-  uploads full NV12 images before AMD warp. The user approved C3-only QCOM
-  pre-upload warp while retaining the existing C4 path. See
-  `docs/c3_preupload_warp.md` for implementation, validation limits and evidence.
-  EV9 segment `000002c9--15d447d91b--0` on 9a349b60 failed the QCOM/AMD pixel
-  comparison and fell back to AMD (7,471,616 USB bytes, about 24.8 ms upload).
-  At that stage the optimization was NOT confirmed active. Diagnose the
-  per-probe mismatch details before changing warp math or acceptance criteria.
-  Follow-up `000002ca--50469cb155--0` on 820f82ea found 16 repeat-stable
-  projective-only mismatches; all eight logged samples reconstruct as adjacent
-  source pixels at half-pixel rounding boundaries. Validation now checks each
-  mismatch against correct-camera/plane NV12 source values within 0.00025
-  source pixels of a rounding boundary. Do not replace this with a percentage
-  or intensity tolerance. On 2026-09-21, EV9 `000002cc--03d0a44f7d--10`
-  on 2723a8eb confirmed QCOM active: 393,728 USB bytes, 5.36 ms upload,
-  34.98 ms mean model execution. Four remaining warnings matched complete
-  camera streams with 12.6-13.2 ms SOF skew: Carrot's strict 10 ms pairing
-  discarded four main frames. Current pairing allows at most 20 ms skew;
-  metadata replay retains all 1,200 EV9 pairs while preserving real Ioniq
-  phase-slip/IFE-loss gaps. This is not on-device validation of the pairing fix.
-  Official v3 also publishes invalid odometry after a real main-frame gap;
-  do not describe this policy as a Carrot-only regression. Official pairing
-  logs >10 ms skew but proceeds; Carrot still bounds large/stale pairs.
-  Preserve official model input/outputs and recurrent state; never hide overload
-  by weakening pose validity. Evaluate model/runtime updates per device family;
-  do not assume C4 validation covers C3, or automatically freeze all C3 models.
-  Keep World Model experiments local and apply its separate validation rules.
+```sh
+git fetch origin 'refs/tags/archive/*:refs/tags/archive/*'
+git show archive/2026-11-09/agents-md-dev-md:AGENTS.md
+```
 
-- As of 2026-09-20, the user requested deletion of the remote `carrot-worldmodel`
-  branch to prevent others from installing an unfinished experiment. Keep this
-  experiment local only; do not recreate or push its remote branch unless the
-  user explicitly authorizes publication again. Continue applying common
-  `carrot-wip` changes locally while preserving World Model-specific artifacts
-  and runtime work. Only `carrot-wip` must be pushed for shared changes; this
-  exception does not restore any retired branch. World Model has passed isolated
-  synthetic inference, but vehicle control integration remains unvalidated.
-
-- As of 2026-09-19, the user requests full integration of `carrot-cinque_v3` into
-  `carrot-wip`, including the pinned Cinque v3 eGPU model/runtime, AGNOS
-  `19.8-carrot-bt1`, and Bluetooth remote features. This supersedes the earlier
-  Cinque v2/OS separation below. Keep the internal-GPU driving model unchanged;
-  driver monitoring uses official Super Leicht (#38942). After successful
-  integration the user explicitly retired `carrot-cinque_v3`; `carrot-wip` is
-  the sole maintained top-level `carrot-*` branch. Do not recreate v3 or push
-  changes to its detached worktree. Its complete history is merged into wip.
-
-- Whenever radar detection or lead-selection code changes, update the NAS Carrot Routes
-  radar replay service in the same task. The `Carrot Routes image` GitHub workflow builds
-  committed shared code using `tools/carrot_route_vault/build_bundle.py`; the NAS scheduled
-  updater pulls, validates and deploys the tested image to the existing
-  `/volume1/docker/carrot-route-vault` project. Use this automatic path for routine updates;
-  do not manually copy sources or rebuild on the NAS. Verify the workflow and NAS updater
-  report the intended commit, and verify an actual upload-result page and
-  its recalculated radar data before reporting completion. This includes replay adapters and
-  shared detection dependencies such as `radar_motion`, `cluster`, cut-in helpers, and required
-  cereal/DBC compatibility changes. Keep the server's code fingerprint/cache invalidation and
-  deployed `SOURCE_COMMIT` current; a vehicle-branch push alone does not complete this work.
-- For long-running work, treat user questions, status checks, clarifications, and added in-scope
-  requests as interruptions to answer while continuing the active work. Stop an active process or
-  abandon the task only when the user explicitly asks to stop, cancel, pause, or replace it.
-- Apply model selection/artifacts, model and branch names, required model compatibility changes,
-  and branch-specific features (such as YOLO2) only to their relevant branches. Preserve these
-  differences when synchronizing shared code; do not spread an experiment to other branches.
-  The user will explicitly identify new feature experiments and their target branches.
-- As of 2026-09-13, `carrot-wip` is the sole maintained top-level `carrot-*` branch.
-  It incorporates the complete `carrot-cinque_v2` history. Its former Cinque v2
-  selection was superseded by the 2026-09-19 integration above.
-  Commit and push common changes, including radar processing and Carrot Web, to `carrot-wip`;
-  verify it matches `origin/carrot-wip` with no unpushed commits before completion.
-  Do not recreate retired branches or synchronize changes to their archive tags or detached
-  worktrees. Retired local branch tips are preserved under `archive/2026-09-13/<branch>`.
-  Namespaced contributor branches such as `thftgr/carrot-*` are outside this consolidation.
-- Create new model or feature experiment branches from current `carrot-wip` only when the user
-  explicitly requests them. Keep their model selections, generated display assets, compatibility
-  changes and dedicated features scoped to those experiments; agree their maintenance scope
-  with the user instead of automatically restoring the retired multi-branch synchronization rule.
-- The 2026-09-17 exception maintaining `carrot-cinque_v3` separately ended on
-  2026-09-19 after its complete integration and the user's explicit deletion request.
-- On this Windows workstation, vehicle tmux session captures are stored under
-  `\\DS1821P\openpilot\<branch>`. When tmux is mentioned, search the directory for the known
-  branch for a vehicle folder whose name ends with the exact dongle ID. If the branch is unknown,
-  search `\\DS1821P\openpilot` across branch directories for the exact dongle ID first. Do not
-  start by looking for a local Windows or WSL tmux installation.
-- Big-model ONNX files and manifests are hosted on the user's NAS under
-  `\\DS1821P\openpilot\models\<model-directory>`. Vehicles download the same files through
-  `https://upload.shind0.synology.me/models/<model-directory>/`. For a new big-model branch,
-  create a distinct model directory, place the verified ONNX and `manifest.json` there, and point
-  the branch at that NAS manifest. Do not use GitHub LFS as the vehicle download source.
-- Navigation deceleration behavior for the `origin/thftgr/navi-stream` branch is documented in
-  `docs/carrot_navi_7713_7714_deceleration.md`.
-- The 7714-only control comparison between `origin/carrot-wip` and `origin/thftgr/navi-stream` is
-  documented in `docs/carrot_navi_7714_branch_comparison.md`.
-- When changing the UDP 7713 legacy navigation path, TCP 7714 Carrot Navi v2 path, shared
-  `CarrotServ` speed selection, or the on-road/cluster speed-source UI, update that document and
-  the focused tests together.
-- Both `origin/carrot-wip` and `origin/thftgr/navi-stream` evaluate a new 7714 speed item before
-  assigning the current `lane_current.road_category`. A present lane item without that key becomes
-  category 0. This can suppress primary SDI type 22 (`xSpdType=-1`) even though raw 7714 UI shows it;
-  7713 assigns `roadcate` before `_update_sdi()` and does not have this ordering failure.
-- The `origin/thftgr/navi-stream` cluster road-camera/map flicker analysis is documented in
-  `docs/cluster_road_camera_map_flicker_analysis.md`. The hardware H.264 map and TICI road camera
-  both use `samplerExternalOES` on texture unit 0; each external image must be rebound immediately
-  before every draw, not only when its source frame changes.
-
-# Vehicle settings snapshots
-
-- On this Windows workstation, uploaded vehicle settings are stored under
-  `W:\<branch>\<car-fingerprint> <dongle-id>\toggles-YYYYMMDD-HHMMSS.json`.
-- To find a vehicle's most recent settings, first search all of `W:\` for directories whose names
-  end with the exact dongle ID. Gather `toggles-*.json` from every matching directory and select the
-  file with the newest timestamp encoded in its filename.
-- A dongle can appear under several branch or fingerprint directories. For incident analysis,
-  narrow the matches using the branch and car fingerprint from the route/upload metadata, then
-  inspect the newest snapshot at or before the incident time and compare it with the newest later
-  snapshot.
-- Treat the JSON values as raw Params values; for example, `StoppingAccel` is stored in hundredths
-  of m/s^2.
-
-# Vehicle route log lookup
-
-- On this Windows workstation, vehicle route logs are stored under `\\DS1821P\openpilot\routes`. Whenever
-  the user mentions an `rlog`, a route log, or a vehicle log, start by searching that share for a
-  vehicle directory whose name ends with the exact dongle ID or device ID. The vehicle directory
-  name identifies the car fingerprint; its child directories identify the route/segment numbers.
-  Do not start by searching the repository, tmux captures, or another route root.
-
-- A `Carrot Dashcam Upload` result is always uploaded under `\\DS1821P\openpilot\routes`. When the user
-  provides a `Carrot Dashcam Upload` block, resolve that local route first and do not start from
-  the remote result link, the repository, tmux captures, or another route root. Build the exact
-  preferred log path as
-  `\\DS1821P\openpilot\routes\<Car name> <DongleId>\<Result segment>\rlog.zst`.
-- Decode presentation escaping before building the path: Markdown `\_` is `_`, URL `%20` is a
-  space, and the result link's final directory name is the route segment.
-- If the exact path is absent, search `\\DS1821P\openpilot\routes` for a vehicle directory ending
-  in the exact dongle ID and then the exact result segment. Prefer `rlog.zst`; use `qlog.zst` only
-  when the full log is unavailable.
-- Treat Upload Time, Branch, and Commit as incident-analysis metadata, not as path components.
-
-# Vehicle rlog decoding
-
-- For full rlog analysis, use the full OpenPilot cereal schema. Prefer
-  `openpilot.tools.lib.logreader.LogReader`; do not use
-  `opendbc.car.logreader.LogReader(..., only_union_types=True)` to determine which services are
-  present. The opendbc reader loads the reduced `opendbc/car/rlog.capnp` schema and silently drops
-  services unknown to it, which can make `carState`, `carrotMan`, `navInstruction`,
-  `navInstructionCarrot`, `controlsState`, and `carControl` appear absent.
-- On Windows, if importing `openpilot.tools.lib.logreader` fails because of platform-only
-  dependencies such as `fcntl`, decompress the `.zst` file with `zstandard` and parse it directly
-  with `openpilot.cereal.log.Event.read_multiple_bytes`. Use `opendbc.car.logreader` only for an
-  intentionally CAN-only inspection.
-- Before reporting that a service is missing, count message types with the full cereal schema and
-  inspect at least one expected service value. When calculating segment-relative time, use the
-  first message of the analyzed service (for example `can` or `carState`) rather than `initData`,
-  whose boot-time timestamp can make later segments appear cumulatively longer.
-
-# User documentation policy
-
-- Do not create or edit files under `docs/user/ko/` or `docs/user/en/` unless the user explicitly
-  requests user-documentation work. User-visible code changes alone do not authorize guide edits.
-- The user has explicitly requested that every user-visible setting addition, removal, or behavior
-  change update the relevant Korean and English user guides in the same change. Treat setting work
-  as user-documentation work, keep the catalog summary and detailed guide synchronized with the
-  implementation, and run the user-docs validator.
-- Also keep setting-level explanations in the generated GitHub Wiki workflow. Keep explanations
-  specific to web-only features in the localized UI instead of duplicating web internals into
-  `docs/user/`.
-- `docs/user/docs_map.json` and the native `openpilot-dev-tools` `check-user-docs` command are validation aids, not instructions
-  to generate documentation. For an ordinary code pull request without explicitly requested docs,
-  record a concrete `Docs-Not-Needed: <reason>` in the PR body when the workflow requires it.
-  For direct pushes, put the reason in each affected commit message; it only exempts that
-  commit. Settings-related rules remain required; other mapped changes produce review advice
-  and do not authorize unsolicited guide edits. Settings behavior changes still require the
-  relevant Korean/English guides and Wiki explanations, even when outside mapped paths.
-- Do not place private, internal-only, credential-bearing, or non-public feature documentation in
-  `docs/user/` or link it from the public Wiki.
-
-# Settings Wiki authoring
-
-- Before editing generated settings Wiki content or its generator, read
-  `tools/docs/wiki_settings/AUTHORING_GUIDE.md` completely.
-- In an existing generated Wiki setting page, edit only the matching `CARROT:MANUAL` region.
-  Preserve every `CARROT:*` marker and never hand-edit `CARROT:AUTO` content.
-- Verify behavior against the current `carrot-wip` implementation instead of inferring it from the
-  parameter name. Run the Wiki validator and focused generator tests after editing.
-- Generated setting pages carry the same authoring-guide URL in a hidden `CARROT:AUTHORING` marker
-  so an agent working from the Wiki checkout alone can discover the canonical rules.
+정리된 브랜치의 커밋은 `archive/2026-11-09/codex/<브랜치>` 태그에 있다. 필요할 때 일부만 꺼내 쓰고,
+다른 트랙의 태그에서 가져오지 않는다.
