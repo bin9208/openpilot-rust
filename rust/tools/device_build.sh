@@ -12,6 +12,15 @@ if [[ -x rust/bin/openpilot-launch && -f $stamp && $(<"$stamp") == "$head" ]]; t
   exit 0
 fi
 
+# Earlier builds hid the unpacked models with skip-worktree. Git then refused
+# to switch to any branch where those files differ, such as the original
+# carrot branch ("not uptodate. Cannot merge"), so the device stayed here.
+hidden=$(git ls-files -v | sed -n 's/^S //p')
+if [[ -n $hidden ]]; then
+  printf '%s\n' "$hidden" | xargs -d '\n' git update-index --no-skip-worktree --
+  git update-index -q --refresh || true
+fi
+
 store=${OPENPILOT_BUILD_STORE:-/data/openpilot-build}
 mkdir -p "$store" || exit 1
 log=$store/build.log
@@ -108,9 +117,9 @@ if [[ -L rust/bin || ! -f $assets_stamp || $(<"$assets_stamp") != "$assets_id" ]
   fi
   unpack assets . || fail 'Could not unpack runtime files'
   echo "$assets_id" > "$assets_stamp"
-  while IFS= read -r path; do
-    git update-index --skip-worktree -- "$path"
-  done < <(git ls-files -- '*.onnx' 'openpilot/selfdrive/carrot/xiaoge/assets/*')
+  # The unpacked models equal their LFS pointers through the clean filter;
+  # refreshing the index is enough for Git to see the checkout as unchanged.
+  git update-index -q --refresh || true
   start_ui
 fi
 
