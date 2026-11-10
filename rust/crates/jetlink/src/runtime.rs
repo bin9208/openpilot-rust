@@ -3,7 +3,7 @@ use crate::{
     adapter::Adapter,
     contract,
     rpc::ProxyClient,
-    transition::{ControlState, Decision, Mode, Outcome, Phase, Source, Transition},
+    transition::{ControlState, Decision, Outcome, Phase, Source, Transition},
     Deadline, Error,
 };
 use openpilot_modeld::prediction::DrivingPrediction;
@@ -49,14 +49,12 @@ pub struct Status {
     pub execution_ms: f64,
     pub validated: bool,
 }
-pub struct FrameInput<'a> {
-    pub mode: Mode,
+pub struct FrameInput {
     pub controls: ControlState,
     pub frame: u32,
     pub source_sof: u64,
     pub prepare_only: bool,
     pub camera_ready: bool,
-    pub validation: Option<&'a [u8]>,
     pub desire: [f32; 8],
     pub traffic: [f32; 2],
     pub action: [f32; 2],
@@ -75,7 +73,8 @@ pub struct Runtime {
     connecting: bool,
     cancel: Option<UnixStream>,
     retry_at: Instant,
-    mode: Mode,
+    /// Local outputs produced so far; a cold first execution precedes any join.
+    small_runs: u32,
     controls: ControlState,
     deadline: Deadline,
     started: Instant,
@@ -85,7 +84,7 @@ pub struct Runtime {
 }
 impl Runtime {
     /// Construct before assigning the realtime frame thread's scheduler/affinity.
-    pub fn new(path: &Path, previously_active: bool) -> Result<Self, Error> {
+    pub fn new(path: &Path) -> Result<Self, Error> {
         let (work_tx, work_rx) = mpsc::sync_channel::<Work>(1);
         let (result_tx, results) = mpsc::sync_channel(1);
         let worker = thread::Builder::new()
@@ -108,18 +107,15 @@ impl Runtime {
             selected_sha: contract::SHA256.into(),
             abandoned: false,
             path: path.to_owned(),
-            transition: Transition::new(previously_active),
+            transition: Transition::default(),
             model: None,
             pending: false,
             connecting: false,
             cancel: None,
             retry_at: now,
-            mode: Mode::Off,
+            small_runs: 0,
             controls: ControlState {
-                standstill: false,
-                cruise_enabled: false,
-                lateral_active: false,
-                enabled: false,
+                join_allowed: false,
             },
             deadline: Deadline(0),
             started: now,
@@ -128,7 +124,7 @@ impl Runtime {
                 decision: Decision {
                     source: Source::Native,
                     phase: Phase::Off,
-                    loss_latched: previously_active,
+                    loss_latched: false,
                     reset_required: false,
                 },
                 generation: String::new(),
@@ -163,13 +159,7 @@ impl Runtime {
             }
         }
         self.detail = error.to_string().chars().take(240).collect();
-        self.status.decision = self.transition.update(
-            self.mode,
-            false,
-            self.status.validated,
-            self.controls,
-            Outcome::Lost,
-        );
+        self.status.decision = self.transition.update(false, self.controls, Outcome::Lost);
         self.cancel();
         self.model = None;
         self.identity = None;
@@ -226,15 +216,13 @@ impl Runtime {
     pub fn selected_sha(&self) -> &str {
         &self.selected_sha
     }
-    pub fn begin(&mut self, input: FrameInput<'_>, warp: impl FnOnce() -> Result<Vec<u8>, Error>) {
+    pub fn begin(&mut self, input: FrameInput, warp: impl FnOnce() -> Result<Vec<u8>, Error>) {
         let FrameInput {
-            mode,
             controls,
             frame,
             source_sof,
             prepare_only,
             camera_ready,
-            validation,
             desire,
             traffic,
             action,
@@ -243,7 +231,6 @@ impl Runtime {
         self.deadline = Deadline(crate::now_ns().saturating_add(50_000_000));
         self.frame = frame;
         self.controls = controls;
-        self.mode = mode;
         if self.pending || self.connecting {
             match self.results.try_recv() {
                 Ok(result) => {
@@ -253,14 +240,7 @@ impl Runtime {
                 Err(TryRecvError::Disconnected) => self.lost(Error::Closed),
             }
         }
-        if mode == Mode::Off {
-            self.cancel();
-            self.model = None;
-            self.identity = None;
-            if self.pending || self.connecting {
-                self.abandoned = true;
-            }
-        } else if self.model.is_none()
+        if self.model.is_none()
             && !self.pending
             && !self.connecting
             && Instant::now() >= self.retry_at
@@ -276,14 +256,11 @@ impl Runtime {
             .as_ref()
             .is_some_and(|model| !model.client.dead())
             && camera_ready
+            && self.small_runs >= 3
             && !self.pending;
-        self.status.validated = self.identity.as_ref().is_some_and(|identity| {
-            contract::validation_matches_model(validation, identity, &self.selected_sha)
-        });
-        self.status.decision =
-            self.transition
-                .update(mode, ready, self.status.validated, controls, Outcome::None);
-        if !ready || mode == Mode::Off {
+        self.status.validated = ready;
+        self.status.decision = self.transition.update(ready, controls, Outcome::None);
+        if !ready {
             return;
         }
         let Some(mut model) = self.model.take() else {
@@ -326,6 +303,9 @@ impl Runtime {
         }
     }
     pub fn finish(&mut self, native: Option<DrivingPrediction>) -> Option<DrivingPrediction> {
+        if native.is_some() {
+            self.small_runs = self.small_runs.saturating_add(1);
+        }
         if native.is_none() || self.status.decision.source != Source::Jetlink {
             return native;
         }

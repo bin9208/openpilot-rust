@@ -50,8 +50,6 @@ impl Controller {
     ) -> Result<(), Error> {
         let views = Views { state };
         let count = self.events.names().len();
-        let external = views.model()?.get_jetlink()?.get_source()?
-            == log_capnp::jetlink_frame_status::Source::Jetlink;
         let manager_frame = state.topic("managerState")?.receive_frame;
         if manager_frame != self.manager_frame {
             self.manager_frame = manager_frame;
@@ -63,10 +61,7 @@ impl Controller {
             }
             self.not_running_cache = refreshed;
         }
-        let mut not_running = self.not_running_cache.clone();
-        if !external {
-            not_running.remove("jetlinkd");
-        }
+        let not_running = self.not_running_cache.clone();
         if state.topic("managerState")?.receive_frame != 0 && !not_running.is_empty() {
             if self.not_running_previous.as_ref() != Some(&not_running) {
                 let mut fields = Fields::new();
@@ -201,13 +196,6 @@ impl Controller {
             cs.get_can_valid() && !cs.get_can_timeout(),
         ) {
             self.events.add(E::StockSccFault, false);
-        }
-        let jetlink = views.model()?.get_jetlink()?;
-        if jetlink.get_loss_latched()
-            || (jetlink.get_source()? == log_capnp::jetlink_frame_status::Source::Jetlink
-                && !state.all_checks(&["modelV2"])?)
-        {
-            self.events.add(E::JetlinkLost, false);
         }
         let disable = self.events.contains(EventType::NoEntry)
             && (self.events.contains(EventType::SoftDisable)

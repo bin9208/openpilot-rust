@@ -534,7 +534,7 @@ pub fn catalog(config: ImportConfig) -> Vec<Descriptor> {
             },
             Always,
             config.tici,
-            false,
+            true,
         ),
         Descriptor::new(
             "modem",

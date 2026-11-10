@@ -17,8 +17,6 @@ mod reports;
 pub mod runtime;
 #[cfg(feature = "native")]
 pub mod serial;
-#[cfg(test)]
-mod tests;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

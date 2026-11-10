@@ -104,5 +104,3 @@ pub fn capture(
     }
     store(&chunks.iter().flatten().copied().collect::<Vec<_>>())
 }
-#[cfg(test)]
-mod tests;

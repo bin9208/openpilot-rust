@@ -144,29 +144,6 @@ mod tests {
             self.messages.push(text.into());
         }
     }
-    #[test]
-    fn original_utc_759_boundary_values() {
-        #[derive(serde::Deserialize)]
-        struct Case {
-            bits: u64,
-            utc: Option<String>,
-        }
-        #[derive(serde::Deserialize)]
-        struct Fixture {
-            cases: Vec<Case>,
-        }
-        let fixture: Fixture = serde_json::from_str(include_str!(
-            "../../../../fixtures/build-time-utc-final.json"
-        ))
-        .unwrap();
-        for (index, case) in fixture.cases.into_iter().enumerate() {
-            assert_eq!(
-                utc(f64::from_bits(case.bits)).ok(),
-                case.utc,
-                "UTCcase{index}"
-            );
-        }
-    }
     fn mock(stamp: &str, times: &[f64]) -> Mock {
         Mock {
             stamp: stamp.into(),

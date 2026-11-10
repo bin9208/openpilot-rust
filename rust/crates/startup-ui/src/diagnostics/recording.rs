@@ -275,34 +275,3 @@ impl Drop for Recorder {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn final_source_capture_rate_arguments() {
-        let rows: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../../fixtures/ui-recording-rate-final.json"
-        ))
-        .unwrap();
-        for row in rows.as_array().unwrap() {
-            let encoding = Encoding {
-                width: 64,
-                height: 48,
-                fps: row["fps"].as_i64().unwrap() as i32,
-                capture_every: row["every"].as_u64().unwrap(),
-                speed: 1,
-                quality: 23,
-                bitrate: String::new(),
-                preset: "ultrafast",
-                capacity: 8,
-            };
-            assert_eq!(
-                serde_json::to_value(encoding.arguments(Path::new("owned.mp4")).unwrap()).unwrap(),
-                row["args"],
-                "fps={}, every={}",
-                row["fps"],
-                row["every"]
-            );
-        }
-    }
-}

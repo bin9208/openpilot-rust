@@ -159,10 +159,8 @@ pub fn run(
         .parse::<i64>()
         .map_err(|_| Error::Contract("invalid SIMULATION"))?
         != 0;
-    let mut external = openpilot_jetlink::runtime::Runtime::new(
-        Path::new("/dev/shm/carrot-jetlink.sock"),
-        params.get_bool("JetlinkActive")? || params.get_bool("JetlinkLossLatched")?,
-    )?;
+    let mut external =
+        openpilot_jetlink::runtime::Runtime::new(Path::new("/dev/shm/carrot-jetlink.sock"))?;
     let mut external_stored = None;
     let mut external_display = jetlink::ModelStatusWriter::new(std::path::Path::new(
         openpilot_jetlink::status::MODEL_STATUS,
@@ -223,19 +221,27 @@ pub fn run(
         let camera_age_at_run_ms =
             (process::monotonic() - frame.metadata.timestamp_eof as f64 * 1e-9) * 1000.0;
         let inference_cpu_start = thread_cpu();
-        let controls_fresh = subscribers.state.all_valid(&["carState", "carControl"])?
-            && subscribers.state.all_alive(&["carState", "carControl"])?;
+        let join_now = process::monotonic();
+        let mut join_valid = [false; 3];
+        let mut join_received = [0.; 3];
+        for (index, name) in ["carState", "selfdriveState", "carControl"]
+            .into_iter()
+            .enumerate()
+        {
+            let topic = subscribers.state.topic(name)?;
+            join_valid[index] = topic.valid && topic.alive;
+            join_received[index] = topic.receive_time;
+        }
         let controls = openpilot_jetlink::transition::ControlState {
-            standstill: controls_fresh && sources.car.get_standstill(),
-            cruise_enabled: sources.car.get_cruise_state()?.get_enabled(),
-            lateral_active: sources.control.get_lat_active(),
-            enabled: sources.control.get_enabled(),
+            join_allowed: openpilot_driving_modeld::recovery::may_join(
+                join_now,
+                join_valid,
+                join_received,
+                sources.car.get_standstill(),
+                f64::from(sources.car.get_v_ego()),
+                sources.car.get_steering_pressed(),
+            ),
         };
-        let mode = openpilot_jetlink::transition::Mode::from_setting(parameters::integer(
-            &params,
-            "JetlinkMode",
-        )?);
-        let validation = params.get("JetlinkValidation")?;
         let mut desire = [0.0; 8];
         let desire_index = usize::from(u16::from(publication.desire.desire));
         if let Some(value) = desire.get_mut(desire_index) {
@@ -248,15 +254,11 @@ pub fn run(
         };
         external.begin(
             openpilot_jetlink::runtime::FrameInput {
-                mode,
                 controls,
                 frame: frame.metadata.frame_id,
                 source_sof: frame.metadata.timestamp_sof,
                 prepare_only: dropped.prepare_only,
-                camera_ready: calibration.seen()
-                    && controls_fresh
-                    && !params.get_bool("UsbGpuActive")?,
-                validation: validation.as_deref(),
+                camera_ready: calibration.seen() && !params.get_bool("UsbGpuActive")?,
                 desire,
                 traffic,
                 action: [lateral as f32, longitudinal as f32],

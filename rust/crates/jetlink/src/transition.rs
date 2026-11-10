@@ -1,37 +1,19 @@
-//! Source-compatible stopped acknowledgement and loss latch.
+//! Carrot modeld/jetlink/model.py JoiningModel switch: join a ready Jetlink
+//! session at a fresh vehicle-state gate, return to the local model on any
+//! failure and rejoin later. No setting, validation record or loss latch.
 use serde::{Deserialize, Serialize};
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
-pub enum Mode {
-    Off,
-    Shadow,
-    ActiveRequest,
-}
-impl Mode {
-    pub fn from_setting(value: i32) -> Self {
-        match value {
-            1 => Self::Shadow,
-            2 => Self::ActiveRequest,
-            _ => Self::Off,
-        }
-    }
-}
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum Outcome {
     None,
     Valid,
     Lost,
 }
+/// `join_allowed` is model_join.may_join: carState, selfdriveState and
+/// carControl valid and received within 250 ms, and either stopped
+/// (standstill, |vEgo| < 0.01) or the driver holding the wheel.
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct ControlState {
-    pub standstill: bool,
-    pub cruise_enabled: bool,
-    pub lateral_active: bool,
-    pub enabled: bool,
-}
-impl ControlState {
-    pub fn inactive_stop(self) -> bool {
-        self.standstill && !(self.cruise_enabled || self.lateral_active || self.enabled)
-    }
+    pub join_allowed: bool,
 }
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -55,79 +37,69 @@ pub struct Decision {
     pub loss_latched: bool,
     pub reset_required: bool,
 }
+#[derive(Default)]
 pub struct Transition {
     active: bool,
-    loss_latched: bool,
-    armed: bool,
-    previous_mode: Mode,
 }
 impl Transition {
-    pub fn new(previously_active: bool) -> Self {
-        Self {
-            active: false,
-            loss_latched: previously_active,
-            armed: false,
-            previous_mode: Mode::ActiveRequest,
-        }
-    }
-    pub fn update(
-        &mut self,
-        mode: Mode,
-        ready: bool,
-        validated: bool,
-        controls: ControlState,
-        outcome: Outcome,
-    ) -> Decision {
+    pub fn update(&mut self, ready: bool, controls: ControlState, outcome: Outcome) -> Decision {
         let mut reset = false;
-        if self.active
-            && (matches!(outcome, Outcome::Lost)
-                || !ready
-                || !validated
-                || mode != Mode::ActiveRequest)
-        {
+        let lost = matches!(outcome, Outcome::Lost);
+        if self.active && (lost || !ready) {
             self.active = false;
-            self.loss_latched = true;
-            self.armed = false;
         }
-        if !self.active && mode != Mode::ActiveRequest && controls.inactive_stop() {
-            if ready || mode == Mode::Off {
-                self.loss_latched = false;
-            }
-            self.armed = true;
-        }
-        let edge = mode == Mode::ActiveRequest && self.previous_mode != Mode::ActiveRequest;
-        if !self.active
-            && edge
-            && self.armed
-            && !self.loss_latched
-            && ready
-            && validated
-            && controls.inactive_stop()
-        {
+        if !self.active && !lost && ready && controls.join_allowed {
             self.active = true;
             reset = true;
-            self.armed = false;
         }
-        self.previous_mode = mode;
         Decision {
             source: if self.active {
                 Source::Jetlink
             } else {
                 Source::Native
             },
-            phase: if self.loss_latched {
-                Phase::Lost
-            } else if self.active {
+            phase: if self.active {
                 Phase::Active
-            } else if mode == Mode::Off {
-                Phase::Off
+            } else if lost {
+                Phase::Lost
             } else if ready {
                 Phase::Ready
             } else {
                 Phase::Preparing
             },
-            loss_latched: self.loss_latched,
+            loss_latched: false,
             reset_required: reset,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn joins_at_the_gate_and_rejoins_after_loss() {
+        let mut t = Transition::default();
+        let gate = |join_allowed| ControlState { join_allowed };
+        assert_eq!(
+            t.update(true, gate(false), Outcome::None).source,
+            Source::Native
+        );
+        let joined = t.update(true, gate(true), Outcome::None);
+        assert_eq!(joined.source, Source::Jetlink);
+        assert!(joined.reset_required);
+        // Once active the gate is not re-checked while driving.
+        assert_eq!(
+            t.update(true, gate(false), Outcome::None).source,
+            Source::Jetlink
+        );
+        assert_eq!(
+            t.update(false, gate(true), Outcome::Lost).phase,
+            Phase::Lost
+        );
+        assert!(!t.update(true, gate(true), Outcome::Lost).loss_latched);
+        assert_eq!(
+            t.update(true, gate(true), Outcome::None).source,
+            Source::Jetlink
+        );
     }
 }

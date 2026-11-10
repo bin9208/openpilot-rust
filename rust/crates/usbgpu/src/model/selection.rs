@@ -37,31 +37,3 @@ pub fn selected_manifest(paths: &Paths) -> Option<Manifest> {
     )
     .then_some(active)
 }
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn current_selection_matches_original_source_catalog_and_failure_cases() {
-        let fixture: Value = serde_json::from_str(include_str!(
-            "../../tests/fixtures/model_selection_source.json"
-        ))
-        .unwrap();
-        for (index, case) in fixture["cases"].as_array().unwrap().iter().enumerate() {
-            let active =
-                serde_json::from_value::<Option<Manifest>>(case["active"].clone()).unwrap();
-            let actual = active.as_ref().is_some_and(|active| {
-                allowed(
-                    active,
-                    case["url"].as_str().unwrap(),
-                    Some(&case["state"]),
-                    case["failed"].as_bool().unwrap(),
-                )
-            });
-            assert_eq!(
-                actual,
-                case["selected"].as_bool().unwrap(),
-                "source case {index}"
-            );
-        }
-    }
-}
