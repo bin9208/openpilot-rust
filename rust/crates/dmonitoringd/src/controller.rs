@@ -146,8 +146,24 @@ fn stationary_pause(
         && lead.get_v_lead().is_finite()
         && lead.get_v_lead().abs() < 0.1)
 }
+/// Tester-only switch. It is not a setting: nothing in Carrot Web, the device
+/// UI, backups or profiles can create this file, only a shell. While it
+/// exists every drive starts with the same session disable that pressing
+/// CANCEL three times gives. Without it the normal policy applies unchanged.
+const TEST_DISABLE: &str = "/data/disable_dm_for_testing";
+
+fn apply_test_disable(params: &Params) -> Result<(), Error> {
+    if std::path::Path::new(TEST_DISABLE).exists()
+        && !params.get_bool("DriverMonitoringSessionDisabled")?
+    {
+        params.put_bool("DriverMonitoringSessionDisabled", true)?;
+    }
+    Ok(())
+}
+
 impl Controller {
     pub fn new(params: &Params) -> Result<Self, Error> {
+        apply_test_disable(params)?;
         let now = monotonic();
         let mut monitoring = DriverMonitoring2::new(
             params.get_bool("IsRhdDetected")?,
@@ -210,6 +226,7 @@ impl Controller {
             self.next_mode_check = now + 0.5;
         }
         if self.frame.is_multiple_of(40) {
+            apply_test_disable(params)?;
             let enabled = params.get_bool("DriverMonitoringEnabled")?
                 && !params.get_bool("DriverMonitoringSessionDisabled")?;
             if enabled && !self.enabled {
