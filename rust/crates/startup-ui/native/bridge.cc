@@ -11,6 +11,7 @@
 #include <string>
 #if defined(__GLIBC__)
 #include <malloc.h>
+#include <unistd.h>
 #endif
 bool openpilot_raylib_symbol_available(const char *name);
 uint32_t openpilot_active_framebuffer();
@@ -550,7 +551,22 @@ void Surface::finish_content(float scale) {
     if (shader.id) EndShaderMode();
   }
 }
-void Surface::present() { EndDrawing(); frame_open=false; }
+// Remote capture for devices whose panel cannot be looked at: create
+// /tmp/ui_screenshot.req and the next frame is saved to /tmp/ui_screenshot.png.
+// The request file is checked at most once per second.
+static void capture_if_requested() {
+  static double checked = -1;
+  double now = GetTime();
+  if (checked >= 0 && now - checked < 1.0) return;
+  checked = now;
+  if (access("/tmp/ui_screenshot.req", F_OK) != 0) return;
+  unlink("/tmp/ui_screenshot.req");
+  rlDrawRenderBatchActive();
+  auto image = LoadImageFromScreen();
+  ExportImage(image, "/tmp/ui_screenshot.png");
+  UnloadImage(image);
+}
+void Surface::present() { capture_if_requested(); EndDrawing(); frame_open=false; }
 void Surface::end(float scale) { finish_content(scale); present(); }
 bool Surface::has_render_target() const { return target.id != 0; }
 bool Surface::has_capture_frame() const {return frame_target.id != 0;}
