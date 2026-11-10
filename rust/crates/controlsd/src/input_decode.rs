@@ -185,8 +185,7 @@ pub fn decode(state: &State, now: f64) -> Result<Inputs, Error> {
             .any(|event| {
                 matches!(
                     event.get_name(),
-                    Ok(log_capnp::onroad_event::EventName::PandaCanFault
-                        | log_capnp::onroad_event::EventName::StockSccFault)
+                    Ok(log_capnp::onroad_event::EventName::PandaCanFault)
                 )
             }),
         monitoring_disabled: service!(state, "driverMonitoringState", DriverMonitoringState)

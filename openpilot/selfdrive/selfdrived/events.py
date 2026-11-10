@@ -991,9 +991,9 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.PERMANENT: NormalPermanentAlert("CAN Controller Fault: Check Connections"),
   },
 
+  # Reported only. Casper EV has shown these FCA11 flags for years with the car
+  # driving normally; blocking on them (7d337b054) stopped it from engaging.
   EventName.stockSccFault: {
-    ET.IMMEDIATE_DISABLE: ImmediateDisableAlert("Front Safety System Fault"),
-    ET.NO_ENTRY: NoEntryAlert("Front Safety System Fault: Check Vehicle"),
     ET.PERMANENT: NormalPermanentAlert("Front Safety System Fault: Check Vehicle"),
   },
 

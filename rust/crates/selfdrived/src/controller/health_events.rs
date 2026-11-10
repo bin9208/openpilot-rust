@@ -170,6 +170,7 @@ impl Controller {
                     interrupt_rate_fault: faults
                         .iter()
                         .any(|fault| fault.as_ref().ok() == Some(&name)),
+                    carried_traffic: state.get_total_rx_cnt() > 0 || state.get_total_tx_cnt() > 0,
                 }
             };
             use log_capnp::panda_state::FaultType as Fault;

@@ -16,6 +16,8 @@ pub struct CanSample {
     pub bus_off: bool,
     pub total_error_count: u32,
     pub interrupt_rate_fault: bool,
+    /// The controller has received or sent at least one frame since boot.
+    pub carried_traffic: bool,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -48,6 +50,13 @@ impl VehicleFaultMonitor {
         let mut keys = BTreeSet::new();
         for (index, panda) in pandas.iter().enumerate() {
             for (bus, state) in panda.buses.iter().enumerate() {
+                // A controller that never exchanged a frame is not part of this
+                // car's control path: a Casper EV logged 10k errors/s on its
+                // unused middle controller while both used buses were clean.
+                // Losing a used bus is still caught by canError/canBusMissing.
+                if !state.carried_traffic {
+                    continue;
+                }
                 let key = (index, bus);
                 keys.insert(key);
                 healthy &= !(state.error_passive || state.bus_off);
@@ -159,10 +168,29 @@ mod tests {
             bus_off: false,
             total_error_count: count,
             interrupt_rate_fault: bad,
+            carried_traffic: true,
         };
         PandaSample {
             uptime: 100,
             buses: [bus, CanSample::default(), CanSample::default()],
+        }
+    }
+
+    #[test]
+    fn errors_on_a_controller_that_never_carried_traffic_are_not_a_fault() {
+        let mut monitor = VehicleFaultMonitor::default();
+        let mut count = 0;
+        for step in 0..30 {
+            count += 1000;
+            let mut sample = panda(0, false);
+            sample.buses[1] = CanSample {
+                error_passive: true,
+                bus_off: false,
+                total_error_count: count,
+                interrupt_rate_fault: true,
+                carried_traffic: false,
+            };
+            assert!(!monitor.update_pandas(&[sample], f64::from(step) * 0.1, true));
         }
     }
 
