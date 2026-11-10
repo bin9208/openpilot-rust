@@ -11,7 +11,7 @@
 #include <string>
 #if defined(__GLIBC__)
 #include <malloc.h>
-#include <unistd.h>
+#include <sys/stat.h>
 #endif
 bool openpilot_raylib_symbol_available(const char *name);
 uint32_t openpilot_active_framebuffer();
@@ -551,16 +551,20 @@ void Surface::finish_content(float scale) {
     if (shader.id) EndShaderMode();
   }
 }
-// Remote capture for devices whose panel cannot be looked at: create
+// Remote capture for devices whose panel cannot be looked at: touch
 // /tmp/ui_screenshot.req and the next frame is saved to /tmp/ui_screenshot.png.
-// The request file is checked at most once per second.
+// The request is checked at most once per second; each new mtime is one capture,
+// so a request file owned by another user (and not removable here) fires once.
 static void capture_if_requested() {
   static double checked = -1;
+  static struct timespec handled = {};
   double now = GetTime();
   if (checked >= 0 && now - checked < 1.0) return;
   checked = now;
-  if (access("/tmp/ui_screenshot.req", F_OK) != 0) return;
-  unlink("/tmp/ui_screenshot.req");
+  struct stat request;
+  if (stat("/tmp/ui_screenshot.req", &request) != 0) return;
+  if (request.st_mtim.tv_sec == handled.tv_sec && request.st_mtim.tv_nsec == handled.tv_nsec) return;
+  handled = request.st_mtim;
   rlDrawRenderBatchActive();
   auto image = LoadImageFromScreen();
   ExportImage(image, "/tmp/ui_screenshot.png");
