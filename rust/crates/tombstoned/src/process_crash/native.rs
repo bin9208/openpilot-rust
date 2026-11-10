@@ -46,6 +46,10 @@ impl Native {
     }
 }
 impl Provider for Native {
+    fn carrot_logs_configured(&self) -> bool {
+        openpilot_web_upload::Environment::for_runtime()
+            .is_ok_and(|environment| openpilot_web_upload::carrot_logs_configured(&environment))
+    }
     fn capture(&self, event: &Fields) -> io::Result<String> {
         let mut argv = vec![
             self.tmux.clone().into_os_string(),
@@ -213,10 +217,7 @@ fn upload_settings(raw: &Fields) -> Fields {
     let default = openpilot_web_upload::DEFAULT_WEB_UPLOAD_URL;
     let mut url =
         openpilot_web_upload::normalize_base_url(value, default).unwrap_or_else(|_| default.into());
-    if matches!(
-        url.to_lowercase().as_str(),
-        "https://op.wjcloud.kr" | "https://shind0.synology.me"
-    ) {
+    if openpilot_web_upload::LEGACY_WEB_UPLOAD_URLS.contains(&url.to_lowercase().as_str()) {
         url = default.into();
     }
     [("web_upload_url".into(), Value::Text(url))]

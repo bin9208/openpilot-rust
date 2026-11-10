@@ -132,12 +132,11 @@ pub(crate) fn upload_url(value: &Value) -> Result<Value, Error> {
     let normalized = normalize_base_url(&text, DEFAULT_WEB_UPLOAD_URL)
         .unwrap_or_else(|_| DEFAULT_WEB_UPLOAD_URL.into());
     let legacy_comparison = normalized.to_lowercase().replace('\u{17f}', "s");
-    let normalized = if ["https://op.wjcloud.kr", "https://shind0.synology.me"]
-        .contains(&legacy_comparison.as_str())
-    {
-        DEFAULT_WEB_UPLOAD_URL
-    } else {
-        &normalized
-    };
+    let normalized =
+        if openpilot_web_upload::LEGACY_WEB_UPLOAD_URLS.contains(&legacy_comparison.as_str()) {
+            DEFAULT_WEB_UPLOAD_URL
+        } else {
+            &normalized
+        };
     Ok(Value::text(normalized))
 }

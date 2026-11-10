@@ -151,14 +151,18 @@ impl Upload<'_> {
         let result = (|| {
             let environment = Environment::for_runtime()
                 .map_err(|_| Error::Contract("upload environment encoding"))?;
+            if !openpilot_web_upload::carrot_logs_configured(&environment) {
+                return Ok(None);
+            }
             self.post(
                 &openpilot_web_upload::carrot_logs_target(&environment)?,
                 &self.payload(why),
                 settings,
             )
+            .map(Some)
         })();
         match result {
-            Ok(response) => Some(response),
+            Ok(response) => response,
             Err(error) => {
                 eprintln!("carrot_man carrot_logs tmux sending error: {error}");
                 None

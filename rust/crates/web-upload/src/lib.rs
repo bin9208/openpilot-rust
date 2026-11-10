@@ -23,8 +23,9 @@ pub use multipart::TmuxUpload;
 pub use openpilot_logging::{Fields, Value};
 pub use response::{Response, SessionMode};
 pub use targets::{
-    api_url, carrot_logs_target, device_id, normalize_base_url, session_payload, tmux_target,
-    web_settings, Environment, Target, DEFAULT_TMUX_WEB_UPLOAD_URL, DEFAULT_WEB_UPLOAD_URL,
+    api_url, carrot_logs_configured, carrot_logs_target, device_id, normalize_base_url,
+    session_payload, tmux_target, web_settings, Environment, Target, DEFAULT_TMUX_WEB_UPLOAD_URL,
+    DEFAULT_WEB_UPLOAD_URL, LEGACY_WEB_UPLOAD_URLS,
 };
 pub use webdav::{LocalFiles, RouteSegment, WebDav, WebDavError};
 
