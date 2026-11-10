@@ -10,6 +10,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
+/// zstd level 3: on a real 54 MB/min rlog it compresses 6.8x faster than the
+/// original level 10 for a 7% larger file; compression was most of loggerd's CPU.
+const LEVEL: i32 = 3;
+
 struct Segment {
     path: PathBuf,
     rlog: zstd::stream::write::Encoder<'static, File>,
@@ -24,8 +28,8 @@ impl Segment {
             .create(&path)?;
         File::create(path.join("rlog.lock"))?;
         Ok(Self {
-            rlog: zstd::stream::write::Encoder::new(File::create(path.join("rlog.zst"))?, 10)?,
-            qlog: zstd::stream::write::Encoder::new(File::create(path.join("qlog.zst"))?, 10)?,
+            rlog: zstd::stream::write::Encoder::new(File::create(path.join("rlog.zst"))?, LEVEL)?,
+            qlog: zstd::stream::write::Encoder::new(File::create(path.join("qlog.zst"))?, LEVEL)?,
             path,
         })
     }

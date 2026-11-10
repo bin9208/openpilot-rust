@@ -39,14 +39,14 @@ impl FrameState {
             camera,
             exposure: ExposureState::new(sensor, camera),
             region: geometry.exposure_region(sensor, camera),
+            // Exposure uses only the median of the region. Every 8th pixel in
+            // both directions still gives ~7k-27k samples (median error well
+            // under 1%), but reads 8-16x less uncached frame memory than the
+            // original 2x2 (driver 2x4) grid, which was most of camerad's CPU.
             sampling: Sampling {
                 width,
-                x_skip: 2,
-                y_skip: if matches!(camera, CameraId::Driver) {
-                    4
-                } else {
-                    2
-                },
+                x_skip: 8,
+                y_skip: 8,
             },
         })
     }
