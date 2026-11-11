@@ -22,11 +22,11 @@
 | 항목 | 값 |
 | --- | --- |
 | 작업 브랜치 | `bin9208/openpilot-rust:codex/md-upstream-sync` (base `dev-md`, PR #695) |
-| 이 문서 갱신 시 코드 HEAD | `625361a7a` |
+| 이 문서 갱신 시 코드 HEAD | `d536922ad` |
 | 원본 비교 기준 | `carrot-wip` `bc8eb4c2e` (2026-11-11 14:34). 누락 목록 문서는 `1032f8641` 기준이고 그 뒤 12커밋은 아래 "원본 갱신분" 참고 |
 | 이식 기록상 원본 기준 | `0436c7f0a` (`rust/upstream/carrot-wip.json`, `coverage_complete: false`). 갱신되지 않는 옛 기록이다 |
 | 시험 기기 | comma 3X, 차량 HYUNDAI_IONIQ_5_PE |
-| **기기에 올라가 있는 SHA** | **`eb70376eb`** (2026-11-11 17:56에 갱신 시작, 18:06 현재 빌드 중). 그 뒤 커밋(`bc615e62f`부터)은 기기에 없다 |
+| **기기에 올라가 있는 SHA** | `eb70376eb`은 빌드 완료(724초)와 실행을 확인했다. 그 뒤 `8210bfdea`로 갱신해 빌드를 시작했는데(18:08), 6작업 단계에서 `carrot-server` 컴파일러가 중단된 것까지만 봤다. 스크립트는 작업 수를 줄여 다시 시도하므로 끝났을 가능성이 높지만 **최종 결과는 확인하지 못했다**(그 뒤 기기가 꺼짐). `b8c5b2190` 이후 커밋은 기기에 없다 |
 
 기기 접속 방법과 로그 위치는 저장소에 적지 않는다. 작업자 쪽 메모를 본다.
 
@@ -55,7 +55,6 @@
 
   `xiaoge`의 `inference::session` 테스트 1건은 모델 경로 환경변수가 없어 이 PC에서 실패한다(원래부터).
 
-- `cargo fmt -p openpilot-card`는 `brands/hyundai/parser_inputs.rs`를 건드린다(원래 서식이 안 맞는 파일). 커밋에 넣지 말고 되돌린다.
 - `carrot-server` 테스트는 worktree 루트에 `.omo/evidence/`를 만든다. 추적하지 않는 산출물이다. 커밋하지 않는다.
 - **같은 worktree에서 Codex와 Claude가 동시에 작업한 적이 있다.** `git add`는 자기 파일 경로만 지정하고, 커밋 전에 `git status`를 본다.
 
@@ -83,6 +82,8 @@
 | `bc615e62f` | 폰 모델이 응답하는 프레임에도 내부 모델을 매번 실행함(F04). 원본처럼 건너뛰고, 폰 프레임을 잃으면 내부 모델을 초기화해 같은 프레임에 답함 | **주행 경로 변경. 주행 필요** |
 | `30e4c168b` | `signalcolord`가 manager에 등록돼 있지 않아 `SignalAssistMode`를 켜도 관측기가 뜨지 않음(F01) | PC 테스트만 |
 | `4e3d56ef8` | `OnnxBsdEnabled`를 읽지 않아 폴리곤이 설정돼 있으면 비전 BSD 추론이 항상 돎(B02). 원본 기본값은 꺼짐 | PC 테스트만 |
+| `b8c5b2190` | 동작 변경 없음. `jetlinkd`와 `modeld`가 폰 프레임의 단계별 시간을 rlog `runtimeTiming`에 남김(원본 `daemon.py`의 지표 이름) | PC 테스트만 |
+| `a6f80fa52` | `modelV2.orientationRate`에 모델 표준편차가 빠져 있었음(B16의 일부) | PC 컴파일만 |
 | `625361a7a` | 원본 `ec79cae36`의 차량 쪽: `carState.cruiseCancelState` 추가, CANCEL 래치 중 방향지시등 요청과 계기판 차선변경 램프 유지를 중단 | PC 테스트만. **시험 차량 해당, 주행 필요** |
 
 **이어받는 사람에게:** "원본과 같다"는 주석·테스트 이름·커밋 메시지를 믿지 말고 원본 파일을 직접 읽는다.
@@ -94,7 +95,7 @@
 ### 1. Jetlink (폰 빅모델): 주행 가능한 상태로 만들기
 
 - [ ] 기기를 현재 HEAD로 올리고 `6446918b1`을 차량에서 확인한다. 폰 모델 사용 중 직진 조향 떨림이 없어졌는지, rlog의 `camera dropped … frames` 횟수와 `drivingModelData.jetlink` 상태로 본다.
-- [ ] 같은 주행에서 tmux 로그의 `Jetlink slow frame N: T ms; warp …, handoff …, roundtrip …, parse …`를 모은다(`63ee82761`). `roundtrip`이 대부분이면 폰·USB 쪽이고, `warp`나 `handoff`가 크면 콤마 쪽이다.
+- [ ] 같은 주행의 rlog에서 `runtimeTiming`을 본다(`b8c5b2190`). `component=modeld`의 `jetlink_warp_ms`·`jetlink_handoff_ms`·`jetlink_roundtrip_ms`·`jetlink_parse_ms`와 `component=jetlinkd`의 `usb_exchange_ms`·`server_total_ms`다. `usb_exchange_ms − server_total_ms`가 USB 전송, `jetlink_roundtrip_ms − usb_exchange_ms`가 로컬 소켓 구간이다. `server_total_ms`가 50에 가까우면 폰 쪽이고, 나머지가 크면 콤마 쪽이다. 같은 내용이 tmux의 `Jetlink slow frame …; warp …, handoff …, roundtrip …, parse …` 줄에도 찍힌다.
 - [ ] 폰 왕복 시간이 50ms를 넘으면 modelV2가 16Hz 아래로 내려가 `commIssue`가 뜬다(주행 `00000ca1` 1번 구간에서 201회, 인게이지 해제). 폰 발열이 주원인으로 보이며 사용자가 쿨러를 달 예정이다. 그 뒤 다시 잰다.
 - [ ] 주행 중 USB Type-C 연결이 물리적으로 끊긴 뒤 복구되지 않았다(커널 `USB Type-C disconnect`). 원인 미확인. 폰이 부팅 때부터 꽂혀 있으면 콤마가 폰에서 전류를 끌어 쓰는데(책상에서 300–450mA 측정), 원본은 포트가 비어 있을 때만 입력 전류를 끊는다. 전원 공급형 USB3 허브 사용 여부와 함께 확인한다.
 - [ ] 포트 누락 A14: 원본은 modeld와 데몬 사이 영상을 공유 메모리로 넘긴다(`shared_input.py`). Rust는 프레임마다 소켓으로 복사한다.
@@ -229,6 +230,16 @@ Rust가 원본과 다른 부분(지연에 얼마나 기여하는지는 재지 �
 - [ ] 이 PC에서 `carrot-recovery` 테스트 7건과 `tombstoned` 1건은 보조 실행 파일이 없어 실패한다. `carrot-server` 테스트는 위 "이 PC에서 이어받기"의 라이브러리 경로를 주면 실행된다(25건 통과).
 - [ ] `rust/crates/selfdrived/data/alerts.json`은 `openpilot/selfdrive/selfdrived/events.py`에서 생성하는 파일이다. 이번에는 둘을 손으로 맞췄다. 생성기(`rust/tools/generate_selfdrive_alerts.py`)로 다시 만들어 차이가 없는지 확인한다.
 - [ ] `openpilot/selfdrive/carrot_settings.json`이 원본보다 뒤처져 있다(설명 문구와 `Long KiV` 표기 등 39줄). 원본 `bc8eb4c2e`·`ec79cae36`의 설정 변경과 함께 맞춘다.
+
+## CI 상태
+
+PR #695의 필수 검사 셋 중 둘은 코드와 무관한 이유로 계속 실패하고 있었다.
+
+- `focused x86 checks`: `79219669a`가 파일 35개 끝에 빈 줄을 남겨 첫 단계(`git diff --check`)에서 멈췄다. 그 뒤 단계(서식 검사, 호스트 테스트)는 한 번도 돌지 않았다. `61463eda4`에서 고쳤고, 같은 스크립트를 이 PC에서 돌려 서식·문법·`runtime-core`·`runtime-installer` 테스트 통과를 확인했다(pytest 단계는 이 PC에 pytest가 없어 못 돌렸다).
+- `check mapped user docs`: Jetlink와 Rust 포팅 안내서(한·영) 갱신을 요구했다. 두 안내서는 없어진 설정과 도구를 설명하고 있었다. `d536922ad`에서 지금 코드대로 고쳐 썼고 검사기를 이 PC에서 돌려 통과를 확인했다.
+- `device acceptance`: PR 본문에 현재 HEAD SHA의 기기 확인 기록이 있어야 통과한다. 사용자가 기기 결과를 알려 준 뒤에 적는다.
+
+이 검사의 서식 단계는 기준 브랜치 대비 바뀐 `.rs` 파일 전부에 `rustfmt --check`를 돌린다. `cargo fmt -p <crate>`가 고친 파일은 이제 그대로 커밋해도 된다.
 
 ## 작업 규칙 (이번에 정한 것)
 
