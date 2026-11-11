@@ -290,11 +290,12 @@ impl Runtime {
         if self.status.decision.reset_required {
             model.adapter.reset();
         }
-        if prepare_only {
-            model.adapter.reset();
-            self.model = Some(model);
-            return;
-        }
+        // A camera gap (`prepare_only`) is not a reason to restart the peer
+        // model. carrot's model.py runs the full recurrent graph for each
+        // received pair and lets the gap show in pose validity. Resetting here
+        // cleared the phone's history every few frames whenever its answers
+        // took longer than a frame period, and the published path shook.
+        let _ = prepare_only;
         let prepared = warp().and_then(|warped| {
             let packed = model.adapter.prepare_session(
                 &warped,
@@ -327,7 +328,10 @@ impl Runtime {
         if native.is_some() {
             self.small_runs = self.small_runs.saturating_add(1);
         }
-        if native.is_none() || self.status.decision.source != Source::Jetlink {
+        // While the peer model is the published one its answer is used for
+        // every received frame, including frames where the internal model only
+        // advanced its history (`native` is None), as carrot's model.py does.
+        if self.status.decision.source != Source::Jetlink {
             return native;
         }
         if !self.pending {
