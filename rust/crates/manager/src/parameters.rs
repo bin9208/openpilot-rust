@@ -4,6 +4,7 @@ use openpilot_params::{KeyInfo, Params, KEYS};
 pub trait Parameters {
     fn get(&self, key: &str) -> Result<Option<Vec<u8>>, Error>;
     fn put(&self, key: &str, value: &[u8]) -> Result<(), Error>;
+    fn remove(&self, key: &str) -> Result<(), Error>;
     fn clear(&self, flags: u32) -> Result<(), Error>;
     fn cast_failed(&self, info: &KeyInfo, value: &[u8]) -> Result<(), Error> {
         crate::diagnostics::cast_failed(
@@ -29,6 +30,12 @@ impl Parameters for Params {
     }
     fn put(&self, key: &str, value: &[u8]) -> Result<(), Error> {
         match Params::put(self, key, value) {
+            Ok(()) | Err(openpilot_params::Error::Io(_)) => Ok(()),
+            Err(error) => Err(error.into()),
+        }
+    }
+    fn remove(&self, key: &str) -> Result<(), Error> {
+        match Params::remove(self, key) {
             Ok(()) | Err(openpilot_params::Error::Io(_)) => Ok(()),
             Err(error) => Err(error.into()),
         }
@@ -135,6 +142,20 @@ pub fn migrate_atc(params: &impl Parameters) -> Result<(), Error> {
     Ok(())
 }
 
+/// carrot's `migrate_lateral_geometry_params`: retire the enable switch
+/// without activating a value that was switched off. The ratio is written
+/// before the switch is removed so an interruption leaves it retryable.
+pub fn migrate_lateral_geometry(params: &impl Parameters) -> Result<(), Error> {
+    const SWITCH: &str = "CenterToFrontRatioEnabled";
+    if params.get(SWITCH)?.is_some() {
+        if !params.boolean(SWITCH)? {
+            params.put("CenterToFrontRatio", b"0")?;
+        }
+        params.remove(SWITCH)?;
+    }
+    Ok(())
+}
+
 pub fn write_onroad(params: &impl Parameters, started: bool) -> Result<(), Error> {
     params.put_bool("IsOnroad", started)?;
     params.put_bool("IsOffroad", !started)
@@ -186,4 +207,73 @@ pub fn configure_stopping_speed(params: &impl Parameters) -> Result<(), Error> {
         params.put("VEgoStopping", value.to_string().as_bytes())?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{cell::RefCell, collections::BTreeMap};
+
+    #[derive(Default)]
+    struct Store(RefCell<BTreeMap<String, Vec<u8>>>);
+    impl Store {
+        fn with(entries: &[(&str, &[u8])]) -> Self {
+            Self(RefCell::new(
+                entries
+                    .iter()
+                    .map(|(key, value)| ((*key).to_owned(), value.to_vec()))
+                    .collect(),
+            ))
+        }
+        fn value(&self, key: &str) -> Option<Vec<u8>> {
+            self.0.borrow().get(key).cloned()
+        }
+    }
+    impl Parameters for Store {
+        fn get(&self, key: &str) -> Result<Option<Vec<u8>>, Error> {
+            Ok(self.value(key).filter(|value| !value.is_empty()))
+        }
+        fn put(&self, key: &str, value: &[u8]) -> Result<(), Error> {
+            self.0.borrow_mut().insert(key.to_owned(), value.to_vec());
+            Ok(())
+        }
+        fn remove(&self, key: &str) -> Result<(), Error> {
+            self.0.borrow_mut().remove(key);
+            Ok(())
+        }
+        fn clear(&self, _flags: u32) -> Result<(), Error> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn retired_geometry_switch_is_removed_and_a_disabled_ratio_becomes_zero() {
+        // Switched off: the stored ratio must not start applying.
+        let off = Store::with(&[
+            ("CenterToFrontRatioEnabled", b"0"),
+            ("CenterToFrontRatio", b"44"),
+        ]);
+        migrate_lateral_geometry(&off).unwrap();
+        assert_eq!(off.value("CenterToFrontRatio").as_deref(), Some(&b"0"[..]));
+        assert_eq!(off.value("CenterToFrontRatioEnabled"), None);
+
+        // Switched on: the ratio is kept.
+        let on = Store::with(&[
+            ("CenterToFrontRatioEnabled", b"1"),
+            ("CenterToFrontRatio", b"44"),
+        ]);
+        migrate_lateral_geometry(&on).unwrap();
+        assert_eq!(on.value("CenterToFrontRatio").as_deref(), Some(&b"44"[..]));
+        assert_eq!(on.value("CenterToFrontRatioEnabled"), None);
+
+        // No switch: nothing is touched, and a second run changes nothing.
+        let none = Store::with(&[("CenterToFrontRatio", b"44")]);
+        migrate_lateral_geometry(&none).unwrap();
+        migrate_lateral_geometry(&on).unwrap();
+        assert_eq!(
+            none.value("CenterToFrontRatio").as_deref(),
+            Some(&b"44"[..])
+        );
+        assert_eq!(on.value("CenterToFrontRatio").as_deref(), Some(&b"44"[..]));
+    }
 }
