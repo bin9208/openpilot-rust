@@ -111,7 +111,7 @@ impl Session {
             .lock()
             .map_err(|_| Error::Contract("USB role mutex poisoned"))?;
         self.stopped.store(true, Ordering::Release);
-        fs::write(self.gadget.join("UDC"), b"\n")?;
+        unbind(&self.gadget)?;
         self.ep0
             .lock()
             .map_err(|_| Error::Contract("ep0 mutex poisoned"))?
@@ -126,8 +126,18 @@ impl Session {
         if self.stopped.load(Ordering::Acquire) {
             return Ok(());
         }
-        fs::write(self.gadget.join("UDC"), b"\n")?;
-        Ok(())
+        unbind(&self.gadget)
+    }
+}
+
+/// Detaches the gadget from its controller. A gadget that is already detached
+/// answers ENODEV; that is the state asked for, not a failure. Treating it as
+/// one ended the daemon after every lost session, so the manager restarted it
+/// and the phone saw the cable drop and return in a loop.
+fn unbind(gadget: &Path) -> Result<(), Error> {
+    match fs::write(gadget.join("UDC"), b"\n") {
+        Err(error) if error.raw_os_error() == Some(libc::ENODEV) => Ok(()),
+        result => Ok(result?),
     }
 }
 

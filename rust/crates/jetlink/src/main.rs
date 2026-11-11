@@ -624,6 +624,7 @@ mod tests {
             setup_backoff("a USB gadget already owns the controller"),
             Duration::from_secs(2)
         );
-        assert_eq!(setup_backoff("USB mount failed"), Duration::from_secs(60));
+        // Carrot's daemon sleeps 2 s after every failed session, whatever the cause.
+        assert_eq!(setup_backoff("USB mount failed"), Duration::from_secs(2));
     }
 }

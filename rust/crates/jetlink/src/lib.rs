@@ -32,6 +32,9 @@ pub enum Error {
     Native(String),
     #[error("Jetlink contract: {0}")]
     Contract(&'static str),
+    /// What the phone or Jetson answered, with the values needed to act on it.
+    #[error("Jetlink peer: {0}")]
+    Peer(String),
     #[error("Jetlink deadline exceeded")]
     Deadline,
     #[error("Jetlink session closed")]

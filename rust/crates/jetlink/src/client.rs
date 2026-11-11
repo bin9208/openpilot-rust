@@ -660,11 +660,37 @@ impl<T: Transport> Client<T> {
         }
         let response = self.expect(9, seq, deadline)?;
         let end = 20 + self.session_contract().spec.output_count()? * 4;
-        if response.payload.len() < end
-            || wire::word(&response.payload, 0) != frame
-            || wire::word(&response.payload, 4) != 0
-        {
-            return Err(Error::Contract("peer inference frame/status/length"));
+        if response.payload.len() < 20 {
+            return Err(Error::Contract("inference response is missing its header"));
+        }
+        // Report which check failed, as the source client does: one merged
+        // message hid why a phone refused every real frame while driving.
+        let (answered, status) = (
+            wire::word(&response.payload, 0),
+            wire::word(&response.payload, 4),
+        );
+        if status != 0 {
+            let name = match status {
+                1 => "NOT_READY",
+                2 => "BAD_SHAPE",
+                3 => "INFER_FAILED",
+                4 => "NOT_FINITE",
+                _ => "unknown status",
+            };
+            return Err(Error::Peer(format!(
+                "inference failed: {name} ({status}) for frame {answered}"
+            )));
+        }
+        if answered != frame {
+            return Err(Error::Peer(format!(
+                "inference response frame {answered}, expected {frame}"
+            )));
+        }
+        if response.payload.len() < end {
+            return Err(Error::Peer(format!(
+                "inference response is {} bytes, expected {end}",
+                response.payload.len()
+            )));
         }
         if let Ok(mut status) = self.status.lock() {
             status["timings"] = json!([
