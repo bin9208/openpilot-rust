@@ -1,0 +1,291 @@
+//! Port of carrot's `opendbc/car/hyundai/tests/test_spas.py`.
+use super::*;
+
+const LEFT: Option<Direction> = Some(Direction::Left);
+
+fn stock(s: &mut Session, t: f64, count: u8) -> f64 {
+    for i in 0..count {
+        for (address, _) in SPAS {
+            let m = frame(address, i, None, s.bus);
+            s.observe(m.address, m.bus, &m.data, t + f64::from(i) * 0.02);
+        }
+    }
+    t + f64::from(count - 1) * 0.02
+}
+
+struct Step<'a> {
+    healthy: bool,
+    request: Option<&'a str>,
+    direction: Option<Direction>,
+    driver_override: bool,
+}
+impl Default for Step<'_> {
+    fn default() -> Self {
+        Self {
+            healthy: true,
+            request: Some("a"),
+            direction: LEFT,
+            driver_override: false,
+        }
+    }
+}
+fn step(s: &mut Session, t: f64, kw: Step<'_>) -> Vec<Frame> {
+    s.update(
+        t,
+        Update {
+            healthy: kw.healthy,
+            request: kw.request,
+            direction: kw.direction,
+            duration: 300.,
+            driver_override: kw.driver_override,
+        },
+    )
+}
+fn none() -> Step<'static> {
+    Step {
+        request: None,
+        ..Step::default()
+    }
+}
+fn reply(s: &mut Session, t: f64, body: &[u8]) {
+    let mut data = vec![body.len() as u8];
+    data.extend_from_slice(body);
+    data.resize(8, 0);
+    s.observe(RESPONSE, s.bus, &data, t);
+}
+fn opened(bus: u8) -> (Session, f64) {
+    let mut s = Session::new(bus);
+    let t = stock(&mut s, 10.0, 10);
+    step(&mut s, t, none());
+    assert_eq!(step(&mut s, t + 0.01, Step::default())[0].data, EXTENDED);
+    reply(&mut s, t + 0.02, &[0x50, 0x03]);
+    assert_eq!(step(&mut s, t + 0.03, Step::default())[0].data, DISABLE);
+    reply(&mut s, t + 0.04, &[0x68, 0x03]);
+    assert!(step(&mut s, t + 0.05, Step::default()).is_empty());
+    assert!(!step(&mut s, t + 0.16, Step::default()).is_empty());
+    assert_eq!(s.state, State::Active);
+    (s, t + 0.16)
+}
+fn hex(data: &[u8]) -> String {
+    data.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+#[test]
+fn supplied_vectors_match() {
+    assert_eq!(
+        hex(&frame(0x16a, 0, LEFT, 0).data),
+        "db65000000000000000000000000000060000000000000000000000000000000"
+    );
+    assert_eq!(
+        hex(&frame(0x16a, 0, Some(Direction::Right), 0).data),
+        "848c000000000000000000000000000080000000000000000000000000000000"
+    );
+}
+
+#[test]
+fn bus_contract_and_native_frames() {
+    for bus in [0u8, 1, 4, 5] {
+        let full: BTreeMap<u32, usize> = SPAS.into_iter().collect();
+        assert!(compatible(&BTreeMap::from([(bus, full.clone())]), bus));
+        assert!(!compatible(
+            &BTreeMap::from([(bus, BTreeMap::from([(0x165, 16), (0x16a, 32)]))]),
+            bus
+        ));
+        assert!(!compatible(&BTreeMap::from([(bus + 1, full)]), bus));
+        let (mut s, t) = opened(bus);
+        let messages = step(&mut s, t + 0.021, Step::default());
+        assert_eq!(
+            messages.iter().map(|m| m.address).collect::<Vec<_>>(),
+            vec![0x165, 0x16a]
+        );
+        assert!(messages.iter().all(|m| m.bus == bus
+            && u16::from_le_bytes([m.data[0], m.data[1]]) == checksum(m.address, &m.data)));
+    }
+}
+
+#[test]
+fn incompatible_stock_never_requests_disable() {
+    for failure in [
+        "wrong_bus",
+        "wrong_dlc",
+        "bad_crc",
+        "repeated_counter",
+        "stale",
+        "insufficient",
+    ] {
+        let mut s = Session::new(0);
+        for i in 0..10u8 {
+            for (a, _) in SPAS {
+                let m = frame(
+                    a,
+                    if failure == "repeated_counter" { 0 } else { i },
+                    None,
+                    if failure == "wrong_bus" { 1 } else { 0 },
+                );
+                let mut data = m.data.clone();
+                if failure == "wrong_dlc" {
+                    data.pop();
+                }
+                if failure == "bad_crc" {
+                    data[0] ^= 1;
+                }
+                if failure == "insufficient" && i > 7 {
+                    continue;
+                }
+                s.observe(a, m.bus, &data, 10. + f64::from(i) * 0.02);
+            }
+        }
+        let t = if failure == "stale" { 11.0 } else { 10.19 };
+        step(&mut s, t, none());
+        assert!(
+            step(&mut s, t + 0.01, Step::default()).is_empty(),
+            "{failure}"
+        );
+    }
+}
+
+#[test]
+fn missing_or_negative_extended_ack_never_sends_spas() {
+    for body in [&[0x7f, 0x10, 0x22][..], &[0x50, 0x01], &[0x68, 0x03]] {
+        let mut s = Session::new(0);
+        let t = stock(&mut s, 10.0, 10);
+        step(&mut s, t, none());
+        step(&mut s, t + 0.01, Step::default());
+        reply(&mut s, t + 0.02, body);
+        let mut messages = Vec::new();
+        for i in 1..50 {
+            messages.extend(step(
+                &mut s,
+                t + 0.02 + f64::from(i) * 0.01,
+                Step::default(),
+            ));
+        }
+        assert!(!messages
+            .iter()
+            .any(|m| size(m.address).is_some() || m.data == DISABLE));
+        assert!(s.state.restoring());
+    }
+}
+
+#[test]
+fn stock_sender_must_be_quiet() {
+    let mut s = Session::new(0);
+    let t = stock(&mut s, 10.0, 10);
+    step(&mut s, t, none());
+    step(&mut s, t + 0.01, Step::default());
+    reply(&mut s, t + 0.02, &[0x50, 0x03]);
+    step(&mut s, t + 0.03, Step::default());
+    reply(&mut s, t + 0.04, &[0x68, 0x03]);
+    step(&mut s, t + 0.05, Step::default());
+    for i in 1..45u32 {
+        let now = t + 0.05 + f64::from(i) * 0.01;
+        for (a, _) in SPAS {
+            let m = frame(a, ((9 + i) % 256) as u8, None, 0);
+            s.observe(a, 0, &m.data, now);
+        }
+        assert!(!step(&mut s, now, Step::default())
+            .iter()
+            .any(|m| size(m.address).is_some()));
+    }
+    assert_eq!(s.reason, "ecu_not_quiet");
+}
+
+#[test]
+fn active_session_revoked_and_restores_on_every_failure() {
+    for cause in [
+        "unhealthy",
+        "gap",
+        "request",
+        "direction",
+        "driver",
+        "stock",
+        "deadline",
+    ] {
+        let (mut s, t) = opened(0);
+        let mut kw = Step::default();
+        let mut dt = 0.01;
+        match cause {
+            "unhealthy" => kw.healthy = false,
+            "gap" => dt = 0.21,
+            "request" => kw.request = Some("new"),
+            "direction" => kw.direction = Some(Direction::Right),
+            "driver" => kw.driver_override = true,
+            "deadline" => s.set_started(t - 301.),
+            _ => {
+                let m = frame(0x16a, 10, None, 0);
+                s.observe(0x16a, 0, &m.data, t + 0.001);
+            }
+        }
+        assert_eq!(step(&mut s, t + dt, kw)[0].data, ENABLE, "{cause}");
+        assert_eq!(s.state, State::RestoreEnable);
+    }
+}
+
+#[test]
+fn recovery_requires_reply_and_resumed_stock_and_no_replay() {
+    let (mut s, t) = opened(0);
+    step(&mut s, t + 0.01, none());
+    reply(&mut s, t + 0.02, &[0x68, 0x00]);
+    assert_eq!(step(&mut s, t + 0.03, none())[0].data, DEFAULT);
+    reply(&mut s, t + 0.04, &[0x50, 0x01]);
+    step(&mut s, t + 0.05, none());
+    assert_eq!(s.state, State::RestoreStock);
+    for i in 0..12u8 {
+        let now = t + 0.06 + f64::from(i) * 0.02;
+        for (a, _) in SPAS {
+            let m = frame(a, 20 + i, None, 0);
+            s.observe(a, 0, &m.data, now);
+        }
+        step(&mut s, now, none());
+    }
+    assert!(s.state == State::Idle && s.stock_resumed && s.restore_ack);
+    step(
+        &mut s,
+        t + 0.30,
+        Step {
+            healthy: false,
+            ..Step::default()
+        },
+    );
+    assert!(step(&mut s, t + 0.31, Step::default()).is_empty());
+}
+
+#[test]
+fn restore_is_bounded_and_cannot_rearm_after_failure() {
+    let (mut s, t) = opened(0);
+    step(&mut s, t + 0.01, none());
+    let mut sent = Vec::new();
+    for i in 1..900 {
+        sent.extend(step(&mut s, t + 0.01 + f64::from(i) * 0.01, none()));
+    }
+    assert!(s.state == State::Failed && s.reason == "restore_unconfirmed");
+    assert_eq!(sent.iter().filter(|m| m.data == ENABLE).count(), 2);
+    stock(&mut s, t + 10., 10);
+    assert!(step(
+        &mut s,
+        t + 10.2,
+        Step {
+            request: Some("new"),
+            ..Step::default()
+        }
+    )
+    .is_empty());
+}
+
+#[test]
+fn fifty_hz_no_burst_after_delayed_update() {
+    let (mut s, t) = opened(0);
+    let mut out = Vec::new();
+    for i in 1..100 {
+        let now = t + f64::from(i) * 0.01;
+        for m in step(&mut s, now, Step::default()) {
+            if m.address == 0x16a {
+                out.push((now, m));
+            }
+        }
+    }
+    for pair in out.windows(2) {
+        assert!(pair[1].0 - pair[0].0 >= 0.019999);
+        assert_eq!(pair[1].1.data[2], pair[0].1.data[2].wrapping_add(1));
+    }
+}

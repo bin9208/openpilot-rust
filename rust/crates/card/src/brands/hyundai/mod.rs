@@ -37,6 +37,7 @@ pub mod parameters;
 pub mod parser_inputs;
 mod runtime;
 pub mod settings_float;
+pub mod spas;
 pub mod stalks;
 mod startup;
 pub mod state;
