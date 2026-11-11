@@ -1,6 +1,7 @@
 //! Physical-indicator intent: carrot's `tools/jetlink/blink_*.py` worker,
 //! ported to run inside card instead of as a separate Python process.
 pub mod policy;
+pub mod remote;
 pub mod source;
 pub mod turn_journey;
 pub mod turn_location;

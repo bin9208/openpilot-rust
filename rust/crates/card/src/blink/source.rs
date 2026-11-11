@@ -2,13 +2,14 @@
 //! inside card at the worker's 20 Hz instead of as a Python process.
 //!
 //! In SPAS mode carrot's worker takes intents from three sources: explicit
-//! Bluetooth remote taps, the navigation turn signal (`AutomaticSignals`) and
-//! a confirmed voice lane change. Only the navigation turn signal has its
-//! inputs in this port today; Bluetooth remote actions (A08) and voice lane
-//! requests (A12) are not published yet, so those two produce nothing.
+//! Bluetooth remote taps (`remote`), the navigation turn signal
+//! (`AutomaticSignals`) and a confirmed voice lane change. Voice lane
+//! requests (A12) are not published in this port yet, so that one produces
+//! nothing.
 //! TBT, boundary and observation intents are off in SPAS mode in carrot too.
 use super::{
     policy::{AutomaticInput, AutomaticSignals, Hold, Policy, PolicyInput},
+    remote::Remote,
     turn_journey::Travel,
     Side,
 };
@@ -44,6 +45,7 @@ pub struct SpasWorker {
     policy: Policy,
     automatic: AutomaticSignals,
     travel: Travel,
+    remote: Remote,
     activated_id: Option<String>,
     next: f64,
     pub record: Option<Record>,
@@ -92,6 +94,7 @@ impl SpasWorker {
             policy: Policy::new(),
             automatic: AutomaticSignals::new(),
             travel: Travel::default(),
+            remote: Remote::default(),
             activated_id: None,
             next: 0.,
             record: None,
@@ -140,6 +143,12 @@ impl SpasWorker {
             && cs.get_can_valid()
             && cs.get_v_ego().is_finite()
             && gear != "unknown";
+        let bluetooth = self.remote.load();
+        let commands = self.remote.commands(&bluetooth, now);
+        let remote = self.policy.hold.as_ref().is_some_and(|h| {
+            h.source == "bluetooth"
+                && Remote::holds(&bluetooth, h.device.as_deref(), h.direction, h.time, now)
+        });
         let mode =
             super::super::brands::hyundai::parameters::setting_int(settings, "AutoBlinkerControl")
                 .unwrap_or(0);
@@ -254,11 +263,11 @@ impl SpasWorker {
             now,
             mode,
             ok,
-            commands: &[],
+            commands: &commands,
             speed: f64::from(cs.get_v_ego()),
             angle: f64::from(cs.get_steering_angle_deg()),
             gear,
-            remote: false,
+            remote,
             automatic: auto,
             auto_valid: policy_valid,
         });
