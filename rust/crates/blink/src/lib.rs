@@ -1,11 +1,15 @@
 //! Physical-indicator intent: carrot's `tools/jetlink/blink_*.py` worker,
 //! ported to run in-process (card for SPAS, the Bluetooth daemon for B1)
 //! instead of as a separate Python process.
+pub mod display;
+pub mod observed;
 pub mod policy;
 pub mod remote;
 pub mod source;
+pub mod tbt;
 pub mod turn_journey;
 pub mod turn_location;
+pub mod voice;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
 pub enum Side {
@@ -68,3 +72,5 @@ pub fn setting_int(settings: &openpilot_params::Params, key: &str) -> i32 {
         .and_then(|text| text.trim().parse().ok())
         .unwrap_or(0)
 }
+#[cfg(test)]
+mod tbt_tests;

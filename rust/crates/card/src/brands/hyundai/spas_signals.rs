@@ -660,6 +660,7 @@ impl SpasSignals {
         if self.worker.is_some() && now >= self.feedback_at {
             let active = self.session.state == spas::State::Active;
             self.feedback = crate::blink::source::Feedback {
+                lamps: None,
                 stamp: now,
                 accepted_id: if active {
                     self.session.request().map(str::to_owned)

@@ -37,8 +37,10 @@ pub struct Feedback {
     pub stamp: f64,
     pub accepted_id: Option<String>,
     pub available: bool,
-    /// `"driver_override" | "ready" | "waiting"`.
+    /// `"driver_override" | "ready" | "waiting" | "sending" | ...`.
     pub state: &'static str,
+    /// B1 boards' own lamp sample (1 left, 2 right), when reported.
+    pub lamps: Option<u8>,
 }
 
 pub struct SpasWorker {
