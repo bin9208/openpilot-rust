@@ -206,11 +206,15 @@ pub fn camera_acc(
         (controller.as_deref_mut(), &stopping_input, jerk_u, false),
     )?;
     if let Some(controller) = controller {
-        // State-only fallback for no-lead stops (OEM SCC_ObjSta). The requested
-        // signal-stop object additionally supplies range and speed.
+        // OEM SCC_ObjSta=2 denotes an object controllable longitudinally. During
+        // a final stop request a receding real lead (state 1) is promoted too,
+        // keeping its measured range and speed, next to the no-lead fallback
+        // (state 0). The requested signal-stop object additionally supplies
+        // range and speed.
+        let lead_state = get(&data, "HUD_LEAD_INFO")?;
         if get(&data, "ACCMode")? == 1.
             && get(&data, "StopReq")? == 1.
-            && get(&data, "HUD_LEAD_INFO")? == 0.
+            && (lead_state == 0. || lead_state == 1.)
         {
             data.insert("HUD_LEAD_INFO".into(), 2.);
         }
@@ -278,3 +282,6 @@ pub fn acc(
     let value = get(&data, "aReqValue")?;
     Ok((writer.frame("SCC_CONTROL", input.bus, &data, None)?, value))
 }
+
+#[cfg(test)]
+mod tests;
