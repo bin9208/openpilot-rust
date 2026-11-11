@@ -159,7 +159,10 @@ Rust가 원본과 다른 부분(지연에 얼마나 기여하는지는 재지 �
    - [x] A04 물리 hold 임대: controlsd `physical_hold.rs` → `hudControl.physicalBlinkerHold` → card 0x1EA(`70d85dc6c`)
    - [x] 워커 일반화: `card/src/blink` → `crates/blink`(`ba763191b`), TBT·관측·경계·음성·표시(`ba03c2b5c`, `331f698e5`). `test_blinker_tbt.py` 통과
    - [x] A09 B1 BLE: bluez GATT·헤드리스 페어링·출력 소유권(`8c5d28a61`), carrot-server `src/b1/` 모니터·워커 스레드(`98dfc1191`). 기기·보드 확인 없음
-   - [ ] 남은 B1 관련: 보드 펌웨어 자동 갱신(`tools/carrot_b1/auto_update.py`), CANable USB 출력(`blink_can.py`·`blink_slcan.py`·`blink_protocol.py`), 화면 배지(B07 `b1_badge.py`, 점등 표시), 음성 점등 CAN 출력(`voice_indicator.py`, A12와 함께)
+   - [x] B1 펌웨어 자동 갱신: `4017f4823`. 번들 `CarrotB1.bin` 검증 테스트 통과
+   - [x] B07 점등 표시 배지(HUD)·B1 연결 배지(C3·C4): `d7d4c525f`. 계기판(cluster) 쪽 점등 표시는 B08과 함께
+   - [ ] CANable/PEAK USB 출력의 comma 쪽 `blink_protocol.Sender`(jetlink BEGIN/ACK/DATA 0x4030–0x4032, 추론 텔레메트리의 `carrot_blinker`). Jetson 쪽 `blink_can.py`는 Python 그대로. 실주행 중인 폰 jetlink 교환을 건드리므로 따로 신중히
+   - [ ] 음성 점등 CAN 출력(`voice_indicator.py`)은 A12와 함께
 5. **C 항목의 설정 15개**는 위 기능을 옮기면서 같이 연결한다.
 
 검토 문서의 새 결함:
