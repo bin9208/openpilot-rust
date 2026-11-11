@@ -14,16 +14,18 @@ pub enum Channel {
     Cruise,
     Lane,
     Attention,
+    Blinker,
 }
 
 impl Channel {
-    pub const ALL: [Self; 3] = [Self::Cruise, Self::Lane, Self::Attention];
+    pub const ALL: [Self; 4] = [Self::Cruise, Self::Lane, Self::Attention, Self::Blinker];
 
     pub const fn filename(self) -> &'static str {
         match self {
             Self::Cruise => "cruise.json",
             Self::Lane => "lane.json",
             Self::Attention => "attention.json",
+            Self::Blinker => "blinker.json",
         }
     }
 }
@@ -56,6 +58,7 @@ pub struct CommandWriter {
     cruise: Journal,
     lane: Journal,
     attention: Journal,
+    blinker: Journal,
     session: String,
     sequence: u64,
 }
@@ -67,6 +70,7 @@ impl CommandWriter {
             cruise: Journal::default(),
             lane: Journal::default(),
             attention: Journal::default(),
+            blinker: Journal::default(),
             session: uuid::Uuid::new_v4().simple().to_string(),
             sequence: 0,
         }
@@ -77,6 +81,7 @@ impl CommandWriter {
             Channel::Cruise => &mut self.cruise.events,
             Channel::Lane => &mut self.lane.events,
             Channel::Attention => &mut self.attention.events,
+            Channel::Blinker => &mut self.blinker.events,
         }
     }
 
@@ -85,12 +90,14 @@ impl CommandWriter {
             Channel::Cruise => &self.cruise,
             Channel::Lane => &self.lane,
             Channel::Attention => &self.attention,
+            Channel::Blinker => &self.blinker,
         };
         atomic_json(&self.root.join(channel.filename()), journal)
     }
 
     pub fn send(&mut self, intent: Intent) -> Result<(), Error> {
         let channel = match intent.action {
+            Action::BlinkerLeft | Action::BlinkerRight => Channel::Blinker,
             Action::LaneLeft | Action::LaneRight => Channel::Lane,
             Action::None
             | Action::AccelCruise

@@ -49,13 +49,25 @@ impl Decoder {
         let pending_keys = std::mem::take(&mut self.pending_keys);
         for (key, duration) in pending_keys {
             let hold = self.holds.shift_remove(&HoldSource::Key(key));
-            if hold.is_none_or(|hold| hold.last.is_none() && !hold.expired) {
+            if hold.is_none_or(|hold| hold.last.is_none() && !hold.expired && !hold.short_fired) {
                 releases.push((self.key_token(key), duration));
             }
         }
-        for (&key, &started) in &self.down {
+        let mut tokens = Vec::new();
+        let down: Vec<(u16, Seconds)> = self.down.iter().map(|(k, s)| (*k, *s)).collect();
+        for (key, started) in down {
             let token = self.key_token(key);
             holds::update(&mut self.holds, HoldSource::Key(key), Some(token), started);
+            if let Some(hold) = self.holds.get(&HoldSource::Key(key)) {
+                let fire = !hold.short_fired && !hold.expired && self.immediate(&hold.token);
+                let token = hold.token.clone();
+                if fire {
+                    tokens.push(token);
+                    if let Some(hold) = self.holds.get_mut(&HoldSource::Key(key)) {
+                        hold.short_fired = true;
+                    }
+                }
+            }
         }
         if self.touch {
             let track = self.track.get_or_insert_with(|| {
@@ -77,13 +89,31 @@ impl Decoder {
             };
             let token = self.touch_token();
             holds::update(&mut self.holds, HoldSource::Touch, token, event.at);
+            // A touch may begin over a tap target before becoming a swipe:
+            // only a confirmed direction fires early; taps fire on release.
+            let moving = self.track.as_ref().is_some_and(|t| {
+                (i64::from(t.last.x) - i64::from(t.start.x))
+                    .abs()
+                    .max((i64::from(t.last.y) - i64::from(t.start.y)).abs())
+                    >= 120
+            });
+            if moving {
+                if let Some(hold) = self.holds.get(&HoldSource::Touch) {
+                    if !hold.short_fired && !hold.expired && self.immediate(&hold.token) {
+                        tokens.push(hold.token.clone());
+                        if let Some(hold) = self.holds.get_mut(&HoldSource::Touch) {
+                            hold.short_fired = true;
+                        }
+                    }
+                }
+            }
         } else if self.track.is_some() {
             let token = self.touch_token();
             let hold = self.holds.shift_remove(&HoldSource::Touch);
             self.track = None;
             let duration = event.at.0 - self.started.0;
             if let Some(token) = token {
-                if hold.is_none_or(|hold| hold.last.is_none() && !hold.expired)
+                if hold.is_none_or(|hold| hold.last.is_none() && !hold.expired && !hold.short_fired)
                     && (0.0..=10.0).contains(&duration)
                     && (duration <= 1.5 || self.clicks.assigned(&token, Gesture::Long))
                 {
@@ -91,7 +121,6 @@ impl Decoder {
                 }
             }
         }
-        let mut tokens = Vec::new();
         for (token, duration) in releases {
             tokens.extend(self.clicks.release(token, duration, event.at));
         }

@@ -6,6 +6,8 @@ pub(crate) struct Hold {
     pub started: Seconds,
     pub last: Option<Seconds>,
     pub expired: bool,
+    /// Fired on press as an immediate short token.
+    pub short_fired: bool,
 }
 
 pub(crate) fn update(
@@ -16,7 +18,7 @@ pub(crate) fn update(
 ) {
     if let Some(previous) = holds.get_mut(&source) {
         if Some(&previous.token) != token.as_ref() {
-            if previous.last.is_some() || previous.expired {
+            if previous.last.is_some() || previous.expired || previous.short_fired {
                 previous.expired = true;
                 return;
             }
@@ -32,6 +34,7 @@ pub(crate) fn update(
                     started,
                     last: None,
                     expired: false,
+                    short_fired: false,
                 },
             );
         }

@@ -1,4 +1,4 @@
-use crate::types::{HoldSource, Mapping, Profile, Seconds, Token};
+use crate::types::{Gestures, HoldSource, Mapping, Profile, Seconds, Token};
 use crate::{clicks::Clicks, holds::Hold, types::Gesture};
 use indexmap::IndexMap;
 use std::collections::BTreeSet;
@@ -27,10 +27,16 @@ pub struct Decoder {
     pub(crate) holds: IndexMap<HoldSource, Hold>,
     pub(crate) frame_open: bool,
     pub(crate) repeated: BTreeSet<Token>,
+    pub(crate) fast: bool,
 }
 
 impl Decoder {
-    pub fn new(profile: Profile, mapping: Mapping, learning: bool) -> Self {
+    pub fn new(
+        profile: Profile,
+        mapping: Mapping,
+        learning: bool,
+        gestures: Option<Gestures>,
+    ) -> Self {
         Self {
             profile,
             x: 0,
@@ -41,11 +47,31 @@ impl Decoder {
             down: IndexMap::new(),
             pending_keys: Vec::new(),
             dropped: false,
-            clicks: Clicks::new(mapping, learning),
+            clicks: Clicks::new(mapping, learning, gestures),
             holds: IndexMap::new(),
             frame_open: false,
             repeated: BTreeSet::new(),
+            fast: gestures.is_some() && !learning,
         }
+    }
+
+    /// A token with neither a double nor a long gesture fires on press.
+    pub(crate) fn immediate(&self, token: &Token) -> bool {
+        self.fast
+            && !self.clicks.assigned(token, Gesture::Double)
+            && !self.clicks.assigned(token, Gesture::Long)
+    }
+
+    /// A key held at connect or config reload must be released before fast
+    /// input, so a press that started before is never taken as a new one.
+    pub fn synchronize_pressed(&mut self, keys: &BTreeSet<u16>, now: Seconds) {
+        self.down = keys
+            .iter()
+            .filter(|key| !(256..352).contains(*key))
+            .map(|key| (*key, now))
+            .collect();
+        self.touch = keys.contains(&330);
+        self.dropped = !self.down.is_empty() || self.touch;
     }
 
     pub fn active_longs(&self) -> BTreeSet<Token> {

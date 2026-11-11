@@ -1,4 +1,4 @@
-use crate::{Action, Mapping, Profile, Token};
+use crate::{types::Gestures, Action, Mapping, Profile, Token};
 use indexmap::IndexMap;
 use openpilot_logmessaged::{JsonValue, JsonView};
 use serde::{Serialize, Serializer};
@@ -22,6 +22,8 @@ pub enum ConfigError {
     KeyCode,
     #[error("enabled must be boolean")]
     Enabled,
+    #[error("gesture options must be double/long booleans")]
+    Gestures,
     #[error("invalid Unicode code point")]
     Unicode,
     #[error(transparent)]
@@ -82,6 +84,7 @@ pub struct Device {
     pub profile: Profile,
     pub enabled: bool,
     pub mapping: Mapping,
+    pub gestures: Gestures,
 }
 
 #[derive(Clone, Default, Serialize)]
@@ -137,6 +140,7 @@ impl Config {
                 Some(JsonView::Bool(value)) => value,
                 _ => return Err(ConfigError::Enabled),
             };
+            let gestures = gestures(device.get("gestures"), &mapping)?;
             let source_name = device
                 .get("name")
                 .unwrap_or_else(|| JsonValue::text(address.as_str()));
@@ -150,11 +154,52 @@ impl Config {
                     profile,
                     enabled,
                     mapping,
+                    gestures,
                 },
             );
         }
         Ok(result)
     }
+}
+
+/// carrot's default: a gesture is on when any mapped `@double`/`@long` key
+/// has an action other than `none`.
+fn gestures(value: Option<JsonValue>, mapping: &Mapping) -> Result<Gestures, ConfigError> {
+    let Some(value) = value else {
+        let used = |suffix: &str| {
+            mapping
+                .0
+                .iter()
+                .any(|(token, action)| token.as_str().ends_with(suffix) && *action != Action::None)
+        };
+        return Ok(Gestures {
+            double: used("@double"),
+            long: used("@long"),
+        });
+    };
+    let JsonView::Object(fields) = value.view() else {
+        return Err(ConfigError::Gestures);
+    };
+    if fields.len() != 2 {
+        return Err(ConfigError::Gestures);
+    }
+    let mut result = Gestures::default();
+    let (mut double, mut long) = (false, false);
+    for (key, value) in fields {
+        let key: String = key.iter().copied().filter_map(char::from_u32).collect();
+        let JsonView::Bool(value) = value.view() else {
+            return Err(ConfigError::Gestures);
+        };
+        match key.as_str() {
+            "double" => (result.double, double) = (value, true),
+            "long" => (result.long, long) = (value, true),
+            _ => return Err(ConfigError::Gestures),
+        }
+    }
+    if !(double && long) {
+        return Err(ConfigError::Gestures);
+    }
+    Ok(result)
 }
 
 fn mapping(value: Option<JsonValue>) -> Result<Mapping, ConfigError> {

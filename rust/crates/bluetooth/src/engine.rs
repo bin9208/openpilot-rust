@@ -103,18 +103,26 @@ impl Engine {
         Reload { close, open }
     }
 
-    pub fn connect(&mut self, path: &str, address: &Address) -> Result<(), Error> {
+    pub fn connect(
+        &mut self,
+        path: &str,
+        address: &Address,
+        pressed: &std::collections::BTreeSet<u16>,
+        now: Seconds,
+    ) -> Result<(), Error> {
         let device = self
             .settings
             .devices
             .get(address)
             .ok_or_else(|| Error::Unconfigured(address.as_str().to_owned()))?
             .clone();
-        let decoder = Decoder::new(
+        let mut decoder = Decoder::new(
             device.profile,
             device.mapping.clone(),
             self.learning.matches(address),
+            Some(device.gestures),
         );
+        decoder.synchronize_pressed(pressed, now);
         self.remotes.insert(
             path.to_owned(),
             Remote {
@@ -152,8 +160,9 @@ impl Engine {
             });
             return Ok(());
         }
+        let input = event.at;
         let tokens = remote.decoder.feed(event);
-        self.emit(path, &tokens, observed)
+        self.emit(path, &tokens, observed, Some(input))
     }
 
     pub fn flush(
@@ -168,10 +177,16 @@ impl Engine {
             .ok_or_else(|| Error::NotOpen(path.to_owned()))?
             .decoder
             .flush(decoder_at);
-        self.emit(path, &tokens, emitted_at)
+        self.emit(path, &tokens, emitted_at, None)
     }
 
-    fn emit(&mut self, path: &str, tokens: &[Token], at: Seconds) -> Result<(), Error> {
+    fn emit(
+        &mut self,
+        path: &str,
+        tokens: &[Token],
+        at: Seconds,
+        input: Option<Seconds>,
+    ) -> Result<(), Error> {
         let remote = self
             .remotes
             .get_mut(path)
@@ -182,6 +197,7 @@ impl Engine {
                 path,
                 tokens,
                 at,
+                input,
                 gates: self.gates,
                 learning: &self.learning,
                 writer: &mut self.writer,

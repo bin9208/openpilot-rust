@@ -37,6 +37,9 @@ pub(crate) struct Emission<'a> {
     pub path: &'a str,
     pub tokens: &'a [Token],
     pub at: Seconds,
+    /// Kernel input time; blinker commands carry it so latency is measured
+    /// from the press, not from decoding.
+    pub input: Option<Seconds>,
     pub gates: Gates,
     pub learning: &'a Learning,
     pub writer: &'a mut CommandWriter,
@@ -78,10 +81,14 @@ impl Activity {
                         .attention(remote.address.clone(), action, event.at)?;
                 }
                 if action != Action::None {
+                    let created = match (action, event.input) {
+                        (Action::BlinkerLeft | Action::BlinkerRight, Some(input)) => input,
+                        _ => event.at,
+                    };
                     event.writer.send(Intent {
                         address: remote.address.clone(),
                         action,
-                        at: event.at,
+                        at: created,
                         hold: held
                             .contains(token)
                             .then(|| format!("{}:{}", event.path, token.as_str())),
