@@ -10,15 +10,16 @@
 | 저장소·작업 브랜치 | `bin9208/openpilot-rust:codex/md-upstream-sync` |
 | PR 기준 트랙 | `dev-md`; `dev` 변경은 섞지 않음 |
 | 조사 시작 SHA | `40c7807294d04eab772d962e019a85630871bb8f` |
-| 조사 중 추가 확인 SHA | `84a93d14d`, `e8f9f91d8`, `0af3992cc`, `63ee82761` |
-| 이 문서의 코드 기준 SHA | **`63ee82761b920a579b170acc7d72080e03b8b79c`** |
+| 조사 중 추가 확인 SHA | `84a93d14d`, `e8f9f91d8`, `0af3992cc`, `63ee82761`, `a4a961a1f` |
+| 이 문서의 코드 기준 SHA | **`a4a961a1f690f2a0a71abdc1e47b3d2ba4c99d36`** |
 | 원본 | `ajouatom/openpilot:carrot-wip` **`bc8eb4c2e1aac3023c99f3914e657ed9638beab7`**; 조사 시 원격 HEAD 확인 후 fetch |
 | 이전 기능 조사 | [md-upstream-port-gaps.md](md-upstream-port-gaps.md): Rust `8dbe08653`, 원본 `1032f8641` 기준 |
 | 기존 작업자 인계 | [md-port-handoff.md](md-port-handoff.md): 코드 기준 `6446918b1` |
 | 실제 기기 범위 | 인계 문서에 comma 3X / `HYUNDAI_IONIQ_5_PE`로 기록. 이번 조사에서 직접 확인하지 않음 |
 
-조사 도중 다른 세션이 테슬라·설정·CAN FD 정지 보정과 Jetlink 지연 기록을 커밋했다.
-해당 11개 파일의 추가 차이도 읽어 반영했다. 기준 SHA 이후 변경과 다른 세션의 미커밋 수정은 포함하지 않는다.
+조사 도중 다른 세션이 테슬라·설정·CAN FD 정지 보정과 Jetlink 지연 기록을 커밋했고,
+이 조사에서 발견한 Bluetooth 묶음 명령 문제도 수정했다. 해당 12개 파일의 추가 차이도 읽어 반영했다.
+기준 SHA 이후 변경과 다른 세션의 미커밋 수정은 포함하지 않는다.
 기존 문서는 당시 상태를 남기고, 이 기준 SHA의 판정은 이 문서를 참조한다.
 
 조사한 범위는 다음과 같다.
@@ -63,7 +64,7 @@ Cargo의 자동 `src/main.rs`/`src/bin/` 규칙을 포함해 이름을 대조했
 - 현재 커밋의 `.github/workflows/`에는 `focused-validation.yml`, `user-docs.yaml` **두 개만** 있다.
 - 남은 필수 job 이름은 `focused x86 checks`, `device acceptance`, `check mapped user docs`다.
   이번 조사에서 Actions를 실행하거나 결과를 반복 조회하지 않았다.
-- 테스트가 전부 사라진 상태는 아니다. 남은 inline 테스트가 있고, 조사 중 추가된 네 커밋에도 해당 수정의 테스트가 추가됐다.
+- 테스트가 전부 사라진 상태는 아니다. 남은 inline 테스트가 있고, 조사 중 추가된 다섯 커밋에도 해당 수정의 테스트가 추가됐다.
 
 **옛 코드가 파일로 남은 것과 정상 시작 때 호출되는 것은 다르다.**
 `runtime-installer` transaction, package manifest 검사와 overlay 호환 코드는 남아 있다.
@@ -87,15 +88,17 @@ Cargo의 자동 `src/main.rs`/`src/bin/` 규칙을 포함해 이름을 대조했
 - 근거: [manager catalog](../rust/crates/manager-catalog/src/catalog.rs), [observer main](../rust/crates/signal-observer/src/main.rs),
   [build args](../rust/ci/runtime/build-args.json), 원본 `openpilot/system/manager/process_config.py`.
 
-### F02. Bluetooth 명령 캐시가 같은 묶음의 뒤 명령을 건너뛸 수 있음
+### F02. Bluetooth 묶음 명령 소비 결함 — 조사 중 코드 수정됨
 
-- `CommandReader::read`는 파일 stamp를 먼저 저장한 뒤 첫 유효 action에서 반환한다.
-  다음 호출은 파일이 그대로면 즉시 `None`을 반환한다.
+- 발견 시점 `63ee82761`의 `CommandReader::read`는 파일 stamp를 먼저 저장한 뒤 첫 유효 action에서 반환했다.
+  다음 호출은 파일이 그대로면 즉시 `None`을 반환했다.
 - 한 파일에 아직 처리하지 않은 유효 명령이 둘 이상 있으면, 첫 반환 뒤 남은 명령은 파일이 다시 써지기 전까지
-  읽지 않는다. writer의 `prune`도 이벤트 수가 바뀔 때만 다시 쓰므로 정기 재작성에 의존할 수 없다.
+  읽지 않았다. writer의 `prune`도 이벤트 수가 바뀔 때만 다시 쓰므로 정기 재작성에 의존할 수 없었다.
 - 원본은 20 ms마다 payload를 다시 읽고 `seen`으로 이미 처리한 것만 제외하므로 같은 파일의 다음 명령을 소비할 수 있다.
-- 영향: 묶음 수신 시 크루즈·차선·주의 명령 일부가 지연되거나 TTL 안에 소비되지 않을 수 있다.
+- 당시 영향: 묶음 수신 시 크루즈·차선·주의 명령 일부가 지연되거나 TTL 안에 소비되지 않을 수 있었다.
   조건에 따른 정적 결함 확인이며, 기기에서 버튼 누락을 재현한 결과는 아니다.
+- **현재 코드 반영:** 다른 세션의 `a4a961a1f`가 파일 끝까지 읽은 경우에만 stamp를 저장하도록 수정했다.
+  이 diff와 추가 테스트 코드를 읽었다. 이번 조사에서 테스트를 실행하거나 기기 동작을 확인하지 않았다.
 - 근거: [command.rs](../rust/crates/desire/src/command.rs)의 stamp 검사·`return Some(action)`,
   [journal.rs](../rust/crates/bluetooth/src/journal.rs)의 `prune`, 원본 `carrot/bluetooth/model.py`의 `CommandReader`.
 
@@ -154,7 +157,7 @@ Cargo의 자동 `src/main.rs`/`src/bin/` 규칙을 포함해 이름을 대조했
 | A05 | 페달 인터셉터 | 남음: 새 프로토콜·레이 EV 설정·상태·출력 |
 | A06 | 테슬라 자동 점등 | 남음. `84a93d14d`의 일반 차량 상태 수정과 구분 |
 | A07 | 테슬라 CAN 교통 신호 정지 | 남음 |
-| A08 | Bluetooth 점등·빠른 제스처 | 남음. F02의 기존 명령 소비 문제도 별도 존재 |
+| A08 | Bluetooth 점등·빠른 제스처 | 남음. F02의 기존 명령 소비 수정과는 별개 기능 |
 | A09 | B1 기기 서비스 | 남음: 등록·인증·감시·출력·업데이트 연결 |
 | A10 | 공유 지도·내비 API | 남음: `mapsd` 등록도 없음 |
 | A11 | 내비 모델 입력 | 남음: `nav_map`, `navigation`, 경로 ID, 계기판 모드 7 |
@@ -210,6 +213,7 @@ Cargo의 자동 `src/main.rs`/`src/bin/` 규칙을 포함해 이름을 대조했
 | `e8f9f91d8` | `nonzero_min` 보정과 음성 변경 출처 | 이번 조사에서 코드 차이 확인. 기기 결과 미확인 |
 | `0af3992cc` | CAN FD 최종 정지 때 멀어지는 lead도 제어 가능한 객체 상태로 보정 | 이번 조사에서 코드 차이 확인. 기기 결과 미확인 |
 | `63ee82761` | 느린 Jetlink frame의 warp·worker 대기·왕복·parse 시간을 분리 출력 | 이번 조사에서 코드 차이 확인. 지연 개선이나 기기 결과를 뜻하지 않음 |
+| `a4a961a1f` | F02의 Bluetooth 묶음 명령 캐시 결함 수정 | 이번 조사에서 코드 차이 확인. 테스트 실행·기기 결과 미확인 |
 
 인계 문서의 미해결 기기 현상은 다음과 같다. 원인 확정 기록으로 쓰지 않는다.
 
@@ -263,7 +267,7 @@ Cargo의 자동 `src/main.rs`/`src/bin/` 규칙을 포함해 이름을 대조했
 ## 8. 다음에 이 기록을 사용할 때
 
 1. 먼저 문서의 코드 SHA와 작업 HEAD 차이를 확인한다. B01·B13·U01을 다시 미구현으로 취급하지 않는다.
-2. 기기에서 보고된 막힘을 우선한다. F03은 빌드·복구, F05는 제어 정책 차이, F01/F02/F04는 실행 연결·동작 차이다.
+2. 기기에서 보고된 막힘을 우선한다. F03은 빌드·복구, F05는 제어 정책 차이, F01/F04는 실행 연결·동작 차이다. F02는 발견 후 코드 수정 기록이다.
 3. 원본 업데이트 U01–U03과 기존 기능 누락은 해당 기능을 옮길 때 함께 다룬다. 원본 기준 SHA만 올려서 반영했다고 쓰지 않는다.
 4. 구현 확인, 원본 차이, 작업자 기기 보고, 현재 SHA 기기 결과를 구분한다. 실제 결과가 없으면 항목을 닫지 않는다.
 5. 이 문서에는 코드 수정·새 CI·몇 시간짜리 전체 비교 실행·기기 설치·파일 삭제를 수행했다는 의미가 없다.
@@ -272,12 +276,13 @@ Cargo의 자동 `src/main.rs`/`src/bin/` 규칙을 포함해 이름을 대조했
 
 ## 고정 참조
 
-- [조사 기준 Rust](https://github.com/bin9208/openpilot-rust/tree/63ee82761b920a579b170acc7d72080e03b8b79c)
+- [조사 기준 Rust](https://github.com/bin9208/openpilot-rust/tree/a4a961a1f690f2a0a71abdc1e47b3d2ba4c99d36)
 - [조사 기준 carrot-wip](https://github.com/ajouatom/openpilot/tree/bc8eb4c2e1aac3023c99f3914e657ed9638beab7)
 - [검증 정리 커밋](https://github.com/bin9208/openpilot-rust/commit/79219669a)
 - [테슬라 후속 수정](https://github.com/bin9208/openpilot-rust/commit/84a93d14d643d799b20081a997025a0e19779e97)
 - [설정 보정 후속 수정](https://github.com/bin9208/openpilot-rust/commit/e8f9f91d82df322b5ec86eda2b954576e6cd8255)
 - [CAN FD 정지 후속 수정](https://github.com/bin9208/openpilot-rust/commit/0af3992cc)
 - [Jetlink 단계별 지연 기록](https://github.com/bin9208/openpilot-rust/commit/63ee82761)
+- [Bluetooth 묶음 명령 후속 수정](https://github.com/bin9208/openpilot-rust/commit/a4a961a1f690f2a0a71abdc1e47b3d2ba4c99d36)
 
 Device-Test-Not-Needed: 고정 SHA의 정적 조사 기록만 추가한다. 실행 코드·설정·설치 동작을 변경하지 않는다.
