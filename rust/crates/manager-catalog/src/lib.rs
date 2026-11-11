@@ -100,6 +100,7 @@ pub enum Predicate {
     Updated,
     DriverMonitoring,
     DriverMonitoringModel,
+    SignalObserver,
     ShareData,
     WebRtc,
     C3xLite,
@@ -159,6 +160,15 @@ impl Predicate {
                     && params.get_bool("DriverMonitoringEnabled")?
                     && !params.get_bool("DriverMonitoringSessionDisabled")?)
                     || params.get_bool("IsDriverViewEnabled")?
+            }
+            // signal_color_shadow.requested(): the production flag is
+            // signal_mode() > 0, i.e. SignalAssistMode 1 or 2. An unreadable
+            // setting never starts the observer.
+            SignalObserver => {
+                started
+                    && params
+                        .get_int("SignalAssistMode")
+                        .is_ok_and(|mode| mode == 1 || mode == 2)
             }
             ShareData => started && params.get_bool("ShareData")?,
             WebRtc => params.get_bool("CarrotVisionEnabled")?,
