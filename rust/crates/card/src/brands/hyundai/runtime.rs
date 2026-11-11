@@ -23,6 +23,8 @@ pub struct Setup<'a> {
 pub struct Hyundai {
     pub state: State,
     pub controller: Controller,
+    pub spas: super::spas_signals::SpasSignals,
+    spas_logged: (String, f64),
 }
 
 impl Hyundai {
@@ -43,7 +45,17 @@ impl Hyundai {
             },
         )?;
         let controller = Controller::new(&state)?;
-        Ok(Self { state, controller })
+        let spas = super::spas_signals::SpasSignals::new(
+            state.config.flags & f::CANFD_SPAS_BLINKERS != 0,
+            state.config.bus.ecan,
+            &state.config.candidate,
+        );
+        Ok(Self {
+            state,
+            controller,
+            spas,
+            spas_logged: (String::new(), 0.),
+        })
     }
 
     pub fn update(
@@ -51,10 +63,67 @@ impl Hyundai {
         packets: &[Packet],
         now_ns: u64,
     ) -> Result<Builder<HeapAllocator>, Error> {
-        self.state.update(packets, now_ns)
+        let message = self.state.update(packets, now_ns)?;
+        self.spas.observe(packets, now_ns as f64 * 1e-9);
+        Ok(message)
     }
     pub fn apply(&mut self, input: super::ApplyInput<'_>) -> Result<super::ApplyOutput, Error> {
-        self.controller.apply(&mut self.state, input)
+        let mut spas_sends = Vec::new();
+        if self.spas.enabled {
+            if let Some(subscribers) = input.subscribers {
+                let now = input.now_ns as f64 * 1e-9;
+                let cs = self
+                    .state
+                    .out
+                    .get_root_as_reader::<car_state::Reader<'_>>()?;
+                spas_sends = self.spas.update(super::spas_signals::Inputs {
+                    cs,
+                    subscribers,
+                    settings: &self.state.settings,
+                    now,
+                    initialized: input.initialized,
+                    controller_frame: u64::from(self.controller.frame),
+                    writer: &mut self.controller.writer,
+                    bus: self.state.config.bus,
+                })?;
+                // carrot card.py: CC.hudControl.physicalBlinkerHold = hold_value.
+                self.controller.external_hold = self.spas.hold_value;
+                self.log_spas(cs_blinkers(&self.state)?, now);
+            }
+        }
+        let mut output = self.controller.apply(&mut self.state, input)?;
+        if !spas_sends.is_empty() {
+            spas_sends.append(&mut output.can);
+            output.can = spas_sends;
+        }
+        Ok(output)
+    }
+    /// carrot card.py `cloudlog.event('hyundai_spas', ...)`: on every status
+    /// change, and once a second while a session or a parked trial runs.
+    fn log_spas(&mut self, blinkers: (bool, bool), now: f64) {
+        let s = &self.spas;
+        let running = s.session.state != super::spas::State::Idle
+            || (s.test_direct && s.test_request.is_some());
+        if s.status != self.spas_logged.0 || (running && now >= self.spas_logged.1) {
+            self.state.inputs.diagnostics.logs.push(crate::core::VehicleLog {
+                level: crate::query::DiagnosticLevel::Info,
+                message: format!(
+                    "hyundai_spas state={} reason={} request={:?} direction={:?} left={} right={} hold={} trial={} trial_status={} restored_ack={} stock_resumed={}",
+                    s.session.state.name(),
+                    s.session.reason,
+                    s.session.request(),
+                    s.session.direction(),
+                    blinkers.0,
+                    blinkers.1,
+                    s.hold_value,
+                    s.test_setting,
+                    s.status,
+                    s.session.restore_ack,
+                    s.session.stock_resumed,
+                ),
+            });
+            self.spas_logged = (s.status.clone(), now + 1.);
+        }
     }
     pub fn init(&mut self, io: &mut impl crate::firmware_query::StartupIo) -> Result<(), Error> {
         super::startup::init(&mut self.state, io)
@@ -85,4 +154,9 @@ impl Hyundai {
         }
         warnings
     }
+}
+
+fn cs_blinkers(state: &State) -> Result<(bool, bool), Error> {
+    let cs = state.out.get_root_as_reader::<car_state::Reader<'_>>()?;
+    Ok((cs.get_left_blinker(), cs.get_right_blinker()))
 }

@@ -194,6 +194,8 @@ impl Card {
                 let result = vehicle.apply(ApplyInput {
                     control,
                     now_ns,
+                    subscribers: Some(io.subscribers()),
+                    initialized: self.initialized_previous,
                     model: input::model(io.subscribers())?,
                     radar: input::radar(io.subscribers())?,
                 });

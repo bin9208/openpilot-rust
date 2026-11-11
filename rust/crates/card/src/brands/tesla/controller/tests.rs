@@ -56,6 +56,8 @@ fn inactive_feedback_matches_measured_can_and_holds_on_non_transmit_frame() {
             .apply(
                 &mut state,
                 ApplyInput {
+                    subscribers: None,
+                    initialized: true,
                     control: cc.get_root_as_reader().unwrap(),
                     now_ns: 0,
                     model: None,
@@ -91,6 +93,8 @@ fn inactive_feedback_matches_measured_can_and_holds_on_non_transmit_frame() {
             .apply(
                 &mut state,
                 ApplyInput {
+                    subscribers: None,
+                    initialized: true,
                     control: cc.get_root_as_reader().unwrap(),
                     now_ns: 10_000_000,
                     model: None,

@@ -127,8 +127,16 @@ pub fn messages(
             } else {
                 model.desire
             };
-            c.blink_hold
-                .update(hold_desire, model.lane_pair, model.blinker_hold)
+            let hold = c
+                .blink_hold
+                .update(hold_desire, model.lane_pair, model.blinker_hold);
+            // An external physical hold wins (hyundaicanfd.py `external_hold`).
+            match c.external_hold {
+                1 => 0,
+                2 => 3,
+                3 => 4,
+                _ => hold,
+            }
         } else {
             0
         };

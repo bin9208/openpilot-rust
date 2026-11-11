@@ -22,6 +22,8 @@ use std::collections::BTreeMap;
 pub struct Controller {
     pub frame: u32,
     pub writer: CanWriter,
+    /// carrot `hudControl.physicalBlinkerHold`: 0 none, 1 release, 2 left, 3 right.
+    pub external_hold: u8,
     pub settings: Settings,
     pub steering: Steering,
     pub buttons: Buttons,
@@ -40,6 +42,7 @@ impl Controller {
     pub fn new(state: &State) -> Result<Self, Error> {
         Ok(Self {
             frame: 0,
+            external_hold: 0,
             writer: CanWriter::from_dbc(std::sync::Arc::clone(&state.inputs.pt.dbc)),
             settings: Settings::new(
                 TorqueLimits::new(&state.config.candidate, state.config.flags),

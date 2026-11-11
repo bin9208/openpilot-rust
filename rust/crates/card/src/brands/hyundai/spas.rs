@@ -45,6 +45,12 @@ pub fn checksum(address: u32, data: &[u8]) -> u16 {
     crc ^ if data.len() == 24 { 0x819d } else { 0x9f5b }
 }
 
+/// Both SPAS messages have their exact lengths, as `size` reports them.
+pub fn compatible_with(size: impl Fn(u32) -> Option<usize>) -> bool {
+    SPAS.iter()
+        .all(|(address, expected)| size(*address) == Some(*expected))
+}
+
 /// Both SPAS messages exist on `bus` with their exact lengths.
 pub fn compatible(fingerprint: &BTreeMap<u8, BTreeMap<u32, usize>>, bus: u8) -> bool {
     SPAS.iter().all(|(address, size)| {
@@ -415,6 +421,16 @@ impl Session {
     pub fn started(&self) -> f64 {
         self.started
     }
+    /// The counter that follows each stock frame's last received counter.
+    pub fn next_counters(&self) -> [u8; 2] {
+        self.stock.map(|s| ((s.counter + 1).rem_euclid(256)) as u8)
+    }
+    pub fn request(&self) -> Option<&str> {
+        self.request.as_deref()
+    }
+    pub fn direction(&self) -> Option<Direction> {
+        self.direction
+    }
     #[cfg(test)]
     fn set_started(&mut self, value: f64) {
         self.started = value;
@@ -435,6 +451,9 @@ impl PatchSequence {
             state: 0,
             started_frame: 0,
         }
+    }
+    pub fn active(&self) -> bool {
+        self.state != 0
     }
     pub fn step(
         &mut self,

@@ -63,6 +63,18 @@ pub fn parameters(input: ParamsInput<'_>) -> Result<Builder<HeapAllocator>, Erro
         detection.flags |= flags::CLUSTER_DIRECT_TX;
         detection.safety_param |= flags::safety::CLUSTER_DIRECT_TX;
     }
+    // carrot interface.py: opt-in SPAS indicators need both exact ECAN SPAS
+    // messages and are exclusive with the HDA2 blinker path.
+    if detection.flags & flags::CANFD != 0
+        && input.settings.get_bool("CanfdBlinkerControl")?
+        && super::spas::compatible_with(|address| {
+            super::bus::size(input.fingerprints, detection.bus.ecan, address)
+        })
+        && detection.flags & flags::ENABLE_BLINKERS == 0
+    {
+        detection.flags |= flags::CANFD_SPAS_BLINKERS;
+        detection.safety_param |= flags::safety::CANFD_SPAS_BLINKERS;
+    }
     cp.set_brand("hyundai");
     cp.set_flags(detection.flags);
     cp.set_ext_flags(detection.ext_flags);

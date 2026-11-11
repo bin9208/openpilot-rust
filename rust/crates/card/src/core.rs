@@ -107,6 +107,10 @@ pub enum Error {
 pub struct ApplyInput<'a> {
     pub control: car_control::Reader<'a>,
     pub now_ns: u64,
+    /// The card's subscriptions, for vehicle features that check other
+    /// services' freshness (Hyundai SPAS indicators).
+    pub subscribers: Option<&'a openpilot_messaging::state::State>,
+    pub initialized: bool,
     pub model: Option<model_data_v2::Reader<'a>>,
     pub radar: Option<radar_state::Reader<'a>>,
 }

@@ -26,6 +26,7 @@ pub const ANGLE_CONTROL: u32 = 1 << 24;
 pub const FCEV: u32 = 1 << 25;
 pub const ALT_LIMITS_2: u32 = 1 << 26;
 pub const CLUSTER_DIRECT_TX: u32 = 1 << 27;
+pub const CANFD_SPAS_BLINKERS: u32 = 1 << 28;
 pub const CC_ONLY_CAR: u32 = 1 << 31;
 
 pub mod ext {
@@ -56,4 +57,5 @@ pub mod safety {
     pub const FCEV_GAS: u16 = 256;
     pub const ALT_LIMITS_2: u16 = 512;
     pub const CLUSTER_DIRECT_TX: u16 = 2048;
+    pub const CANFD_SPAS_BLINKERS: u16 = 4096;
 }
