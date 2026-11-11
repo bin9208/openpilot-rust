@@ -64,6 +64,25 @@ pub fn background() {
         eprintln!("jetlink worker affinity: {error}");
     }
 }
+/// modeld's priority (`config_realtime_process(7, 54)`).
+const FRAME_PRIORITY: i32 = 54;
+
+/// Scheduling for the thread that carries one frame to the daemon and back.
+/// carrot's modeld does this exchange on its own realtime thread; here a
+/// separate thread does it while the frame thread waits, so it gets the same
+/// priority. As a normal-priority thread it was woken up to 20 ms late on a
+/// busy device (drive 2026-11-11: 6 of 20 slow frames).
+pub fn frame_worker() {
+    if let Err(error) = widen_affinity() {
+        eprintln!("jetlink worker affinity: {error}");
+    }
+    // Only the device grants realtime scheduling; elsewhere keep the default.
+    if std::path::Path::new("/TICI").is_file() {
+        if let Err(error) = scheduler(Some(FRAME_PRIORITY)) {
+            eprintln!("jetlink worker priority: {error}");
+        }
+    }
+}
 fn widen_affinity() -> io::Result<()> {
     let inherited = rustix::thread::sched_getaffinity(None)?;
     let mut all = rustix::thread::CpuSet::new();

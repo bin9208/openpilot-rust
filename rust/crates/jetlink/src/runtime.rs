@@ -1,4 +1,5 @@
-//! Single background RPC worker; native execution stays on the frame thread.
+//! Single RPC worker at the frame thread's priority; native execution stays on
+//! the frame thread.
 use crate::{
     adapter::Adapter,
     contract,
@@ -128,7 +129,7 @@ impl Runtime {
         let worker = thread::Builder::new()
             .name("jetlink-rpc".into())
             .spawn(move || {
-                crate::platform::background();
+                crate::platform::frame_worker();
                 while let Ok(work) = work_rx.recv() {
                     let result = execute(work);
                     if result_tx.send(result).is_err() {
