@@ -154,6 +154,12 @@ Rust가 원본과 다른 부분(지연에 얼마나 기여하는지는 재지 �
 4. **다른 차종과 부가 기능:** A05(페달), A06·A07(테슬라), A09(B1), A10–A12(지도·내비·음성 비서)
    - [x] A03 SPAS CAN 점등: 세션 `528365267`, 차량 연결·시험 모드 `294f2641c`, 정책·회전 추적 `87d127d46`, 내비 회전 의도 `8fd4cbc85`, 리모컨 탭 `634b3bacf`. 음성 차선변경(A12)만 빠짐. 기기 확인 없음(`CanfdBlinkerControl` 꺼져 있으면 동작 없음)
    - [x] A08 Bluetooth 리모컨 즉시 방향지시등: `4540ba227`. 원본 `test_fast_blinker.py` 8개를 옮겨 통과. 기기 확인 없음
+   - [x] A01 점등 전용 관측기(경계 접근·수동 회전·모델 desire·모델 경로): `855abc517`. `desire/src/indicator/`, drivingd가 `livePose` 구독. `autoTurnSignal`·`observedIndicator*` 등 meta 게시. 원본 테스트 일부 옮겨 통과. 기기 확인 없음
+   - [x] A02 차량 입력: `laneLineInfoMonoTime`, TBT 후방 BSD(`694eb42f1`). 우측 차선변경 거리 설정은 워커 TBT에서 소비(`331f698e5`)
+   - [x] A04 물리 hold 임대: controlsd `physical_hold.rs` → `hudControl.physicalBlinkerHold` → card 0x1EA(`70d85dc6c`)
+   - [x] 워커 일반화: `card/src/blink` → `crates/blink`(`ba763191b`), TBT·관측·경계·음성·표시(`ba03c2b5c`, `331f698e5`). `test_blinker_tbt.py` 통과
+   - [x] A09 B1 BLE: bluez GATT·헤드리스 페어링·출력 소유권(`8c5d28a61`), carrot-server `src/b1/` 모니터·워커 스레드(`98dfc1191`). 기기·보드 확인 없음
+   - [ ] 남은 B1 관련: 보드 펌웨어 자동 갱신(`tools/carrot_b1/auto_update.py`), CANable USB 출력(`blink_can.py`·`blink_slcan.py`·`blink_protocol.py`), 화면 배지(B07 `b1_badge.py`, 점등 표시), 음성 점등 CAN 출력(`voice_indicator.py`, A12와 함께)
 5. **C 항목의 설정 15개**는 위 기능을 옮기면서 같이 연결한다.
 
 검토 문서의 새 결함:
