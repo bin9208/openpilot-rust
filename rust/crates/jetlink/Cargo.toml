@@ -20,7 +20,7 @@ libc = "0.2"
 openpilot-params = { path = "../params" }
 openpilot-logging = { path = "../logging" }
 signal-hook = "0.3"
-rustix = { version = "1", features = ["time", "thread", "fs", "net", "process", "event"] }
+rustix = { version = "1", features = ["time", "thread", "fs", "mm", "net", "process", "event"] }
 
 tempfile = "3"
 regex = "1"

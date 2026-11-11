@@ -358,6 +358,7 @@ fn serve(
                 spec: backend.session_contract().raw().clone(),
                 protocol: backend.session_contract().version as u16,
                 identity: identity.clone(),
+                shared_input: true,
             };
             let mut reply = vec![b'J'];
             reply.extend(serde_json::to_vec(&info)?);
@@ -368,6 +369,8 @@ fn serve(
             )
             .is_ok()
             {
+                let mut shared: Option<crate::shared_input::Reader> = None;
+                let mut first_request = true;
                 while !stop.load(Ordering::Acquire) {
                     let loop_started = Instant::now();
                     let cpu_started = thread_cpu_ms();
@@ -377,6 +380,31 @@ fn serve(
                     ) {
                         Ok(payload) => payload,
                         Err(_) => break,
+                    };
+                    // As carrot's daemon.py: the slot is offered only as the
+                    // first request of a connection.
+                    if first_request && payload == crate::shared_input::SETUP {
+                        first_request = false;
+                        match crate::shared_input::Reader::offer(
+                            &mut stream,
+                            backend.session_contract().packed_count(),
+                            Deadline::after(Duration::from_millis(500))?,
+                        ) {
+                            Ok(reader) => {
+                                shared = Some(reader);
+                                continue;
+                            }
+                            Err(_) => break,
+                        }
+                    }
+                    first_request = false;
+                    let payload = if payload.first() == Some(&crate::shared_input::TOKEN_KIND) {
+                        match shared.as_mut().map(|reader| reader.read(&payload)) {
+                            Some(Ok(request)) => request,
+                            _ => break,
+                        }
+                    } else {
+                        payload
                     };
                     let received = Instant::now();
                     let (reply, deadline, exchange) =

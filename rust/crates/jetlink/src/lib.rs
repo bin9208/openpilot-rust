@@ -18,6 +18,7 @@ pub mod rpc;
 pub mod runtime;
 pub mod selection;
 pub mod session_contract;
+pub mod shared_input;
 pub mod status;
 pub mod tcp;
 pub mod transition;
