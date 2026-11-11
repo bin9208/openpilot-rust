@@ -30,7 +30,36 @@ enum Work {
         source_sof: u64,
         deadline: Deadline,
         started: Instant,
+        /// When the frame thread handed the warped frame to the worker.
+        prepared: Instant,
     },
+}
+/// Where one peer frame spent its time, in the order it happened: camera warp
+/// and input packing on the frame thread, the wait for the RPC worker, the
+/// request/reply with the daemon (USB and the peer's inference), and parsing.
+/// carrot's model.py reports the same split for a slow frame.
+#[derive(Clone, Copy, Debug)]
+struct Stages {
+    warp: Duration,
+    handoff: Duration,
+    roundtrip: Duration,
+    parse: Duration,
+}
+impl Stages {
+    fn total(&self) -> Duration {
+        self.warp + self.handoff + self.roundtrip + self.parse
+    }
+}
+fn slow_frame_line(frame: u32, stages: &Stages) -> String {
+    let ms = |duration: Duration| duration.as_secs_f64() * 1000.0;
+    format!(
+        "Jetlink slow frame {frame}: {:.1} ms; warp {:.1}, handoff {:.1}, roundtrip {:.1}, parse {:.1}",
+        ms(stages.total()),
+        ms(stages.warp),
+        ms(stages.handoff),
+        ms(stages.roundtrip),
+        ms(stages.parse),
+    )
 }
 enum Complete {
     Connected(Box<Model>),
@@ -38,7 +67,7 @@ enum Complete {
         model: Box<Model>,
         output: Box<DrivingPrediction>,
         frame: u32,
-        elapsed: Duration,
+        stages: Stages,
     },
 }
 #[derive(Clone, Debug)]
@@ -203,8 +232,9 @@ impl Runtime {
                 model,
                 output,
                 frame,
-                elapsed,
+                stages,
             }) => {
+                let elapsed = stages.total();
                 self.status.execution_ms = elapsed.as_secs_f64() * 1000.0;
                 // As carrot's model.py: a frame over 50 ms is reported, at most
                 // once a second, and still used.
@@ -214,10 +244,7 @@ impl Runtime {
                         .is_none_or(|at| at.elapsed() >= Duration::from_secs(1))
                 {
                     self.slow_logged = Some(Instant::now());
-                    eprintln!(
-                        "Jetlink slow frame {frame}: {:.1} ms",
-                        self.status.execution_ms
-                    );
+                    eprintln!("{}", slow_frame_line(frame, &stages));
                 }
                 self.status.frame = frame;
                 self.model = Some(model);
@@ -316,6 +343,7 @@ impl Runtime {
                     source_sof,
                     deadline: self.deadline,
                     started: self.started,
+                    prepared: Instant::now(),
                 }) {
                     Ok(()) => self.pending = true,
                     Err(error) => self.lost(error),
@@ -385,7 +413,9 @@ fn execute(work: Work) -> Result<Complete, Error> {
             source_sof,
             deadline,
             started,
+            prepared,
         } => {
+            let picked_up = Instant::now();
             model.client.set_source_sof(source_sof);
             let values = model.client.infer(
                 frame,
@@ -394,12 +424,18 @@ fn execute(work: Work) -> Result<Complete, Error> {
                 deadline,
                 model.adapter.reset_next(),
             )?;
+            let replied = Instant::now();
             let output = Box::new(model.adapter.parse(&values, deadline)?);
             Ok(Complete::Inferred {
                 model,
                 output,
                 frame,
-                elapsed: started.elapsed(),
+                stages: Stages {
+                    warp: prepared.saturating_duration_since(started),
+                    handoff: picked_up.saturating_duration_since(prepared),
+                    roundtrip: replied.saturating_duration_since(picked_up),
+                    parse: replied.elapsed(),
+                },
             })
         }
     }
@@ -431,5 +467,25 @@ impl Drop for Runtime {
                 eprintln!("jetlink RPC worker did not stop within 600ms");
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn slow_frame_line_keeps_the_total_first_and_names_each_stage() {
+        let stages = Stages {
+            warp: Duration::from_micros(4_200),
+            handoff: Duration::from_micros(300),
+            roundtrip: Duration::from_micros(57_000),
+            parse: Duration::from_micros(1_500),
+        };
+        assert_eq!(stages.total(), Duration::from_micros(63_000));
+        assert_eq!(
+            slow_frame_line(812, &stages),
+            "Jetlink slow frame 812: 63.0 ms; warp 4.2, handoff 0.3, roundtrip 57.0, parse 1.5"
+        );
     }
 }
