@@ -84,6 +84,8 @@
 | `4e3d56ef8` | `OnnxBsdEnabled`를 읽지 않아 폴리곤이 설정돼 있으면 비전 BSD 추론이 항상 돎(B02). 원본 기본값은 꺼짐 | PC 테스트만 |
 | `b8c5b2190` | 동작 변경 없음. `jetlinkd`와 `modeld`가 폰 프레임의 단계별 시간을 rlog `runtimeTiming`에 남김(원본 `daemon.py`의 지표 이름) | PC 테스트만 |
 | `a6f80fa52`, `afac882fa`, `4a82d2dc5` | B16 세 가지: `modelV2.orientationRate` 표준편차, 카메라 프레임 누락 기록 `modelCameraGap`, 초당 요약의 최악 프레임 `peak_sample`. 전부 관측용이고 동작 변경 없음 | PC 테스트만 |
+| `3bd8a20a2` | A14: modeld→jetlinkd 프레임을 연결마다 봉인된 memfd로 넘김(원본 `shared_input.py`, `ram_input_v1`). 설정이 한 번 실패하면 그 프로세스는 이후 소켓 복사로 돌아감 | PC 테스트만(소켓 경유 기존 테스트가 이제 이 경로로 돎). **주행 필요** |
+| `1e5d461b6` | B11: Jetson 전용 AP가 켜져 있으면 배경 스캔 중단, `wlan0` 우선 선택, 당근웹 목록은 `--rescan no` | PC 테스트만. Jetson 없으면 동작 변화 없음 |
 | `625361a7a` | 원본 `ec79cae36`의 차량 쪽: `carState.cruiseCancelState` 추가, CANCEL 래치 중 방향지시등 요청과 계기판 차선변경 램프 유지를 중단 | PC 테스트만. **시험 차량 해당, 주행 필요** |
 
 **이어받는 사람에게:** "원본과 같다"는 주석·테스트 이름·커밋 메시지를 믿지 말고 원본 파일을 직접 읽는다.
@@ -144,7 +146,9 @@ Rust가 원본과 다른 부분(지연에 얼마나 기여하는지는 재지 �
    - [x] B02 비전 BSD 켜고 끄기: `4e3d56ef8`. 기기 확인 없음.
    - [x] B15 `memPrivateDirty`: `eb70376eb`. 기기 확인 없음.
    - [x] B16 모델·지연 관측 세 가지: `a6f80fa52`, `afac882fa`, `4a82d2dc5`. 기기 확인 없음.
-   - [ ] B04·B05 eGPU 출력 복구와 오류 분류
+   - [ ] B04·B05 eGPU 출력 복구와 오류 분류. USB 외장 GPU 전용이라 폰을 쓰는 시험 차량에서는 확인할 수 없다
+   - [x] B11 Wi-Fi 공존: `1e5d461b6`
+   - [ ] B09 계기판 Wi-Fi 화면: 원본 `b7b463a20`(10-20)이 ESP32-S3 화면 지원을 통째로 지웠다. Rust는 `cluster-wifi` 크레이트와 `cluster` 7개 파일(`usb/wifi.rs`, `display.rs`, `frame.rs`, `h264.rs`, `runtime/entry.rs`, `output/factory.rs`, `autorun/{entry,native,usb}.rs`)에 남아 있다. 지우는 작업이고 시험 차량에는 그 화면이 없다
 2. **시험 차량에 해당하는 A 항목:** A01–A04(자동 방향지시등 일체), A14(Jetlink 입력 경로), A13(모델 라이브러리). A01–A04는 아래 "자동 방향지시등을 옮기기 전에 알아야 할 것"을 먼저 읽는다.
 3. **화면·관측:** B06–B10 (B15·B16은 끝남)
 4. **다른 차종과 부가 기능:** A05(페달), A06·A07(테슬라), A08·A09(Bluetooth·B1), A10–A12(지도·내비·음성 비서)
@@ -178,6 +182,13 @@ Rust가 원본과 다른 부분(지연에 얼마나 기여하는지는 재지 �
 - CAN 점등(A03)은 `openpilot/selfdrive/car/hyundai_spas.py`(273줄)와 `opendbc/car/hyundai/spas.py`(216줄)다. 점등 의도는 별도 Python 작업 프로세스(`tools/jetlink/blink_source.py`, `blink_protocol.py`)가 만들고 card가 그 프로세스와 주고받는다. 주차 상태 시험 모드가 18가지(`CanfdBlinkerTest`) 들어 있다. 차량 ECU에 진단 세션을 여는 코드이므로 한 단계씩 차에서 확인하며 옮겨야 한다.
 - `boundary_indicator_supported`는 `HYUNDAI_IONIQ_5_PE`에서만 참이다(원본 테스트 기준). 시험 차량이 유일한 대상 차종이다.
 - 원본 분량: `desire_helper.py` 886줄, `desire_lib/` 관측기 5개 약 800줄, `hyundai_spas.py`·`spas.py` 약 490줄, `tools/jetlink/blink_*.py`, 그리고 `card.py`·`controlsd.py`·`hyundaicanfd.py`의 연결. Rust `desire` 크레이트는 레버·차선변경 FSM까지만 있다.
+
+Rust판에서는 원본의 Python 작업 프로세스를 그대로 띄울 수 없다(2026-11-12 확인). `blink_source.py`는
+`cereal.messaging`을 쓰는데, Rust 빌드는 `msgq`의 Python 연결부(`ipc_pyx`)를 만들지 않는다. 따라서
+`tools/jetlink/blink_*.py` 15개(약 2,300줄)도 Rust로 옮겨야 한다. card가 이 작업과 주고받는 형식은 `blink_protocol.py`다.
+
+시험 차량 설정(2026-11-11 업로드): `AutoBlinkerControl=0`, `CanfdBlinkerControl=false`, 관측기 설정 4개 모두 꺼짐.
+tmux 로그에 B1 흔적은 없었다. 사용자에게 B1 보드 유무를 아직 묻지 못했다.
 
 먼저 정해야 할 것: 시험 차량에 B1 보드가 있는지. 없으면 A03(CAN 점등)부터, 있으면 A01·A04·A08·A09부터가 맞다.
 
