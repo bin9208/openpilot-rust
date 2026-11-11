@@ -76,6 +76,12 @@ pub fn build(
         &times,
         &data.plan.map(|r| [r[12], r[13], r[14]]),
     )?;
+    // The model's own uncertainty, published for offline comparison as in
+    // carrot's fill_model_msg.py; no controller reads these.
+    wire::xyz_std(
+        model.reborrow().get_orientation_rate()?,
+        &data.plan_std.map(|r| [r[12], r[13], r[14]]),
+    )?;
     lines(model.reborrow(), data)?;
     leads(model.reborrow(), data)?;
     let status = state.update(&data.meta, frame.timing.frame_id);
