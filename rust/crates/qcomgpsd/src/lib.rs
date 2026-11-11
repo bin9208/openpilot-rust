@@ -36,6 +36,9 @@ pub enum Error {
     Json(#[from] serde_json::Error),
     #[error("{0}")]
     Protocol(&'static str),
+    /// A modem answer that was not the expected one, with what it was.
+    #[error("{0}")]
+    Response(String),
     #[error("NMEA modem reboot requested")]
     NmeaReboot,
     #[error("qcomgpsd stop requested")]
