@@ -5,6 +5,23 @@ use openpilot_logmessaged::JsonValue;
 
 impl Bluez {
     pub async fn start_pair(&mut self, address: &Address) -> Result<(), Error> {
+        self.start_pair_with(address, false).await
+    }
+
+    /// carrot `start_pair(mac, headless=True)` for Carrot-B1 enrollment.
+    pub async fn start_pair_headless(&mut self, address: &Address) -> Result<(), Error> {
+        self.start_pair_with(address, true).await
+    }
+
+    /// Waits for the running pair task; true when it ended paired.
+    pub async fn pair_wait(&mut self) -> Result<bool, Error> {
+        if let Some(done) = self.pair.join_next().await {
+            done??;
+        }
+        Ok(matches!(self.shared.lock()?.pair, Pair::Paired { .. }))
+    }
+
+    async fn start_pair_with(&mut self, address: &Address, headless: bool) -> Result<(), Error> {
         if let Some(done) = self.pair.try_join_next() {
             done??;
         }
@@ -24,7 +41,14 @@ impl Bluez {
                     method: "RegisterAgent",
                     seconds: 10,
                 },
-                (agent, "KeyboardDisplay"),
+                (
+                    agent,
+                    if headless {
+                        "NoInputNoOutput"
+                    } else {
+                        "KeyboardDisplay"
+                    },
+                ),
             )
             .await?;
             self.registered = true;
@@ -32,6 +56,7 @@ impl Bluez {
         {
             let mut state = self.shared.lock()?;
             state.target = Some(path.to_string());
+            state.auto_pair = headless;
             state.pair = Pair::Pairing {
                 address: address.as_str().to_owned(),
             };

@@ -3,6 +3,7 @@
 //! instead of as a separate Python process.
 pub mod display;
 pub mod observed;
+pub mod owner;
 pub mod policy;
 pub mod remote;
 pub mod snapshot;

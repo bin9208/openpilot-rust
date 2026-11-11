@@ -109,6 +109,27 @@ async fn reply(
         if state.target.is_none() || path != state.target {
             return wire::error(&message, "org.bluez.Error.Rejected").map(Some);
         }
+        // Only the exact name/service-selected device reaches this branch.
+        if state.auto_pair
+            && matches!(
+                method.as_str(),
+                "RequestAuthorization" | "RequestConfirmation"
+            )
+        {
+            return Ok(Some(message.method_return()));
+        }
+        if state.auto_pair && method == "AuthorizeService" {
+            let mut args = message.iter_init();
+            args.next();
+            let uuid = args
+                .get_refarg()
+                .and_then(|value| value.as_str().map(str::to_lowercase));
+            return if uuid.as_deref() == Some(super::gatt::B1_SERVICE) {
+                Ok(Some(message.method_return()))
+            } else {
+                wire::error(&message, "org.bluez.Error.Rejected").map(Some)
+            };
+        }
     }
     let kind = match method.as_str() {
         "DisplayPinCode" => PromptKind::DisplayPinCode,

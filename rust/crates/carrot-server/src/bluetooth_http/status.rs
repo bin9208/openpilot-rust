@@ -16,6 +16,8 @@ pub(super) async fn status(service: &Service) -> Result<Value, Failure> {
         "cancelLong",
         "laneLeft",
         "laneRight",
+        "blinkerLeft",
+        "blinkerRight",
         "paddleDecel",
         "carrotCruise",
     ];
