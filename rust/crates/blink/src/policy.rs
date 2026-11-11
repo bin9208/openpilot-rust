@@ -54,13 +54,13 @@ pub struct Policy {
     taps: Vec<Command>,
     auto_previous: Option<Automatic>,
     auto_armed: bool,
-    suppressed: bool,
+    pub suppressed: bool,
     mode: i32,
     turned: bool,
     centered: Option<f64>,
     started: f64,
     off_since: Option<f64>,
-    relights: u32,
+    pub relights: u32,
 }
 
 pub struct PolicyInput<'a> {
@@ -300,7 +300,7 @@ pub struct AutomaticSignals {
     heading: Option<f64>,
     rotation: f64,
     location: TurnLocation,
-    pending: Option<(f64, Side, Option<Target>)>,
+    pub pending: Option<(f64, Side, Option<Target>)>,
     pub reason: &'static str,
     cancelled_target: Option<(f64, Side, Option<Target>)>,
     pub journey: TurnJourney,

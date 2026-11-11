@@ -399,12 +399,23 @@ impl SpasSignals {
             self.settings_at = now + 0.1;
         }
         if self.worker.is_none() && input.initialized {
-            self.worker = Some(crate::blink::source::SpasWorker::new());
+            self.worker = Some(crate::blink::source::Worker::new(
+                crate::blink::source::Mode::Spas,
+                String::new(),
+                false,
+            ));
         }
         if let Some(worker) = &mut self.worker {
             // A failed cycle publishes no intent rather than a stale one.
             if worker
-                .update(now, cs, input.subscribers, input.settings, &self.feedback)
+                .update(
+                    now,
+                    cs,
+                    true,
+                    input.subscribers,
+                    input.settings,
+                    &self.feedback,
+                )
                 .is_err()
             {
                 worker.record = None;

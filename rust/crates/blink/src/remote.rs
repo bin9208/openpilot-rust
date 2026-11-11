@@ -5,7 +5,7 @@ use super::{policy::Command, Side};
 use serde_json::Value;
 use std::path::{Path, PathBuf};
 
-const RUNTIME: &str = "/dev/shm/carrot-bluetooth";
+pub const RUNTIME: &str = "/dev/shm/carrot-bluetooth";
 const CONFIG: &str = "/data/carrot/bluetooth.json";
 
 fn read(path: &Path) -> Value {
@@ -65,6 +65,28 @@ impl Snapshot {
         let learning = self.learning["address"].as_str() == Some(mac)
             && self.learning["until"].as_f64().unwrap_or(0.) > now;
         device["enabled"] == Value::Bool(true) && grabbed && mapped && time > cutoff && !learning
+    }
+}
+
+impl Snapshot {
+    /// Enabled, grabbed remotes not being learned (the record's `devices`).
+    pub fn devices(&self, now: f64) -> Vec<String> {
+        if !fresh(self.status.get("time").and_then(Value::as_f64), now) {
+            return Vec::new();
+        }
+        let learning = self.learning["address"].as_str();
+        let until = self.learning["until"].as_f64().unwrap_or(0.);
+        self.status["grabbed"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(Value::as_str)
+            .filter(|mac| {
+                self.settings["devices"][*mac]["enabled"] == Value::Bool(true)
+                    && !(learning == Some(*mac) && until > now)
+            })
+            .map(str::to_owned)
+            .collect()
     }
 }
 

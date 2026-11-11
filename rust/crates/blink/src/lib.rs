@@ -5,6 +5,7 @@ pub mod display;
 pub mod observed;
 pub mod policy;
 pub mod remote;
+pub mod snapshot;
 pub mod source;
 pub mod tbt;
 pub mod turn_journey;

@@ -48,7 +48,7 @@ pub struct TurnJourney {
     cue: Option<f64>,
     mode: Option<i32>,
     pub active: Option<Active>,
-    pending: Option<(Side, f64, Option<Target>)>,
+    pub pending: Option<(Side, f64, Option<Target>)>,
     pub reason: &'static str,
     pub cancelled_until: f64,
 }
