@@ -333,10 +333,18 @@ fn serve(
     ready.store(true, Ordering::Release);
     // rlog evidence of where a frame's time went. A missing log sink only
     // loses the evidence; it never stops the link.
+    let params = openpilot_params::Params::for_runtime().ok();
+    let onroad = || {
+        params
+            .as_ref()
+            .is_some_and(|params| params.get_bool("IsOnroad").unwrap_or(false))
+    };
+    let mut scheduling = crate::platform::OnroadScheduling::default();
     let mut logger = Factory::for_runtime().ok().map(|factory| factory.logger());
     let mut diagnostics =
         RuntimeDiagnostics::new("jetlinkd", 1.0).with_peak_metric("usb_exchange_ms");
     while !stop.load(Ordering::Acquire) {
+        scheduling.update(onroad);
         let (mut stream, _) = match listener.accept() {
             Ok(pair) => pair,
             Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
@@ -372,6 +380,7 @@ fn serve(
                 let mut shared: Option<crate::shared_input::Reader> = None;
                 let mut first_request = true;
                 while !stop.load(Ordering::Acquire) {
+                    scheduling.update(onroad);
                     let loop_started = Instant::now();
                     let cpu_started = thread_cpu_ms();
                     let payload = match rpc::recv_packet(
