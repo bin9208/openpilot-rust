@@ -120,8 +120,15 @@ pub fn messages(
         }
         let cs = state.out.get_root_as_reader::<car_state::Reader<'_>>()?;
         let blink_hold = if c.frame.is_multiple_of(5) && captures.get("adrv_0x1ea").is_some() {
+            // The lane-change lamp hold is not started or kept while the
+            // cruise CANCEL latch is set; an explicit lever request still is.
+            let hold_desire = if cs.get_cruise_cancel_state() {
+                0
+            } else {
+                model.desire
+            };
             c.blink_hold
-                .update(model.desire, model.lane_pair, model.blinker_hold)
+                .update(hold_desire, model.lane_pair, model.blinker_hold)
         } else {
             0
         };

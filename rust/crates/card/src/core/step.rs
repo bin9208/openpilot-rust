@@ -174,6 +174,16 @@ impl Card {
                         message.get_root_as_reader::<car_state::Reader>()?,
                     )?);
                 }
+                let cancelled = readiness::cancelled_blinkers(
+                    match &guarded {
+                        Some(message) => message.get_root_as_reader()?,
+                        None => input::control(io.subscribers())?,
+                    },
+                    message.get_root_as_reader::<car_state::Reader>()?,
+                )?;
+                if cancelled.is_some() {
+                    guarded = cancelled;
+                }
                 let control = if let Some(message) = &guarded {
                     message
                         .get_root_as_reader::<openpilot_cereal::car_capnp::car_control::Reader>()?

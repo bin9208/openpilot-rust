@@ -322,6 +322,7 @@ impl CruiseCarrot {
                 .ok_or(Error::Numeric)?
         });
         cs.set_soft_hold_active(self.s._soft_hold_active);
+        cs.set_cruise_cancel_state(self.s._cruise_cancel_state);
         cs.set_activate_cruise(self.s._activate_cruise);
         cs.set_lat_enabled(self.s._lat_enabled);
         cs.set_use_lane_line_speed(
