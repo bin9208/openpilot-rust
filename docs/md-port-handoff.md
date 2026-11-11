@@ -22,7 +22,7 @@
 | 항목 | 값 |
 | --- | --- |
 | 작업 브랜치 | `bin9208/openpilot-rust:codex/md-upstream-sync` (base `dev-md`, PR #695) |
-| 이 문서 갱신 시 코드 HEAD | `d536922ad` |
+| 이 문서 갱신 시 코드 HEAD | `4a82d2dc5` |
 | 원본 비교 기준 | `carrot-wip` `bc8eb4c2e` (2026-11-11 14:34). 누락 목록 문서는 `1032f8641` 기준이고 그 뒤 12커밋은 아래 "원본 갱신분" 참고 |
 | 이식 기록상 원본 기준 | `0436c7f0a` (`rust/upstream/carrot-wip.json`, `coverage_complete: false`). 갱신되지 않는 옛 기록이다 |
 | 시험 기기 | comma 3X, 차량 HYUNDAI_IONIQ_5_PE |
@@ -83,7 +83,7 @@
 | `30e4c168b` | `signalcolord`가 manager에 등록돼 있지 않아 `SignalAssistMode`를 켜도 관측기가 뜨지 않음(F01) | PC 테스트만 |
 | `4e3d56ef8` | `OnnxBsdEnabled`를 읽지 않아 폴리곤이 설정돼 있으면 비전 BSD 추론이 항상 돎(B02). 원본 기본값은 꺼짐 | PC 테스트만 |
 | `b8c5b2190` | 동작 변경 없음. `jetlinkd`와 `modeld`가 폰 프레임의 단계별 시간을 rlog `runtimeTiming`에 남김(원본 `daemon.py`의 지표 이름) | PC 테스트만 |
-| `a6f80fa52` | `modelV2.orientationRate`에 모델 표준편차가 빠져 있었음(B16의 일부) | PC 컴파일만 |
+| `a6f80fa52`, `afac882fa`, `4a82d2dc5` | B16 세 가지: `modelV2.orientationRate` 표준편차, 카메라 프레임 누락 기록 `modelCameraGap`, 초당 요약의 최악 프레임 `peak_sample`. 전부 관측용이고 동작 변경 없음 | PC 테스트만 |
 | `625361a7a` | 원본 `ec79cae36`의 차량 쪽: `carState.cruiseCancelState` 추가, CANCEL 래치 중 방향지시등 요청과 계기판 차선변경 램프 유지를 중단 | PC 테스트만. **시험 차량 해당, 주행 필요** |
 
 **이어받는 사람에게:** "원본과 같다"는 주석·테스트 이름·커밋 메시지를 믿지 말고 원본 파일을 직접 읽는다.
@@ -143,9 +143,10 @@ Rust가 원본과 다른 부분(지연에 얼마나 기여하는지는 재지 �
    - [x] B12 폐기 설정 이전: `90874d7d1`. 기기 확인 없음.
    - [x] B02 비전 BSD 켜고 끄기: `4e3d56ef8`. 기기 확인 없음.
    - [x] B15 `memPrivateDirty`: `eb70376eb`. 기기 확인 없음.
+   - [x] B16 모델·지연 관측 세 가지: `a6f80fa52`, `afac882fa`, `4a82d2dc5`. 기기 확인 없음.
    - [ ] B04·B05 eGPU 출력 복구와 오류 분류
 2. **시험 차량에 해당하는 A 항목:** A01–A04(자동 방향지시등 일체), A14(Jetlink 입력 경로), A13(모델 라이브러리). A01–A04는 아래 "자동 방향지시등을 옮기기 전에 알아야 할 것"을 먼저 읽는다.
-3. **화면·관측:** B06–B10, B15, B16
+3. **화면·관측:** B06–B10 (B15·B16은 끝남)
 4. **다른 차종과 부가 기능:** A05(페달), A06·A07(테슬라), A08·A09(Bluetooth·B1), A10–A12(지도·내비·음성 비서)
 5. **C 항목의 설정 15개**는 위 기능을 옮기면서 같이 연결한다.
 
@@ -210,6 +211,8 @@ Rust가 원본과 다른 부분(지연에 얼마나 기여하는지는 재지 �
 | `drivingd`의 Jetlink 프레임 경로 | 원본 `JoiningModel.run`과 대조해 내부 모델 생략·실패 시 초기화를 맞춤. 합류 조건(`may_join`)과 워프 준비 과정은 안 봄 |
 | `xiaoge` 비전 BSD | `v_asm_server.py`의 켜고 끄기·세대 확인·상태 응답을 대조함. 게이트 계산, 차선 인식, 테슬라 broadcast(B14)는 안 봄 |
 | `runtime-core` smaps 수집 | `proclog_smaps.py`와 대조함 |
+| `logging` 초당 요약(`runtimeTiming`) | `runtime_diagnostics.py`의 `RuntimeDiagnostics`와 대조함. `communication_snapshot`은 안 봄 |
+| `modeld` 카메라 짝 맞춤과 누락 기록 | `camera_sync.py`·`camera_gap.py`와 대조함. Rust는 카메라 프레임을 매번 통째로 복사한다(`drivingd/src/camera.rs`). 원본은 복사하지 않는다. 최적화 단계에서 볼 것 |
 | `card` 크루즈 CANCEL 래치의 게시와 소비 | `card.py`·`hyundaicanfd.py`의 해당 줄만 대조함. `cruise.py` 전체는 안 봄 |
 | 나머지 전부 | 안 봄 |
 
