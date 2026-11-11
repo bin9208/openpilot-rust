@@ -2918,6 +2918,7 @@ version = "0.1.0"
 dependencies = [
  "libc",
  "openpilot-http-transport",
+ "openpilot-logging",
  "openpilot-managed-entry",
  "openpilot-modeld",
  "openpilot-params",

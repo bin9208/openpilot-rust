@@ -114,6 +114,8 @@ pub struct Runtime {
     deadline: Deadline,
     started: Instant,
     slow_logged: Option<Instant>,
+    /// Stage times of the peer frame collected since the last `begin`.
+    last_stages: Option<Stages>,
     frame: u32,
     pub status: Status,
     pub detail: String,
@@ -156,6 +158,7 @@ impl Runtime {
             deadline: Deadline(0),
             started: now,
             slow_logged: None,
+            last_stages: None,
             frame: 0,
             status: Status {
                 decision: Decision {
@@ -235,6 +238,7 @@ impl Runtime {
                 stages,
             }) => {
                 let elapsed = stages.total();
+                self.last_stages = Some(stages);
                 self.status.execution_ms = elapsed.as_secs_f64() * 1000.0;
                 // As carrot's model.py: a frame over 50 ms is reported, at most
                 // once a second, and still used.
@@ -276,6 +280,7 @@ impl Runtime {
             action,
         } = input;
         self.started = Instant::now();
+        self.last_stages = None;
         self.deadline = Deadline(crate::now_ns().saturating_add(FRAME_BUDGET_NS));
         self.frame = frame;
         self.controls = controls;
@@ -351,6 +356,19 @@ impl Runtime {
             }
             Err(error) => self.lost(error),
         }
+    }
+    /// Warp, hand-off, round trip and parse of this iteration's peer frame in
+    /// ms, when one was collected.
+    pub fn frame_stages_ms(&self) -> Option<[f64; 4]> {
+        let ms = |duration: Duration| duration.as_secs_f64() * 1000.0;
+        self.last_stages.map(|stages| {
+            [
+                ms(stages.warp),
+                ms(stages.handoff),
+                ms(stages.roundtrip),
+                ms(stages.parse),
+            ]
+        })
     }
     /// True between `begin` and `finish` when this frame went to the peer and
     /// the peer is the published model. carrot's JoiningModel.run does not run

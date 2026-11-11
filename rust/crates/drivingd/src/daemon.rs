@@ -460,6 +460,7 @@ pub fn run(
             cpu_end: thread_cpu(),
             dropped: dropped.dropped,
             published,
+            jetlink: external.frame_stages_ms(),
         }
         .record(&mut diagnostics, logger);
         frame_count += 1;

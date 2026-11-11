@@ -814,6 +814,16 @@ impl<T: Transport> Backend for Client<T> {
     fn source_sof(&mut self, source_sof: u64) {
         self.set_source_sof(source_sof);
     }
+    fn last_timings(&self) -> Option<[f64; 3]> {
+        // The peer reports microseconds; the status file keeps them as sent.
+        let status = self.status.lock().ok()?;
+        let timings = status.get("timings")?.as_array()?;
+        Some([
+            timings.first()?.as_f64()? / 1000.0,
+            timings.get(1)?.as_f64()? / 1000.0,
+            timings.get(2)?.as_f64()? / 1000.0,
+        ])
+    }
     fn session_contract(&self) -> &crate::session_contract::SessionContract {
         self.session
             .as_ref()
