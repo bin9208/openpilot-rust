@@ -22,7 +22,7 @@ use openpilot_messaging::{
 use openpilot_model_runtime::catalog::Catalog;
 use openpilot_modeld::{
     calibration::DrivingCalibration,
-    camera::{receive_pair, CameraSource},
+    camera::{receive_pair_traced, CameraSource},
     inputs::DropTracker,
     model_wire::ModelTiming,
 };
@@ -168,6 +168,7 @@ pub fn run(
     let mut frame_count = 0u64;
     // Set while frames are answered by the peer model only.
     let mut internal_stale = false;
+    let mut camera_gap = openpilot_driving_modeld::camera_gap::CameraGapTrace::default();
     let mut diagnostics = RuntimeDiagnostics::new("modeld", 1.0);
     while !stop.load(Ordering::Relaxed) {
         let loop_start = process::monotonic();
@@ -175,7 +176,10 @@ pub fn run(
         if state.begin_iteration() {
             state.refresh(parameters::settings(&params)?);
         }
-        let Some(pair) = receive_pair(&mut main, extra.as_mut())? else {
+        camera_gap.received.clear();
+        let Some(pair) =
+            receive_pair_traced(&mut main, extra.as_mut(), Some(&mut camera_gap.received))?
+        else {
             logger.emit(
                 log_site!(),
                 Record::text(
@@ -221,6 +225,7 @@ pub fn run(
         };
         runtime.update_inputs(model_controls);
         let start = Instant::now();
+        let inference_started = process::monotonic();
         let camera_age_at_run_ms =
             (process::monotonic() - frame.metadata.timestamp_eof as f64 * 1e-9) * 1000.0;
         let inference_cpu_start = thread_cpu();
@@ -445,6 +450,35 @@ pub fn run(
                     }
                 }
             }
+        }
+        {
+            let now = process::monotonic();
+            let backend = if external.status.decision.source
+                == openpilot_jetlink::transition::Source::Jetlink
+            {
+                "jetlink"
+            } else if runtime.uses_usb() {
+                "usbgpu"
+            } else {
+                "internal"
+            };
+            camera_gap.record(
+                logger,
+                now,
+                frame.metadata.frame_id,
+                dropped.dropped,
+                backend,
+                &[
+                    ("camera_wait", (camera_ready - loop_start) * 1000.0),
+                    (
+                        "before_inference",
+                        (inference_started - camera_ready) * 1000.0,
+                    ),
+                    ("inference", model_execution_time * 1000.0),
+                    ("postprocess", (now - inference_finished) * 1000.0),
+                    ("loop", (now - loop_start) * 1000.0),
+                ],
+            );
         }
         FrameTiming {
             frame_id: frame.metadata.frame_id,

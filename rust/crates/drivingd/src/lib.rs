@@ -1,5 +1,6 @@
 pub mod bus;
 pub mod camera;
+pub mod camera_gap;
 pub mod clock;
 pub mod diagnostics;
 pub mod jetlink;
