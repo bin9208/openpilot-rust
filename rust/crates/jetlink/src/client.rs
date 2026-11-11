@@ -70,6 +70,16 @@ pub struct Client<T: Transport> {
 struct AppSelection {
     cache: std::path::PathBuf,
     connected: std::sync::Arc<dyn Fn() -> bool + Send + Sync>,
+    /// Parked: `IsOffroad and not IsOnroad`, as carrot's daemon reads it.
+    parked: std::sync::Arc<dyn Fn() -> bool + Send + Sync>,
+    /// Our engine request was given back to the App and must be made again
+    /// before the next modeld session.
+    released: bool,
+}
+fn parked() -> bool {
+    let read = |name: &str| std::fs::read_to_string(format!("/data/params/d/{name}"));
+    read("IsOffroad").is_ok_and(|value| value.trim() == "1")
+        && !read("IsOnroad").is_ok_and(|value| value.trim() == "1")
 }
 impl<T: Transport> Client<T> {
     pub fn new(transport: T) -> Self {
@@ -100,6 +110,8 @@ impl<T: Transport> Client<T> {
         client.app = Some(AppSelection {
             cache,
             connected: std::sync::Arc::new(|| true),
+            parked: std::sync::Arc::new(parked),
+            released: false,
         });
         client
     }
@@ -172,7 +184,13 @@ impl<T: Transport> Client<T> {
         if !self.ready || self.app.is_none() || crate::now_ns() < self.idle_at {
             return Ok(());
         }
-        self.release_app_request()?;
+        // Carrot's daemon gives its engine request back only while parked, so
+        // the App's "Use Model" does not compete with it there. While driving
+        // the request must stay: without it the phone answers NOT_READY to the
+        // first real frame, which made the link drop and reconnect in a loop.
+        if self.app.as_ref().is_some_and(|app| (app.parked)()) {
+            self.release_app_request()?;
+        }
         self.idle_at = crate::now_ns().saturating_add(2_000_000_000);
         let deadline = Deadline::after(Duration::from_millis(500))?;
         let sequence = self.send(12, b"{}", deadline)?;
@@ -232,6 +250,72 @@ impl<T: Transport> Client<T> {
         }
         crate::selection::check_loaded(&self.session_contract().spec, &hello)?;
         self.app_request_pending = false;
+        if let Some(app) = &mut self.app {
+            app.released = true;
+        }
+        Ok(())
+    }
+    /// Before a modeld session: ask for the engine again if it was given back
+    /// while parked (daemon.py `if not requested: ... ensure_engine`). Runs
+    /// outside every frame deadline.
+    pub fn session_start(&mut self) -> Result<(), Error> {
+        if !self.ready || !self.app.as_ref().is_some_and(|app| app.released) {
+            return Ok(());
+        }
+        let result = self.request_engine_again();
+        if result.is_err() {
+            self.close();
+        }
+        result
+    }
+    fn request_engine_again(&mut self) -> Result<(), Error> {
+        let spec = self.session_contract().spec.clone();
+        let deadline = Deadline::after(Duration::from_millis(500))?;
+        let sequence = self.send(12, b"{}", deadline)?;
+        let state: Value = serde_json::from_slice(&self.expect(13, sequence, deadline)?.payload)?;
+        crate::selection::check_loaded(&spec, &state)?;
+        let deadline = Deadline::after(Duration::from_secs(30))?;
+        let sequence = self.send(
+            3,
+            &serde_json::to_vec(
+                &json!({"sha256":spec.sha256,"nbytes":spec.nbytes,"frame_skip":spec.frame_skip}),
+            )?,
+            deadline,
+        )?;
+        let mut state: Value =
+            serde_json::from_slice(&self.expect_setup(4, sequence, deadline)?.payload)?;
+        loop {
+            match state["state"].as_str() {
+                Some("ready") => break,
+                Some("failed" | "need_upload") => {
+                    return Err(Error::Contract("App engine unavailable"))
+                }
+                _ => {}
+            }
+            let message = self.receive_setup(deadline)?;
+            if message.header.kind == 14 {
+                return Err(Error::Contract("App engine error"));
+            }
+            if message.header.kind == 4 {
+                let candidate: Value = serde_json::from_slice(&message.payload)?;
+                if candidate["sha256"].is_null() || candidate["sha256"] == spec.sha256 {
+                    state = candidate;
+                }
+            }
+        }
+        let session = crate::session_contract::SessionContract::parse(
+            state["spec"].clone(),
+            self.transport.version(),
+        )?;
+        if session.spec != spec {
+            return Err(Error::Contract(
+                "model contract changed before local inference",
+            ));
+        }
+        self.app_request_pending = true;
+        if let Some(app) = &mut self.app {
+            app.released = false;
+        }
         Ok(())
     }
     fn provision_wifi(&mut self, initial: bool) -> Result<(), Error> {
@@ -523,8 +607,8 @@ impl<T: Transport> Client<T> {
                 true,
             )?;
         }
+        // Held until the device is parked; see idle_inner.
         self.app_request_pending = follows_app;
-        self.release_app_request()?;
         self.last_frame = None;
         self.telemetry_at = 0;
         self.idle_at = crate::now_ns().saturating_add(2_000_000_000);
@@ -723,6 +807,9 @@ impl<T: Transport> Backend for Client<T> {
     }
     fn idle(&mut self) -> Result<(), Error> {
         Client::idle(self)
+    }
+    fn session_start(&mut self) -> Result<(), Error> {
+        Client::session_start(self)
     }
     fn source_sof(&mut self, source_sof: u64) {
         self.set_source_sof(source_sof);
@@ -982,6 +1069,7 @@ mod tests {
         transport.replies.push_back(output);
         let mut client = Client::app(transport, cache.path().to_owned());
         let identity = client.connect().unwrap();
+        client.release_app_request().unwrap();
         assert_eq!(identity["artifact_sha256"], spec["sha256"]);
         assert_eq!(client.session_contract().packed_count(), 12);
         let hellos: Vec<Value> = client
@@ -1032,9 +1120,10 @@ mod tests {
         let parsed =
             crate::model_spec::ModelSpec::parse(crate::model_spec::LEGACY_JSON.as_bytes()).unwrap();
         let mut transport = app_wire(&spec, 3);
+        transport.replies.pop_back();
         transport
             .replies
-            .push_back(reply(15, 9, 0, &vec![0.; parsed.output_count().unwrap()]));
+            .push_back(reply(14, 9, 0, &vec![0.; parsed.output_count().unwrap()]));
         let client = Client::app(transport, cache.path().to_owned());
         let directory = tempfile::tempdir().unwrap();
         let path = directory.path().join("owner.sock");
@@ -1078,6 +1167,7 @@ mod tests {
             .push_back(json_reply(13, 16, json!({"loaded":null})));
         let mut client = Client::app(transport, cache.path().to_owned());
         client.connect().unwrap();
+        client.release_app_request().unwrap();
         client.idle_at = 0;
         client.idle().unwrap();
         let snapshot = client.status.lock().unwrap().clone();
@@ -1140,7 +1230,7 @@ mod tests {
         assert!(crate::selection::approved(cache.path()).unwrap().is_none());
     }
     #[test]
-    fn app_request_release_onroad_checks_fresh_loaded_identity() {
+    fn app_request_release_checks_fresh_loaded_identity() {
         let cache = tempfile::tempdir().unwrap();
         let spec: Value = serde_json::from_str(crate::model_spec::LEGACY_JSON).unwrap();
         let parsed =
@@ -1152,6 +1242,7 @@ mod tests {
             .push_back(json_reply(13, 15, json!({"loaded":spec["sha256"]})));
         let mut client = Client::app(transport, cache.path().to_owned());
         client.connect().unwrap();
+        client.release_app_request().unwrap();
         assert!(!client.app_request_pending);
         assert_eq!(client.transport.sent.len(), 14);
         client.idle().unwrap();
@@ -1168,12 +1259,70 @@ mod tests {
             json!({"protocol":3,"loaded":"b".repeat(64)}),
         ));
         let mut client = Client::app(transport, cache.path().to_owned());
-        assert!(client.connect().is_err());
+        client.connect().unwrap();
+        assert!(client.app_request_pending);
+        // Parked: giving the request back finds another model loaded and closes.
+        client.app.as_mut().unwrap().parked = std::sync::Arc::new(|| true);
+        client.idle_at = 0;
+        assert!(client.idle().is_err());
         assert!(client.dead());
         assert_eq!(
             crate::selection::approved(cache.path()).unwrap().unwrap(),
             parsed
         );
+    }
+    #[test]
+    fn engine_request_is_kept_while_driving_and_made_again_after_parking() {
+        let cache = tempfile::tempdir().unwrap();
+        let spec: Value = serde_json::from_str(crate::model_spec::LEGACY_JSON).unwrap();
+        let mut transport = app_wire(&spec, 3);
+        let release = transport.replies.pop_back().unwrap();
+        // Driving idle: only the state poll (sequence 14).
+        transport
+            .replies
+            .push_back(json_reply(13, 14, json!({"loaded":spec["sha256"]})));
+        // Parked idle: release HELLO (15), then the state poll (16).
+        transport.replies.push_back(json_reply(
+            2,
+            15,
+            serde_json::from_slice(&release.payload).unwrap(),
+        ));
+        transport
+            .replies
+            .push_back(json_reply(13, 16, json!({"loaded":spec["sha256"]})));
+        // Next modeld session: state poll (17) and the engine request (18).
+        transport
+            .replies
+            .push_back(json_reply(13, 17, json!({"loaded":spec["sha256"]})));
+        transport.replies.push_back(json_reply(
+            4,
+            18,
+            json!({"state":"ready","sha256":spec["sha256"],"spec":spec}),
+        ));
+        let mut client = Client::app(transport, cache.path().to_owned());
+        client.connect().unwrap();
+        assert!(client.app_request_pending);
+        let connected = client.transport.sent.len();
+
+        client.app.as_mut().unwrap().parked = std::sync::Arc::new(|| false);
+        client.idle_at = 0;
+        client.idle().unwrap();
+        assert!(client.app_request_pending);
+        assert_eq!(client.transport.sent.len(), connected + 1);
+        client.session_start().unwrap();
+        assert_eq!(client.transport.sent.len(), connected + 1);
+
+        client.app.as_mut().unwrap().parked = std::sync::Arc::new(|| true);
+        client.idle_at = 0;
+        client.idle().unwrap();
+        assert!(!client.app_request_pending);
+        assert_eq!(client.transport.sent.len(), connected + 3);
+
+        client.session_start().unwrap();
+        assert!(client.app_request_pending);
+        assert_eq!(client.transport.sent.len(), connected + 5);
+        client.session_start().unwrap();
+        assert_eq!(client.transport.sent.len(), connected + 5);
     }
     #[test]
     fn android_first_connection_waits_for_app_selection_and_engine_preparation() {
@@ -1197,6 +1346,7 @@ mod tests {
         );
         let mut client = Client::app(wire, cache.path().to_owned());
         let identity = client.connect().unwrap();
+        client.release_app_request().unwrap();
         assert_eq!(identity["artifact_sha256"], spec["sha256"]);
         assert!(!client.app_request_pending);
         assert_eq!(client.transport.sent.len(), 15);
@@ -1215,6 +1365,7 @@ mod tests {
         next["sha256"] = json!("b".repeat(64));
         let mut client = Client::app(app_wire(&next, 3), cache.path().to_owned());
         client.connect().unwrap();
+        client.release_app_request().unwrap();
         assert_eq!(client.session_contract().spec.sha256, "b".repeat(64));
         assert_eq!(
             crate::selection::approved(cache.path()).unwrap().unwrap(),

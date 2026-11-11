@@ -26,6 +26,10 @@ pub trait Backend: Send + 'static {
     fn idle(&mut self) -> Result<(), Error> {
         Ok(())
     }
+    /// Called once per accepted modeld connection, before any frame.
+    fn session_start(&mut self) -> Result<(), Error> {
+        Ok(())
+    }
     fn source_sof(&mut self, _source_sof: u64) {}
     fn session_contract(&self) -> &crate::session_contract::SessionContract {
         crate::session_contract::SessionContract::native_default()
@@ -268,6 +272,7 @@ fn serve(
             .map_err(|_| Error::Contract("connection mutex poisoned"))? = Some(stream.try_clone()?);
         let hello = rpc::recv_packet(&mut stream, Deadline::after(Duration::from_millis(500))?);
         if matches!(hello.as_deref(), Ok(b"H")) {
+            backend.session_start()?;
             let info = rpc::Hello {
                 ready: true,
                 generation: rpc::encode_generation(generation),
