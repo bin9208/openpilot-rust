@@ -170,6 +170,55 @@ impl Inputs {
         Ok(values)
     }
 
+    /// Receive time (ns) of the frame a capture was last built from; 0 when
+    /// unknown (carrot `lane_line_time`: all four lane fields share it).
+    pub fn captured_stamp(&self, key: &str) -> u64 {
+        let Some((channel, name)) = self.captures.get(key) else {
+            return 0;
+        };
+        let Ok(parser) = self.parser(*channel) else {
+            return 0;
+        };
+        parser
+            .dbc
+            .names
+            .get(*name)
+            .and_then(|address| parser.states.get(address))
+            .and_then(|state| state.timestamps.back().copied())
+            .unwrap_or(0)
+    }
+
+    /// carrot `rear_gap._fresh`: no bus timeout, a frame of the expected size
+    /// received within `max_age` ns of `now`.
+    pub fn message_fresh(
+        &self,
+        channel: Channel,
+        name: &str,
+        size: usize,
+        now: u64,
+        max_age: u64,
+    ) -> bool {
+        let Ok(parser) = self.parser(channel) else {
+            return false;
+        };
+        let Some(&address) = parser.dbc.names.get(name) else {
+            return false;
+        };
+        let stamp = parser
+            .states
+            .get(&address)
+            .and_then(|state| state.timestamps.back().copied())
+            .unwrap_or(0);
+        !parser.bus_timeout()
+            && stamp > 0
+            && now >= stamp
+            && now - stamp <= max_age
+            && parser
+                .raw
+                .get(&address)
+                .is_some_and(|data| data.len() == size)
+    }
+
     pub fn captured(&self, key: &str) -> Result<Option<Values>, Error> {
         self.captures
             .get(key)
