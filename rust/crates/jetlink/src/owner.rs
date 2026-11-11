@@ -334,7 +334,8 @@ fn serve(
     // rlog evidence of where a frame's time went. A missing log sink only
     // loses the evidence; it never stops the link.
     let mut logger = Factory::for_runtime().ok().map(|factory| factory.logger());
-    let mut diagnostics = RuntimeDiagnostics::new("jetlinkd", 1.0);
+    let mut diagnostics =
+        RuntimeDiagnostics::new("jetlinkd", 1.0).with_peak_metric("usb_exchange_ms");
     while !stop.load(Ordering::Acquire) {
         let (mut stream, _) = match listener.accept() {
             Ok(pair) => pair,
