@@ -1,5 +1,6 @@
 //! Native card startup, CAN-driven core and explicit vehicle interface registry.
 pub mod async_params;
+pub mod blink;
 pub mod brands;
 pub mod can_wire;
 pub mod core;
