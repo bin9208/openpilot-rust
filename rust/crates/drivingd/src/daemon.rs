@@ -166,6 +166,8 @@ pub fn run(
         openpilot_jetlink::status::MODEL_STATUS,
     ));
     let mut frame_count = 0u64;
+    // Set while frames are answered by the peer model only.
+    let mut internal_stale = false;
     let mut diagnostics = RuntimeDiagnostics::new("modeld", 1.0);
     while !stop.load(Ordering::Relaxed) {
         let loop_start = process::monotonic();
@@ -211,12 +213,13 @@ pub fn run(
             )?;
         }
         let (lateral, longitudinal) = state.action_times();
-        runtime.update_inputs(openpilot_driving_modeld::usb_model::Controls {
+        let model_controls = openpilot_driving_modeld::usb_model::Controls {
             desire: i32::from(publication.desire.desire),
             is_rhd: sources.monitoring.get_is_r_h_d(),
             lateral_time: lateral,
             longitudinal_time: longitudinal,
-        });
+        };
+        runtime.update_inputs(model_controls);
         let start = Instant::now();
         let camera_age_at_run_ms =
             (process::monotonic() - frame.metadata.timestamp_eof as f64 * 1e-9) * 1000.0;
@@ -274,12 +277,26 @@ pub fn run(
             },
         );
         jetlink::persist(&params, &mut external_stored, &external.status)?;
-        let prediction = runtime.infer(
-            &frame.buffer.bytes,
-            &extra_frame.buffer.bytes,
-            [calibration.main(), calibration.extra()],
-            dropped.prepare_only,
-        );
+        // carrot's JoiningModel.run: a frame the peer model answers is not also
+        // run on the internal model. The internal model's history goes stale
+        // meanwhile and is cleared before its next run.
+        let external_frame = external.awaiting_frame() && !runtime.uses_usb();
+        let prediction = if external_frame {
+            internal_stale = true;
+            Ok(None)
+        } else {
+            if internal_stale {
+                runtime.reset_internal()?;
+                runtime.update_inputs(model_controls);
+                internal_stale = false;
+            }
+            runtime.infer(
+                &frame.buffer.bytes,
+                &extra_frame.buffer.bytes,
+                [calibration.main(), calibration.extra()],
+                dropped.prepare_only,
+            )
+        };
         let prediction = match prediction {
             Ok(prediction) => prediction,
             Err(error) if runtime.uses_usb() => {
@@ -309,7 +326,24 @@ pub fn run(
             }
             Err(error) => return Err(error),
         };
-        let prediction = external.finish(prediction);
+        let mut prediction = external.finish(prediction);
+        if external_frame && prediction.is_none() {
+            // "Jetlink failed; restoring local model": the peer's frame was
+            // lost (the fault file already asks for disengagement), so this
+            // frame is answered by the internal model from a cleared history.
+            runtime.reset_internal()?;
+            runtime.update_inputs(model_controls);
+            internal_stale = false;
+            prediction = runtime.infer(
+                &frame.buffer.bytes,
+                &extra_frame.buffer.bytes,
+                [calibration.main(), calibration.extra()],
+                dropped.prepare_only,
+            )?;
+            if prediction.is_some() {
+                external.count_native_output();
+            }
+        }
         jetlink::persist(&params, &mut external_stored, &external.status)?;
         external_display.update_selected(
             &external.status,

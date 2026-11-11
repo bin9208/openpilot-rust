@@ -352,6 +352,17 @@ impl Runtime {
             Err(error) => self.lost(error),
         }
     }
+    /// True between `begin` and `finish` when this frame went to the peer and
+    /// the peer is the published model. carrot's JoiningModel.run does not run
+    /// the internal model for such a frame.
+    pub fn awaiting_frame(&self) -> bool {
+        self.pending && self.status.decision.source == Source::Jetlink
+    }
+    /// An internal output produced outside `finish` (the fallback run after a
+    /// lost peer frame) counts toward the warm-up that precedes a join.
+    pub fn count_native_output(&mut self) {
+        self.small_runs = self.small_runs.saturating_add(1);
+    }
     pub fn finish(&mut self, native: Option<DrivingPrediction>) -> Option<DrivingPrediction> {
         if native.is_some() {
             self.small_runs = self.small_runs.saturating_add(1);
