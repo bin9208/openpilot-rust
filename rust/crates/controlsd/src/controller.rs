@@ -47,6 +47,7 @@ pub struct Controls {
     pub turn_speed: i32,
     pub calibration: [f64; 3],
     pub pose: Option<Pose>,
+    pub physical_hold: crate::physical_hold::HoldReader,
 }
 impl Controls {
     pub fn new(
@@ -83,6 +84,7 @@ impl Controls {
         let longitudinal = Longitudinal::new(&config, params)?;
         let lateral = Lateral::new(&config, &interface, params)?;
         let vm = VehicleModel::new(config.physical.clone());
+        let physical_hold = crate::physical_hold::HoldReader::new(&config.fingerprint);
         Ok(Self {
             config,
             interface,
@@ -100,6 +102,7 @@ impl Controls {
             turn_speed,
             calibration: [0.; 3],
             pose: None,
+            physical_hold,
         })
     }
     pub fn control(

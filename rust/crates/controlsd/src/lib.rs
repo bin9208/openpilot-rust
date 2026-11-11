@@ -10,6 +10,7 @@ pub mod lateral;
 mod lateral_torque;
 pub mod longitudinal;
 pub mod parameters;
+pub mod physical_hold;
 pub mod publication;
 mod readiness;
 pub mod sanitize;

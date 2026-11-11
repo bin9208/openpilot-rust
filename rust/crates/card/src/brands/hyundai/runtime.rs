@@ -91,6 +91,11 @@ impl Hyundai {
                 self.log_spas(cs_blinkers(&self.state)?, now);
             }
         }
+        if !self.spas.enabled {
+            // controlsd's physical-hold.json lease (B1 path, carrot physical.py).
+            self.controller.external_hold =
+                input.control.get_hud_control()?.get_physical_blinker_hold();
+        }
         let mut output = self.controller.apply(&mut self.state, input)?;
         if !spas_sends.is_empty() {
             spas_sends.append(&mut output.can);

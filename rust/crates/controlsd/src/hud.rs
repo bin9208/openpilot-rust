@@ -16,6 +16,15 @@ pub(crate) fn write(
     speed: f64,
 ) -> Result<(), Error> {
     hud.set_active_carrot(narrow(input.carrot.active)?);
+    let now = {
+        let t = rustix::time::clock_gettime(rustix::time::ClockId::Monotonic);
+        t.tv_sec as f64 + t.tv_nsec as f64 * 1e-9
+    };
+    hud.set_physical_blinker_hold(
+        controls
+            .physical_hold
+            .read(input.car.can_valid, now, params)?,
+    );
     hud.set_atc_distance(input.carrot.turn_distance as f32);
     if controls.config.meb() {
         navigation(controls, input, params, hud.reborrow())?;
