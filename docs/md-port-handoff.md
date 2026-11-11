@@ -22,11 +22,11 @@
 | 항목 | 값 |
 | --- | --- |
 | 작업 브랜치 | `bin9208/openpilot-rust:codex/md-upstream-sync` (base `dev-md`, PR #695) |
-| 이 문서 갱신 시 코드 HEAD | `90874d7d1` |
+| 이 문서 갱신 시 코드 HEAD | `625361a7a` |
 | 원본 비교 기준 | `carrot-wip` `bc8eb4c2e` (2026-11-11 14:34). 누락 목록 문서는 `1032f8641` 기준이고 그 뒤 12커밋은 아래 "원본 갱신분" 참고 |
 | 이식 기록상 원본 기준 | `0436c7f0a` (`rust/upstream/carrot-wip.json`, `coverage_complete: false`). 갱신되지 않는 옛 기록이다 |
 | 시험 기기 | comma 3X, 차량 HYUNDAI_IONIQ_5_PE |
-| **기기에 올라가 있는 SHA** | **`10c5f287f`** (2026-11-11 16:55 확인). `6446918b1`과 그 뒤 커밋은 기기에 없다 |
+| **기기에 올라가 있는 SHA** | **`eb70376eb`** (2026-11-11 17:56에 갱신 시작, 18:06 현재 빌드 중). 그 뒤 커밋(`bc615e62f`부터)은 기기에 없다 |
 
 기기 접속 방법과 로그 위치는 저장소에 적지 않는다. 작업자 쪽 메모를 본다.
 
@@ -45,7 +45,15 @@
   cargo test --offline -q -p openpilot-card
   # carrot-server 테스트는 FFmpeg 라이브러리 경로가 있어야 실행된다
   LD_LIBRARY_PATH=/home/fma1/rust/cache/native-sdk/usr/lib/x86_64-linux-gnu cargo test --offline -q -p openpilot-carrot-server --lib
+  # xiaoge의 실제 실행 코드는 native-skip-miri 기능과 호스트용 OpenCV가 있어야 컴파일된다
+  OPENPILOT_OPENCV_ROOT=/home/fma1/rust/cache/opencv-signal-host \
+  LD_LIBRARY_PATH=/home/fma1/rust/cache/native-sdk/usr/lib/x86_64-linux-gnu:/home/fma1/rust/cache/opencv-signal-host/install/lib \
+    cargo test --offline -q -p openpilot-xiaoge --features native-skip-miri --lib
+  # card의 주행 경로(core/step.rs 등)는 native 기능으로 컴파일된다
+  cargo test --offline -q -p openpilot-card --features native
   ```
+
+  `xiaoge`의 `inference::session` 테스트 1건은 모델 경로 환경변수가 없어 이 PC에서 실패한다(원래부터).
 
 - `cargo fmt -p openpilot-card`는 `brands/hyundai/parser_inputs.rs`를 건드린다(원래 서식이 안 맞는 파일). 커밋에 넣지 말고 되돌린다.
 - `carrot-server` 테스트는 worktree 루트에 `.omo/evidence/`를 만든다. 추적하지 않는 산출물이다. 커밋하지 않는다.
@@ -71,6 +79,11 @@
 | `63ee82761` | 동작 변경 없음. 느린 폰 프레임 로그에 단계별 시간을 추가 | PC 테스트만 |
 | `a4a961a1f` | 리모컨 명령 파일에 명령이 둘 이상이면 첫 번째만 전달됨(`507625e05`의 캐시가 원인) | PC 테스트만 |
 | `90874d7d1` | 폐기된 `CenterToFrontRatioEnabled`가 꺼져 있던 기기에서 저장된 비율이 그대로 적용됨(원본은 시작 때 0으로 돌리고 스위치를 지움) | PC 테스트만 |
+| `eb70376eb` | `procLog`에 `memPrivateDirty`가 항상 0 (B15) | PC 테스트만 |
+| `bc615e62f` | 폰 모델이 응답하는 프레임에도 내부 모델을 매번 실행함(F04). 원본처럼 건너뛰고, 폰 프레임을 잃으면 내부 모델을 초기화해 같은 프레임에 답함 | **주행 경로 변경. 주행 필요** |
+| `30e4c168b` | `signalcolord`가 manager에 등록돼 있지 않아 `SignalAssistMode`를 켜도 관측기가 뜨지 않음(F01) | PC 테스트만 |
+| `4e3d56ef8` | `OnnxBsdEnabled`를 읽지 않아 폴리곤이 설정돼 있으면 비전 BSD 추론이 항상 돎(B02). 원본 기본값은 꺼짐 | PC 테스트만 |
+| `625361a7a` | 원본 `ec79cae36`의 차량 쪽: `carState.cruiseCancelState` 추가, CANCEL 래치 중 방향지시등 요청과 계기판 차선변경 램프 유지를 중단 | PC 테스트만. **시험 차량 해당, 주행 필요** |
 
 **이어받는 사람에게:** "원본과 같다"는 주석·테스트 이름·커밋 메시지를 믿지 말고 원본 파일을 직접 읽는다.
 특히 원본의 조건문(`IsOffroad and not IsOnroad` 같은 것)과 상수(대기 시간)가 빠지거나 바뀐 곳이 많았다.
@@ -85,7 +98,7 @@
 - [ ] 폰 왕복 시간이 50ms를 넘으면 modelV2가 16Hz 아래로 내려가 `commIssue`가 뜬다(주행 `00000ca1` 1번 구간에서 201회, 인게이지 해제). 폰 발열이 주원인으로 보이며 사용자가 쿨러를 달 예정이다. 그 뒤 다시 잰다.
 - [ ] 주행 중 USB Type-C 연결이 물리적으로 끊긴 뒤 복구되지 않았다(커널 `USB Type-C disconnect`). 원인 미확인. 폰이 부팅 때부터 꽂혀 있으면 콤마가 폰에서 전류를 끌어 쓰는데(책상에서 300–450mA 측정), 원본은 포트가 비어 있을 때만 입력 전류를 끊는다. 전원 공급형 USB3 허브 사용 여부와 함께 확인한다.
 - [ ] 포트 누락 A14: 원본은 modeld와 데몬 사이 영상을 공유 메모리로 넘긴다(`shared_input.py`). Rust는 프레임마다 소켓으로 복사한다.
-- [ ] 원본은 폰 모델이 활성일 때 내부 모델을 돌리지 않는다. Rust는 매 프레임 둘 다 돌린다(검토 문서 F04). 아래 대조 결과 참고.
+- [ ] 원본은 폰 모델이 활성일 때 내부 모델을 돌리지 않는다. `bc615e62f`에서 원본처럼 바꿨다(검토 문서 F04). 주행으로 확인한다: 폰 모델 사용 중 콤마 발열·부하, 그리고 정차 상태에서 폰을 뽑았을 때 내부 모델로 돌아오는지(이때 `commIssue`가 뜨는 것은 원본과 같은 동작이다).
 
 #### 폰 모델이 느릴 때의 처리: 원본과 대조한 결과 (2026-11-11)
 
@@ -101,7 +114,7 @@ Rust가 원본과 다른 부분(지연에 얼마나 기여하는지는 재지 �
 
 | 항목 | 원본 | Rust |
 | --- | --- | --- |
-| 폰 모델 활성 중 내부 모델 | 실행하지 않음. 실패하면 내부 모델 상태를 초기화하고 돌아감 | 매 프레임 실행(같은 GPU에서 워프와 겹침) |
+| 폰 모델 활성 중 내부 모델 | 실행하지 않음. 실패하면 내부 모델 상태를 초기화하고 돌아감 | `bc615e62f`부터 원본과 같음. 그 전에는 매 프레임 실행(같은 GPU에서 워프와 겹침) |
 | 폰과의 요청·응답 | modeld 실시간 스레드(FIFO 54, 코어 7)가 직접 함 | `SCHED_OTHER` 작업 스레드가 함 |
 | 워프한 영상 전달 | 연결이 소유한 공유 메모리에 바로 씀 | 소켓으로 복사(A14) |
 
@@ -127,18 +140,20 @@ Rust가 원본과 다른 부분(지연에 얼마나 기여하는지는 재지 �
    - [x] B01 테슬라 속도 송신 조건: `84a93d14d`. 조건 세 개만이 아니라 `carstate.py`의 측정값 유효성 일체가 빠져 있었다. 기기 확인 없음.
    - [x] B13 설정 보정: `e8f9f91d8`. `nonzero_min`을 쓰는 설정은 `CenterToFrontRatio` 하나뿐이다(누락 목록의 "ATC 거리 등"은 틀림). 기기 확인 없음.
    - [x] B12 폐기 설정 이전: `90874d7d1`. 기기 확인 없음.
+   - [x] B02 비전 BSD 켜고 끄기: `4e3d56ef8`. 기기 확인 없음.
+   - [x] B15 `memPrivateDirty`: `eb70376eb`. 기기 확인 없음.
    - [ ] B04·B05 eGPU 출력 복구와 오류 분류
-2. **시험 차량에 해당하는 A 항목:** A01–A04(자동 방향지시등 일체), A14(Jetlink 입력 경로), A13(모델 라이브러리)
+2. **시험 차량에 해당하는 A 항목:** A01–A04(자동 방향지시등 일체), A14(Jetlink 입력 경로), A13(모델 라이브러리). A01–A04는 아래 "자동 방향지시등을 옮기기 전에 알아야 할 것"을 먼저 읽는다.
 3. **화면·관측:** B06–B10, B15, B16
 4. **다른 차종과 부가 기능:** A05(페달), A06·A07(테슬라), A08·A09(Bluetooth·B1), A10–A12(지도·내비·음성 비서)
 5. **C 항목의 설정 15개**는 위 기능을 옮기면서 같이 연결한다.
 
 검토 문서의 새 결함:
 
-- [ ] F01 `signalcolord`가 manager에 등록돼 있지 않다. 원본 시작 조건은 `started and requested()`(`signal_color_shadow.py`, 플래그 파일과 `signal_mode.flag_override`).
+- [x] F01 `signalcolord` 등록: `30e4c168b`. 시작 조건은 주행 중이고 `SignalAssistMode`가 1 또는 2. 설정을 읽지 못하면 시작하지 않는다.
 - [x] F02 리모컨 명령 누락: `a4a961a1f`.
 - [ ] F03 첫 설치에서 SDK·자산 압축 해제가 실패하면 화면과 6999 복구가 뜨지 않을 수 있다.
-- [ ] F04 Jetlink 활성 중 내부 모델 실행(위 1번).
+- [x] F04 Jetlink 활성 중 내부 모델 실행: `bc615e62f`. 주행 확인 필요(위 1번).
 - [ ] F06 카메라 노출 샘플링이 원본(2×2, 운전자 2×4)과 다르다(전부 8×8). `20d75c50d`에서 성능 때문에 바꾼 것이다. "원본과 같게"가 먼저라면 되돌린다.
 
 원본 갱신분(`1032f8641..bc8eb4c2e`, 12커밋):
@@ -147,10 +162,37 @@ Rust가 원본과 다른 부분(지연에 얼마나 기여하는지는 재지 �
 | --- | --- | --- |
 | `df90d3083` | 최종 CAN FD 정차에서 멀어지는 선행차의 객체 상태 | 반영 `0af3992cc`. 주행 필요 |
 | `bc8eb4c2e` | 레이 Comma Pedal 차량은 현대 고정 게인에서 제외하고 설정에 게인을 노출 | A05(페달)와 함께 옮긴다. A05 없이는 조건이 참이 될 수 없다 |
-| `ec79cae36` | 크루즈 취소 때 자동 방향지시등 일시 정지, 예측 차선변경 점등 | A01–A04와 함께 |
+| `ec79cae36` | 크루즈 취소 때 자동 방향지시등 일시 정지, 예측 차선변경 점등 | 차량 쪽(`cruiseCancelState` 게시, 램프 요청·계기판 유지 중단)은 반영 `625361a7a`. 관측기·음성·테슬라 쪽은 A01·A12·A06과 함께 |
 | `c8454993d` | P/R 계기판 화면 | B08 |
 | `a04187511`, `e56e71473`, `9945cdb9d`, `e12057a89`, `e63b6f360`, `f07617011` | Jetson 성능 진단(`performance_log.py`, `daemon.py`)과 서명된 N16 런타임 배포 정보(`host_release.json`) | 기기 쪽 연결 미반영. Jetson 서버 Python은 옮길 대상이 아니다 |
 | `ecdd04393`, `19549c7c7`, `7d318b6ed`, `ed157919a` | 캐스퍼·레이 조사 문서 | 코드 변경 없음 |
+
+#### 자동 방향지시등(A01–A04)을 옮기기 전에 알아야 할 것
+
+원본 코드를 따라가 본 결과, 이 기능은 한 덩어리가 아니라 출력 경로가 둘인 사슬이다.
+
+- `desire_helper.py`의 `_update_params_periodic`: `lamp_mode = AutoBlinkerControl in (1, 2) and not CanfdBlinkerControl`. 경계 접근·수동 회전·모델 desire·모델 경로 관측기(A01)는 **`lamp_mode`일 때만** 켜진다. 즉 CAN으로 점등하는 `CanfdBlinkerControl`을 켜면 이 관측기들은 꺼진다.
+- `lamp_mode`의 실제 점등은 Bluetooth 보드(B1, A08·A09)와 `physical-hold.json`(A04)을 거친다. B1이 없으면 A01을 옮겨도 차에서 보이는 것이 없다.
+- CAN 점등(A03)은 `openpilot/selfdrive/car/hyundai_spas.py`(273줄)와 `opendbc/car/hyundai/spas.py`(216줄)다. 점등 의도는 별도 Python 작업 프로세스(`tools/jetlink/blink_source.py`, `blink_protocol.py`)가 만들고 card가 그 프로세스와 주고받는다. 주차 상태 시험 모드가 18가지(`CanfdBlinkerTest`) 들어 있다. 차량 ECU에 진단 세션을 여는 코드이므로 한 단계씩 차에서 확인하며 옮겨야 한다.
+- `boundary_indicator_supported`는 `HYUNDAI_IONIQ_5_PE`에서만 참이다(원본 테스트 기준). 시험 차량이 유일한 대상 차종이다.
+- 원본 분량: `desire_helper.py` 886줄, `desire_lib/` 관측기 5개 약 800줄, `hyundai_spas.py`·`spas.py` 약 490줄, `tools/jetlink/blink_*.py`, 그리고 `card.py`·`controlsd.py`·`hyundaicanfd.py`의 연결. Rust `desire` 크레이트는 레버·차선변경 FSM까지만 있다.
+
+먼저 정해야 할 것: 시험 차량에 B1 보드가 있는지. 없으면 A03(CAN 점등)부터, 있으면 A01·A04·A08·A09부터가 맞다.
+
+#### 공용 스키마가 원본과 어긋나 있다
+
+원본에 PR을 내거나 원본 도구로 Rust판 로그를 읽으려면 먼저 풀어야 한다. 이번에 고치지 않았다.
+
+| 파일 | 차이 |
+| --- | --- |
+| `openpilot/cereal/log.capnp` 이벤트 이름 | Rust는 `jetlinkLost @126`, `driverMonitorFallback @130`, `teslaTrafficStopWarning @134`. 원본은 `driverMonitorFallback @126`, `teslaTrafficStopWarning @130`. 같은 번호가 다른 이벤트를 뜻한다 |
+| `openpilot/cereal/log.capnp` | Rust가 `JetlinkFrameStatus`를 추가해 `DrivingModelData @8`과 다른 구조체 `@27`에 넣었다. 원본에는 없다 |
+| `openpilot/cereal/custom.capnp` | Rust는 `naviOwner` 등 10개를 `@33–@42`에 넣고 원본의 `positionFixMonoTime` 등 4개를 `@43–@46`으로 밀었다. 원본은 그 4개가 `@33–@36`이다 |
+| `openpilot/cereal/services.py` | Rust에 `youtubeRoadEncodeData` 추가 |
+| `openpilot/common/params_keys.h` | 키 집합은 같고 순서와 Rust 전용 키(`Jetlink*`, `OnnxComputeMode`)가 다르다 |
+| `opendbc/car/car.capnp` | `625361a7a`로 원본과 같아졌다 |
+
+사용자 문서(`docs/user/`)와 `carrot_settings.json`도 원본과 갈라져 있다. Rust 전용 내용이 섞여 있어 통째로 덮어쓸 수 없다.
 
 누락 목록은 정적 조사라서 누락의 전부가 아니다. 이미 옮겨진 모듈도 위 표처럼 원본과 대조해야 한다. 대조가 끝난 모듈은 여기에 적어 둔다.
 
@@ -163,6 +205,11 @@ Rust가 원본과 다른 부분(지연에 얼마나 기여하는지는 재지 �
 | `carrot-server` 설정 쓰기(`/api/params/set`, 인트로 프리셋) | 보정 순서와 변경 출처 목록을 대조함 |
 | `desire` `command.rs` | 원본 `CommandReader`와 대조함 |
 | `manager` 시작 때의 설정 이전 | `manager_init`의 ATC·geometry 이전 두 개를 대조함. 나머지 초기화 순서는 안 봄 |
+| `manager-catalog` 프로세스 목록 | 원본 61개 중 `mapsd`만 없다(A10). 목록 순서는 원본과 다르다(`jetlinkd` 위치 등). 시작 조건은 `signalcolord`만 대조함 |
+| `drivingd`의 Jetlink 프레임 경로 | 원본 `JoiningModel.run`과 대조해 내부 모델 생략·실패 시 초기화를 맞춤. 합류 조건(`may_join`)과 워프 준비 과정은 안 봄 |
+| `xiaoge` 비전 BSD | `v_asm_server.py`의 켜고 끄기·세대 확인·상태 응답을 대조함. 게이트 계산, 차선 인식, 테슬라 broadcast(B14)는 안 봄 |
+| `runtime-core` smaps 수집 | `proclog_smaps.py`와 대조함 |
+| `card` 크루즈 CANCEL 래치의 게시와 소비 | `card.py`·`hyundaicanfd.py`의 해당 줄만 대조함. `cruise.py` 전체는 안 봄 |
 | 나머지 전부 | 안 봄 |
 
 ### 4. 기기에서 본 미해결 현상
