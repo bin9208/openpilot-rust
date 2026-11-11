@@ -62,6 +62,7 @@ pub fn encode_snapshot(snapshot: &Snapshot, log_mono_time: u64) -> Result<Vec<u8
         );
         target.set_exe(process.exe.as_str());
         target.set_mem_pss(process.proportional.pss);
+        target.set_mem_private_dirty(process.proportional.private_dirty);
         target.set_mem_pss_anon(process.proportional.anon);
         target.set_mem_pss_shmem(process.proportional.shared);
         target.set_mem_pss_mono_time(process.proportional.mono_time_ns);

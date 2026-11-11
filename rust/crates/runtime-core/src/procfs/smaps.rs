@@ -179,6 +179,8 @@ impl Scan {
                 &mut self.totals.anon
             } else if line.starts_with(b"Pss_Shmem:") {
                 &mut self.totals.shared
+            } else if line.starts_with(b"Private_Dirty:") {
+                &mut self.totals.private_dirty
             } else {
                 continue;
             };
@@ -195,5 +197,43 @@ impl Scan {
             return Err(invalid_record());
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn private_dirty_is_summed_with_the_pss_fields_of_one_scan() {
+        let mut scan = Scan {
+            identity: Identity {
+                pid: 1,
+                start_ticks: 1,
+            },
+            file: File::open("/dev/null").unwrap(),
+            started: 0,
+            pending: Vec::new(),
+            totals: ProportionalMemory::default(),
+        };
+        // Two mappings, split in the middle of a line as chunked reads do.
+        scan.parse(
+            b"Rss: 100 kB\nPss: 40 kB\nPss_Anon: 30 kB\nPss_Shmem: 4 kB\nPrivate_Dirty: 28 kB\nPss: 2 kB\nPrivate_Di",
+            false,
+        )
+        .unwrap();
+        scan.parse(b"rty: 2 kB\nPrivate_Clean: 9 kB\n", false)
+            .unwrap();
+        scan.parse(b"", true).unwrap();
+        assert_eq!(
+            scan.totals,
+            ProportionalMemory {
+                pss: 42 * 1024,
+                anon: 30 * 1024,
+                shared: 4 * 1024,
+                private_dirty: 30 * 1024,
+                mono_time_ns: 0,
+            }
+        );
     }
 }
