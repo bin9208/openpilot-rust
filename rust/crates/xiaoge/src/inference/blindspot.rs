@@ -37,6 +37,22 @@ impl BlindspotModel {
         }
     }
 
+    /// carrot's `VASMInference.unload`: the network is dropped while
+    /// `OnnxBsdEnabled` is off; the configured polygons are kept.
+    pub fn unloaded(config: Config) -> Self {
+        Self {
+            net: None,
+            error: "disabled by OnnxBsdEnabled".to_owned(),
+            config,
+            geometry: None,
+            state: Blindspot::default(),
+        }
+    }
+    /// Scores, latched sides and confidences back to zero.
+    pub fn reset(&mut self) {
+        self.state = Blindspot::default();
+    }
+
     pub fn loaded(&self) -> bool {
         self.net.as_ref().is_some_and(Session::loaded)
     }

@@ -60,8 +60,18 @@ impl Shared {
             .params
             .as_ref()
             .and_then(|params| params.get("OnnxComputeMode").ok().flatten());
+        // read_param_int(params, "OnnxBsdEnabled", 0) == 1: missing, empty or
+        // unreadable means off.
+        let bsd_enabled = self
+            .params
+            .as_ref()
+            .and_then(|params| params.get("OnnxBsdEnabled").ok().flatten())
+            .and_then(|bytes| String::from_utf8(bytes).ok())
+            .and_then(|text| text.trim().parse::<i64>().ok())
+            == Some(1);
         let mut state = self.state()?;
         state.settings = settings;
+        state.set_bsd_enabled(bsd_enabled);
         let prior = state.compute_mode;
         state.select_compute(ComputeMode::from_parameter(mode.as_deref()))?;
         if prior != state.compute_mode {
