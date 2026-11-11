@@ -1,5 +1,6 @@
 //! Authenticated BLE output for the existing indicator policy; no raw CAN
 //! over BLE. Port of carrot's `carrot/bluetooth/b1_monitor.py`.
+mod firmware;
 mod intent;
 mod worker;
 
@@ -114,9 +115,249 @@ struct Monitor {
     last_display: Option<(String, u8, Option<String>)>,
     proven_at: f64,
     last_command: Option<Value>,
+    last_signal_at: f64,
+    firmware_image: Option<(Vec<u8>, (u64, String))>,
+    firmware_checked: Option<(String, u32)>,
+    firmware_next: f64,
 }
 
 impl Monitor {
+    fn set_firmware(&self, state: &str) {
+        if let Ok(mut slot) = self.shared.firmware.lock() {
+            state.clone_into(&mut slot);
+        }
+    }
+
+    /// Dark intervals in a one-touch sequence are not the end of the maneuver.
+    fn idle(&self) -> bool {
+        let state = self
+            .shared
+            .state
+            .lock()
+            .map(|s| s.clone())
+            .unwrap_or_default();
+        matches!(state.split(" · ").next(), Some("ready" | "missing"))
+            && monotonic() - self.last_signal_at >= 4.
+            && !self.intent.queued()
+            && !self
+                .source
+                .as_ref()
+                .is_some_and(|s| s.hold.is_some() || !s.events.is_empty())
+    }
+
+    fn check_session(&self, mac: &Address, session: u32) -> Result<(), String> {
+        if self.session != Some(session) || self.owned.as_ref() != Some(mac) {
+            return Err("board session changed".into());
+        }
+        if read_json(ENROLLMENT).get("address").and_then(Value::as_str) != Some(mac.as_str()) {
+            return Err("registration changed".into());
+        }
+        Ok(())
+    }
+
+    /// `comma_update.Client.request`: retry a busy adapter.
+    async fn gatt(&mut self, uuid: &str, write: Option<&[u8]>) -> Result<Vec<u8>, String> {
+        let path = self
+            .attrs
+            .as_ref()
+            .and_then(|a| a.get(uuid))
+            .cloned()
+            .ok_or("no characteristic")?;
+        for _ in 0..40 {
+            let result = match write {
+                Some(data) => self
+                    .client
+                    .write_value(&path, data, Duration::from_secs(6))
+                    .await
+                    .map(|()| Vec::new()),
+                None => self.client.read_value(&path, Duration::from_secs(6)).await,
+            };
+            match result {
+                Ok(value) => return Ok(value),
+                Err(error) => {
+                    let text = error.to_string();
+                    let retry = (write.is_none() && text.contains("ATT error: 0x0e"))
+                        || text.contains("InProgress")
+                        || text.contains("In Progress");
+                    if !retry {
+                        return Err(text);
+                    }
+                    tokio::time::sleep(Duration::from_millis(25)).await;
+                }
+            }
+        }
+        Err("BLE adapter is busy".into())
+    }
+
+    async fn transfer(
+        &mut self,
+        packet: &[u8],
+        state: u8,
+        offset: u32,
+        mac: &Address,
+        session: u32,
+    ) -> Result<(), String> {
+        self.check_session(mac, session)?;
+        self.gatt(firmware::OTA, Some(packet)).await?;
+        for _ in 0..80 {
+            let raw = self.gatt(firmware::OTA, None).await?;
+            if raw.len() == 5 {
+                let written = u32::from_le_bytes([raw[1], raw[2], raw[3], raw[4]]);
+                if raw[0] == 3 {
+                    return Err("Update rejected: check board key, image and quiet CAN bus".into());
+                }
+                if (raw[0], written) == (state, offset) {
+                    return Ok(());
+                }
+            }
+            tokio::time::sleep(Duration::from_millis(15)).await;
+        }
+        Err("S3 did not acknowledge the flash offset".into())
+    }
+
+    async fn install(
+        &mut self,
+        image: &[u8],
+        key: &[u8],
+        mac: &Address,
+        session: u32,
+    ) -> Result<(), String> {
+        if !(256..=0x30_0000).contains(&image.len()) || image[0] != 0xe9 || key.len() != 32 {
+            return Err("Expected an ESP32-S3 app image and a 32-byte board key".into());
+        }
+        let meta = self.gatt(META, None).await?;
+        let nonce = Report::parse(&meta)
+            .map(|r| r.nonce)
+            .ok_or("unsupported B1 report")?;
+        self.check_session(mac, session)?;
+        let quiet = !self
+            .attrs
+            .as_ref()
+            .is_some_and(|a| a.contains_key(firmware::TRACE));
+        let mut manifest = firmware::manifest(if quiet { 1 } else { 4 }, nonce, image);
+        let tag = {
+            use hmac::Mac;
+            let mut mac = hmac::Hmac::<Sha256>::new_from_slice(key).map_err(|e| e.to_string())?;
+            mac.update(&manifest);
+            mac.finalize().into_bytes()
+        };
+        manifest.extend_from_slice(&tag);
+        self.transfer(&manifest, 1, 0, mac, session).await?;
+        for (index, chunk) in image.chunks(480).enumerate() {
+            let offset = (index * 480) as u32;
+            let mut packet = vec![2];
+            packet.extend_from_slice(&offset.to_le_bytes());
+            packet.extend_from_slice(chunk);
+            self.transfer(&packet, 1, offset + chunk.len() as u32, mac, session)
+                .await?;
+        }
+        self.transfer(&[3], 2, image.len() as u32, mac, session)
+            .await
+    }
+
+    /// `auto_update.check`.
+    async fn firmware_check(
+        &mut self,
+        mac: &Address,
+        session: u32,
+    ) -> Result<&'static str, String> {
+        self.check_session(mac, session)?;
+        let key = hex::decode(read_json(ENROLLMENT)["key"].as_str().unwrap_or_default())
+            .map_err(|e| e.to_string())?;
+        if !self
+            .attrs
+            .as_ref()
+            .is_some_and(|a| a.contains_key(META) && a.contains_key(firmware::OTA))
+        {
+            return Err("OTA service unavailable".into());
+        }
+        if self.firmware_image.is_none() {
+            let image = tokio::fs::read(firmware::IMAGE)
+                .await
+                .map_err(|e| e.to_string())?;
+            let target = firmware::release_id(&image)?;
+            self.firmware_image = Some((image, target));
+        }
+        let Some((image, target)) = self.firmware_image.clone() else {
+            return Err("no image".into());
+        };
+        if !self.idle() || maintenance_active() {
+            return Ok("waiting for indicators");
+        }
+        let report = if self
+            .attrs
+            .as_ref()
+            .is_some_and(|a| a.contains_key(firmware::TRACE))
+        {
+            let path = self
+                .attrs
+                .as_ref()
+                .and_then(|a| a.get(firmware::TRACE))
+                .cloned()
+                .unwrap_or_default();
+            self.client
+                .read_value(&path, TIMEOUT)
+                .await
+                .map_err(|e| e.to_string())?
+        } else {
+            Vec::new()
+        };
+        let previous = read_json(firmware::RECEIPT);
+        // Retry receipts survive comma reboots: wall time.
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0., |d| d.as_secs_f64());
+        let action = firmware::decision(&report, &target, &previous, mac.as_str(), timestamp)?;
+        let record = |state: &str| {
+            let _ = atomic_json(
+                firmware::RECEIPT,
+                &json!({"mac": mac.as_str(), "elf": target.1, "release": target.0,
+                    "time": timestamp, "status": state}),
+            );
+        };
+        let same = previous.get("mac").and_then(Value::as_str) == Some(mac.as_str())
+            && previous.get("elf").and_then(Value::as_str) == Some(target.1.as_str())
+            && previous.get("status").and_then(Value::as_str) == Some("current");
+        if action == "current" && !same {
+            record("current");
+        }
+        if action != "install" {
+            return Ok(action);
+        }
+        // Manual updates share this lock; the S3 independently rejects active TX.
+        let lock_path = Path::new(RUNTIME).join("b1-ota.lock");
+        let lock = std::fs::OpenOptions::new()
+            .append(true)
+            .create(true)
+            .open(&lock_path)
+            .map_err(|e| e.to_string())?;
+        rustix::fs::flock(&lock, rustix::fs::FlockOperation::NonBlockingLockExclusive)
+            .map_err(|e| e.to_string())?;
+        let meta = self.report(TIMEOUT).await?;
+        if let Some(worker) = &self.worker {
+            if let Some(latest) = worker.latest() {
+                self.source = Some(latest);
+            }
+        }
+        if meta.nonce != session
+            || meta.version != 2
+            || meta.state > 1
+            || meta.lamps != 0
+            || !self.idle()
+        {
+            return Ok("waiting for indicators");
+        }
+        self.check_session(mac, session)?;
+        tokio::time::sleep(Duration::from_millis(750)).await;
+        self.check_session(mac, session)?;
+        record("attempt");
+        self.set_firmware("updating");
+        self.stop_source();
+        self.install(&image, &key, mac, session).await?;
+        drop(lock);
+        record("uploaded");
+        Ok("waiting for reboot")
+    }
     fn set_state(&self, state: &str) {
         if let Ok(mut slot) = self.shared.state.lock() {
             state.clone_into(&mut slot);
@@ -232,6 +473,7 @@ impl Monitor {
             self.intent = Intent::new(now);
             self.intent.seq = report.last_seq;
             self.sent.clear();
+            self.last_signal_at = now;
             self.proven_at = -10.;
             self.last_command = None;
             self.next_start = now + 0.65;
@@ -293,7 +535,17 @@ impl Monitor {
         let (op, ident, ttl) = self
             .intent
             .choose(self.source.as_ref(), state, report.ack, now);
-        let _ = self.intent.queued();
+        if report.lamps != 0
+            || !matches!(state, "ready" | "missing")
+            || ident.is_some()
+            || self.intent.queued()
+            || self
+                .source
+                .as_ref()
+                .is_some_and(|s| s.hold.is_some() || !s.events.is_empty())
+        {
+            self.last_signal_at = now;
+        }
         self.intent.seq = self.intent.seq.wrapping_add(1);
         if self.intent.seq == 0 {
             self.intent.seq = 1;
@@ -446,6 +698,40 @@ impl Monitor {
         Ok(())
     }
 
+    /// `auto_update.run`, checked every 5 s between exchanges.
+    async fn auto_update(&mut self, mac: &Address) {
+        let now = monotonic();
+        if now < self.firmware_next {
+            return;
+        }
+        self.firmware_next = now + 5.;
+        let (Some(owned), Some(session)) = (self.owned.clone(), self.session) else {
+            return;
+        };
+        if owned != *mac
+            || self.firmware_checked == Some((owned.as_str().to_owned(), session))
+            || now - self.proven_at >= 1.
+            || !self.idle()
+            || maintenance_active()
+        {
+            return;
+        }
+        match self.firmware_check(mac, session).await {
+            Ok(result) => {
+                self.set_firmware(result);
+                if matches!(result, "current" | "newer" | "version conflict") {
+                    self.firmware_checked = Some((owned.as_str().to_owned(), session));
+                } else {
+                    self.firmware_next = monotonic() + 30.;
+                }
+            }
+            Err(error) => {
+                self.set_firmware(&error.chars().take(100).collect::<String>());
+                self.firmware_next = monotonic() + 30.;
+            }
+        }
+    }
+
     async fn run(mut self) {
         let mut registration: Option<(Address, Vec<u8>)> = None;
         let mut next_config = 0.;
@@ -505,6 +791,9 @@ impl Monitor {
                 } else {
                     let result = self.exchange(&key).await;
                     tokio::time::sleep(Duration::from_millis(35)).await;
+                    if result.is_ok() {
+                        self.auto_update(&mac).await;
+                    }
                     result
                 }
             } else {
@@ -566,6 +855,10 @@ pub fn start() -> Arc<Shared> {
                     last_display: None,
                     proven_at: -10.,
                     last_command: None,
+                    last_signal_at: monotonic(),
+                    firmware_image: None,
+                    firmware_checked: None,
+                    firmware_next: 0.,
                 }
                 .run(),
             );
