@@ -30,7 +30,9 @@ pub struct CommandReader {
     seen: VecDeque<Vec<u32>>,
     last_check: f64,
     pub is_repeat: bool,
-    /// (mtime, size) of the last parsed file. Every message in it was already consumed.
+    /// (mtime, size) of a file whose every message has been looked at. Set only
+    /// after a pass that reached the end of the file: a pass that returned an
+    /// action may have left later messages unread.
     stamp: Option<(i64, i64, u64)>,
 }
 
@@ -62,7 +64,7 @@ impl CommandReader {
         if self.stamp == Some(stamp) {
             return None;
         }
-        self.stamp = Some(stamp);
+        self.stamp = None;
         let payload = read_json(&self.path)?;
         if !payload.is_object() {
             return None;
@@ -81,9 +83,13 @@ impl CommandReader {
             if let Some(action) =
                 self.consume(message, allowed, now, learning.as_ref(), cancelled.as_ref())
             {
+                // carrot reads the file again 20 ms later and takes the next
+                // unseen message. Remembering the stamp here would skip every
+                // message after this one until the file is written again.
                 return Some(action);
             }
         }
+        self.stamp = Some(stamp);
         None
     }
 
@@ -191,5 +197,68 @@ fn same_address(left: Option<&JsonValue>, right: Option<&JsonValue>) -> bool {
             .and_then(number)
             .zip(right.and_then(number))
             .is_some_and(|(left, right)| left == right),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct Scratch(PathBuf);
+    impl Scratch {
+        fn new(name: &str) -> Self {
+            let path = std::env::temp_dir()
+                .join(format!("openpilot-desire-{name}-{}", std::process::id()));
+            let _ = fs::remove_dir_all(&path);
+            fs::create_dir_all(&path).unwrap();
+            Self(path)
+        }
+    }
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn every_command_of_one_write_is_delivered_one_per_read() {
+        let scratch = Scratch::new("batch");
+        fs::write(
+            scratch.0.join("remote.json"),
+            r#"{"events": [
+                {"id": "a", "time": 10.0, "action": "accelCruise"},
+                {"id": "b", "time": 10.0, "action": "bogus"},
+                {"id": "c", "time": 10.1, "action": "decelCruise", "repeat": true},
+                {"id": "d", "time": 10.1, "action": "laneLeft"}
+            ]}"#,
+        )
+        .unwrap();
+        let mut reader = CommandReader::new(&scratch.0, "remote", 9.0);
+        assert_eq!(reader.read(true, 10.2).as_deref(), Some("accelCruise"));
+        // Inside the 20 ms poll interval nothing is read.
+        assert_eq!(reader.read(true, 10.21), None);
+        assert_eq!(reader.read(true, 10.23).as_deref(), Some("decelCruise"));
+        assert!(reader.is_repeat);
+        assert_eq!(reader.read(true, 10.26).as_deref(), Some("laneLeft"));
+        assert!(!reader.is_repeat);
+        // The file is exhausted: later reads return nothing and deliver nothing twice.
+        assert_eq!(reader.read(true, 10.29), None);
+        assert_eq!(reader.read(true, 10.32), None);
+    }
+
+    #[test]
+    fn a_command_seen_while_not_allowed_or_too_old_is_dropped_for_good() {
+        let scratch = Scratch::new("gates");
+        fs::write(
+            scratch.0.join("remote.json"),
+            r#"{"events": [
+                {"id": "old", "time": 9.0, "action": "accelCruise"},
+                {"id": "new", "time": 10.0, "action": "decelCruise"}
+            ]}"#,
+        )
+        .unwrap();
+        let mut reader = CommandReader::new(&scratch.0, "remote", 8.0);
+        assert_eq!(reader.read(false, 10.1), None);
+        assert_eq!(reader.read(true, 10.2), None);
     }
 }
