@@ -23,6 +23,7 @@ num-traits = "0.2"
 num-bigint = "=0.4.8"
 openpilot-can = { path = "../can" }
 openpilot-runtime-core = { path = "../runtime-core" }
+openpilot-blink = { path = "../blink" }
 openpilot-cereal = { path = "../cereal" }
 openpilot-control-policy = { path = "../control-policy", default-features = false }
 openpilot-desire = { path = "../desire", default-features = false }

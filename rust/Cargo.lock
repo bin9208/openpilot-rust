@@ -2192,6 +2192,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-blink"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "openpilot-cereal",
+ "openpilot-desire",
+ "openpilot-messaging",
+ "openpilot-params",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "openpilot-bluetooth"
 version = "0.1.0"
 dependencies = [
@@ -2326,6 +2340,7 @@ dependencies = [
  "libc",
  "num-bigint",
  "num-traits",
+ "openpilot-blink",
  "openpilot-can",
  "openpilot-cereal",
  "openpilot-control-policy",

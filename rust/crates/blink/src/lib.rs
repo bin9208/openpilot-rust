@@ -1,5 +1,6 @@
 //! Physical-indicator intent: carrot's `tools/jetlink/blink_*.py` worker,
-//! ported to run inside card instead of as a separate Python process.
+//! ported to run in-process (card for SPAS, the Bluetooth daemon for B1)
+//! instead of as a separate Python process.
 pub mod policy;
 pub mod remote;
 pub mod source;
@@ -39,4 +40,31 @@ impl Side {
             Self::Right => -1.,
         }
     }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("unexpected {0} event")]
+    Event(&'static str),
+    #[error(transparent)]
+    Capnp(#[from] capnp::Error),
+    #[error(transparent)]
+    Schema(#[from] capnp::NotInSchema),
+    #[error(transparent)]
+    Utf8(#[from] std::str::Utf8Error),
+    #[error(transparent)]
+    Params(#[from] openpilot_params::Error),
+    #[error(transparent)]
+    Messaging(#[from] openpilot_messaging::state::Error),
+}
+
+/// Python `params.get_int`: leading integer, 0 when absent or malformed.
+pub fn setting_int(settings: &openpilot_params::Params, key: &str) -> i32 {
+    let Ok(Some(bytes)) = settings.get(key) else {
+        return 0;
+    };
+    std::str::from_utf8(&bytes)
+        .ok()
+        .and_then(|text| text.trim().parse().ok())
+        .unwrap_or(0)
 }

@@ -110,7 +110,7 @@ impl SpasWorker {
         subs: &Subscribers,
         settings: &Params,
         feedback: &Feedback,
-    ) -> Result<(), crate::core::Error> {
+    ) -> Result<(), crate::Error> {
         if now < self.next {
             return Ok(());
         }
@@ -149,9 +149,7 @@ impl SpasWorker {
             h.source == "bluetooth"
                 && Remote::holds(&bluetooth, h.device.as_deref(), h.direction, h.time, now)
         });
-        let mode =
-            super::super::brands::hyundai::parameters::setting_int(settings, "AutoBlinkerControl")
-                .unwrap_or(0);
+        let mode = crate::setting_int(settings, "AutoBlinkerControl");
         let mode = if (0..=2).contains(&mode) { mode } else { 0 };
         let auto_paused = cs.get_cruise_cancel_state();
         let carrot_limit = if self.automatic.direction.is_some() {
@@ -191,11 +189,11 @@ impl SpasWorker {
         if let (Some(model), Some(carrot), Some(ss)) = (model, carrot, selfdrive) {
             let meta = match model.event()?.which()? {
                 event::Which::ModelV2(value) => value?.get_meta()?,
-                _ => return Err(crate::core::Error::Event("modelV2")),
+                _ => return Err(crate::Error::Event("modelV2")),
             };
             let cm = match carrot.event()?.which()? {
                 event::Which::CarrotMan(value) => value?,
-                _ => return Err(crate::core::Error::Event("carrotMan")),
+                _ => return Err(crate::Error::Event("carrotMan")),
             };
             let atc_type = cm.get_atc_type()?.to_str()?.to_owned();
             let lane = if meta.get_auto_turn_signal_lane_change()
