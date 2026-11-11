@@ -59,6 +59,12 @@ pub struct FrameInput {
     pub traffic: [f32; 2],
     pub action: [f32; 2],
 }
+/// How long modeld waits for the peer's answer to one frame: carrot's local
+/// client timeout (link.py `timeout=.15`). A frame slower than 50 ms is late,
+/// not lost. With a 50 ms budget every late frame swapped the published model
+/// to the internal one for five seconds and back, twice a minute in the car.
+pub const FRAME_BUDGET_NS: u64 = 150_000_000;
+
 pub struct Runtime {
     work: Option<SyncSender<Work>>,
     results: Receiver<Result<Complete, Error>>,
@@ -78,6 +84,7 @@ pub struct Runtime {
     controls: ControlState,
     deadline: Deadline,
     started: Instant,
+    slow_logged: Option<Instant>,
     frame: u32,
     pub status: Status,
     pub detail: String,
@@ -119,6 +126,7 @@ impl Runtime {
             },
             deadline: Deadline(0),
             started: now,
+            slow_logged: None,
             frame: 0,
             status: Status {
                 decision: Decision {
@@ -198,6 +206,19 @@ impl Runtime {
                 elapsed,
             }) => {
                 self.status.execution_ms = elapsed.as_secs_f64() * 1000.0;
+                // As carrot's model.py: a frame over 50 ms is reported, at most
+                // once a second, and still used.
+                if elapsed > Duration::from_millis(50)
+                    && self
+                        .slow_logged
+                        .is_none_or(|at| at.elapsed() >= Duration::from_secs(1))
+                {
+                    self.slow_logged = Some(Instant::now());
+                    eprintln!(
+                        "Jetlink slow frame {frame}: {:.1} ms",
+                        self.status.execution_ms
+                    );
+                }
                 self.status.frame = frame;
                 self.model = Some(model);
                 Some(*output)
@@ -228,7 +249,7 @@ impl Runtime {
             action,
         } = input;
         self.started = Instant::now();
-        self.deadline = Deadline(crate::now_ns().saturating_add(50_000_000));
+        self.deadline = Deadline(crate::now_ns().saturating_add(FRAME_BUDGET_NS));
         self.frame = frame;
         self.controls = controls;
         if self.pending || self.connecting {
@@ -339,7 +360,7 @@ impl Runtime {
     }
     pub fn valid_at_publish(&mut self) -> bool {
         if self.status.decision.source == Source::Jetlink && crate::now_ns() > self.deadline.0 {
-            self.lost("Jetlink publication exceeded 50ms");
+            self.lost("Jetlink publication exceeded its frame budget");
             return false;
         }
         !(self.status.decision.loss_latched && crate::now_ns() > self.deadline.0)
@@ -383,7 +404,7 @@ impl Drop for Runtime {
     fn drop(&mut self) {
         self.cancel();
         self.work.take();
-        // Connect is bounded at 500ms and inference by its original 50ms deadline.
+        // Connect is bounded at 500ms and inference by FRAME_BUDGET_NS.
         let until = Instant::now() + Duration::from_millis(600);
         while self
             .worker

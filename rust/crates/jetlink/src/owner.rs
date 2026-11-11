@@ -105,8 +105,8 @@ pub fn infer_request(
             .try_into()
             .map_err(|_| Error::Contract("deadline"))?,
     ));
-    if deadline.remaining()? > Duration::from_millis(50) {
-        return Err(Error::Contract("frame budget exceeds 50ms"));
+    if deadline.remaining()? > Duration::from_nanos(crate::runtime::FRAME_BUDGET_NS) {
+        return Err(Error::Contract("frame budget exceeds the modeld limit"));
     }
     let offset = 1 + rpc::REQUEST_BYTES;
     let warped = &payload[offset..offset + contract::WARPED_BYTES];
