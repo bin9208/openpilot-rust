@@ -50,7 +50,7 @@ pub struct TurnJourney {
     pub active: Option<Active>,
     pending: Option<(Side, f64, Option<Target>)>,
     pub reason: &'static str,
-    cancelled_until: f64,
+    pub cancelled_until: f64,
 }
 
 pub struct JourneyInput<'a> {

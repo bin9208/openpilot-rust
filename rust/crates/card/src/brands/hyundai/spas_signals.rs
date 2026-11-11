@@ -2,9 +2,8 @@
 //! Port of carrot's `openpilot/selfdrive/car/hyundai_spas.py` (`SpasSignals`)
 //! and `opendbc/car/hyundai/stalk_trial.py`.
 //!
-//! The automatic intent source (`tools/jetlink/blink_source.py`, a separate
-//! worker in carrot) is not ported yet: until it is, only the parked trials
-//! selected with `CanfdBlinkerTest` drive the session.
+//! The intent source (`tools/jetlink/blink_source.py`, a separate worker in
+//! carrot) runs in-process as `crate::blink::source::SpasWorker`.
 use super::{
     bus::CanBus,
     canfd_maintenance,
@@ -60,6 +59,13 @@ pub fn replay(original: &[u8], direction: Direction, bus: u8) -> Option<Frame> {
     })
 }
 
+fn to_direction(side: crate::blink::Side) -> Direction {
+    match side {
+        crate::blink::Side::Left => Direction::Left,
+        crate::blink::Side::Right => Direction::Right,
+    }
+}
+
 pub struct Inputs<'a> {
     pub cs: car_state::Reader<'a>,
     pub subscribers: &'a Subscribers,
@@ -109,6 +115,9 @@ pub struct SpasSignals {
     driver_count: u32,
     driver_active: bool,
     pub status: String,
+    worker: Option<crate::blink::source::SpasWorker>,
+    feedback: crate::blink::source::Feedback,
+    feedback_at: f64,
 }
 
 fn fresh(subscribers: &Subscribers, name: &str, now: f64, limit: f64) -> bool {
@@ -205,6 +214,9 @@ impl SpasSignals {
             } else {
                 "disabled".into()
             },
+            worker: None,
+            feedback: crate::blink::source::Feedback::default(),
+            feedback_at: 0.,
         }
     }
 
@@ -386,9 +398,36 @@ impl SpasSignals {
             self.test_setting = setting;
             self.settings_at = now + 0.1;
         }
-        // Automatic intents (blink_source.py) are not ported: no request here.
+        if self.worker.is_none() && input.initialized {
+            self.worker = Some(crate::blink::source::SpasWorker::new());
+        }
+        if let Some(worker) = &mut self.worker {
+            // A failed cycle publishes no intent rather than a stale one.
+            if worker
+                .update(now, cs, input.subscribers, input.settings, &self.feedback)
+                .is_err()
+            {
+                worker.record = None;
+            }
+        }
         let mut request: Option<String> = None;
         let mut direction: Option<Direction> = None;
+        if let Some(record) = self.worker.as_ref().and_then(|w| w.record.as_ref()) {
+            if (0. ..0.2).contains(&(now - record.stamp)) && record.ok {
+                if let Some(hold) = &record.hold {
+                    request = Some(hold.id.clone());
+                    direction = Some(to_direction(hold.direction));
+                } else if let Some((id, _, side)) = record
+                    .events
+                    .iter()
+                    .rev()
+                    .find(|(_, time, _)| (0. ..0.4).contains(&(now - time)))
+                {
+                    request = Some(id.clone());
+                    direction = Some(to_direction(*side));
+                }
+            }
+        }
         if self.test_request.is_some() {
             healthy = self.parked(healthy, &input)?;
             if now < self.test_until && self.test_setting != 0 {
@@ -618,6 +657,28 @@ impl SpasSignals {
         } else {
             self.session.reason.clone()
         };
+        if self.worker.is_some() && now >= self.feedback_at {
+            let active = self.session.state == spas::State::Active;
+            self.feedback = crate::blink::source::Feedback {
+                stamp: now,
+                accepted_id: if active {
+                    self.session.request().map(str::to_owned)
+                } else {
+                    None
+                },
+                available: healthy
+                    && self.test_setting == 0
+                    && (self.session.stock_ready(now) || active),
+                state: if self.driver_override {
+                    "driver_override"
+                } else if active {
+                    "ready"
+                } else {
+                    "waiting"
+                },
+            };
+            self.feedback_at = now + 0.05;
+        }
         if self.test_request.is_some()
             && matches!(self.session.state, spas::State::Idle | spas::State::Failed)
             && now >= self.test_until
