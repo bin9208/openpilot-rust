@@ -1,10 +1,10 @@
 use crate::{process, Options};
 use openpilot_cereal::car_capnp::car_params;
-use openpilot_desire::command::CommandReader;
+use openpilot_desire::{command::CommandReader, helper::DesireHelper};
 use openpilot_driving_modeld::{
     bus::{self, Inputs},
     diagnostics::{thread_cpu, FrameTiming},
-    jetlink, parameters,
+    indicator, jetlink, parameters,
     publication::{Output, Publication, Sources},
     state::State,
     usb_selection, Error,
@@ -146,7 +146,20 @@ pub fn run(
     );
     let mut calibration = DrivingCalibration::default();
     let mut drops = DropTracker::default();
-    let mut publication = Publication::default();
+    let fingerprint = car_params
+        .get_root::<car_params::Reader>()?
+        .get_car_fingerprint()?
+        .to_str()?
+        .to_owned();
+    let supported = indicator::supported(&fingerprint);
+    let mut publication = Publication::new(DesireHelper::new(
+        supported,
+        if supported {
+            indicator::startup_journal()
+        } else {
+            None
+        },
+    ));
     let mut commands = CommandReader::new(
         Path::new("/dev/shm/carrot-bluetooth"),
         "lane",
@@ -395,6 +408,13 @@ pub fn run(
                     radar: sources.radar,
                     lateral_active: sources.control.get_lat_active(),
                     live_lateral_delay: sources.delay.get_lateral_delay().into(),
+                    indicator: indicator::inputs(
+                        &subscribers.state,
+                        sources.control,
+                        &params,
+                        &publication.desire,
+                        process::monotonic(),
+                    )?,
                 },
                 || config.clone().unwrap_or_default(),
                 |allowed| commands.read(allowed, process::monotonic()),

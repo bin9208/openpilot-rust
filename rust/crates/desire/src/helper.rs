@@ -1,11 +1,17 @@
 use crate::{
+    indicator::{
+        boundary::BoundaryIndicator,
+        lane::{adjacent_lane, MANUAL_INDICATOR_MIN_SPEED},
+        observer::{ModelIndicator, ObserverInput},
+    },
     lever::{
         lever_maneuver, LaneCrossing, LeverChoice, LeverForcedTurn, LeverRequestWait,
         LEVER_REQUEST_WAIT_S, STALK_QUEUE_GUARD_S,
     },
     side::SideState,
     types::{
-        maximum, minimum, Config, Input, InvalidModel, Maneuver, Navigation, State, DT, MIN_SPEED,
+        maximum, minimum, Config, IndicatorConfig, Input, InvalidModel, Maneuver, Navigation,
+        State, DT, MIN_SPEED,
     },
 };
 use serde::Serialize;
@@ -62,6 +68,22 @@ pub struct DesireHelper {
     /// modelV2.meta.leverTurn: the turn desire comes from a latched lever.
     #[serde(skip)]
     pub lever_turn: bool,
+    /// Physical-indicator observers run only on `HYUNDAI_IONIQ_5_PE`.
+    #[serde(skip)]
+    pub indicator_supported: bool,
+    #[serde(skip)]
+    pub indicator_config: IndicatorConfig,
+    #[serde(skip)]
+    pub boundary_indicator: BoundaryIndicator,
+    #[serde(skip)]
+    pub model_indicator: ModelIndicator,
+    #[serde(skip)]
+    pub indicator_journal_time: f64,
+    /// modelV2.meta.autoTurnSignal: an ATC-originated maneuver only.
+    #[serde(skip)]
+    pub auto_turn_signal: u8,
+    #[serde(skip)]
+    pub auto_turn_signal_lane_change: bool,
 }
 
 impl Default for DesireHelper {
@@ -106,11 +128,137 @@ impl Default for DesireHelper {
             crossing: LaneCrossing::default(),
             blinker_hold_direction: 0,
             lever_turn: false,
+            indicator_supported: false,
+            indicator_config: IndicatorConfig::default(),
+            boundary_indicator: BoundaryIndicator::new(
+                None,
+                adjacent_lane,
+                MANUAL_INDICATOR_MIN_SPEED,
+            ),
+            model_indicator: ModelIndicator::default(),
+            indicator_journal_time: 0.,
+            auto_turn_signal: 0,
+            auto_turn_signal_lane_change: false,
         }
     }
 }
 
 impl DesireHelper {
+    /// carrot's `DesireHelper(boundary_indicator_supported=...)`; `journal`
+    /// is `boundary-indicator.json` as `(time, direction, mask)`.
+    pub fn new(supported: bool, journal: Option<(f64, i64, Option<i64>)>) -> Self {
+        Self {
+            indicator_supported: supported,
+            boundary_indicator: BoundaryIndicator::new(
+                journal.filter(|_| supported),
+                adjacent_lane,
+                MANUAL_INDICATOR_MIN_SPEED,
+            ),
+            ..Self::default()
+        }
+    }
+
+    fn update_indicators(&mut self, input: &Input) {
+        let indicator = &input.indicator;
+        if self.indicator_supported && (self.frame == 1 || self.frame.is_multiple_of(20)) {
+            if let Some(config) = indicator.config {
+                self.indicator_config = config;
+            }
+            // Restores masks after a restart and acknowledges low-speed TBT ownership.
+            if let Some((stamp, direction)) = indicator.journal {
+                let now = indicator.now;
+                if stamp.is_finite()
+                    && self.indicator_journal_time < stamp
+                    && stamp <= now
+                    && now - stamp < 20.
+                    && matches!(direction, 1..=3)
+                {
+                    self.boundary_indicator.own(now, direction as u8);
+                    self.indicator_journal_time = stamp;
+                }
+            }
+        }
+        if self.indicator_supported {
+            let now = indicator.now;
+            // Reset parking evidence while CANCEL is latched; keep lamp
+            // isolation so an OEM one-touch tail cannot become steering.
+            let busy = input.car.cruise_cancel_state
+                || matches!(self.lane_change_state, State::Starting | State::Finishing);
+            let config = self.indicator_config;
+            self.boundary_indicator.update(
+                now,
+                &input.car,
+                &input.model,
+                config.boundary,
+                indicator.valid,
+                busy,
+            );
+            if self
+                .model_indicator
+                .active
+                .as_ref()
+                .is_some_and(|a| a.source() == "manual")
+                && !config.boundary
+            {
+                self.model_indicator.active = None;
+            }
+            let manual_edge = self.boundary_indicator.request_direction;
+            self.model_indicator.update(
+                ObserverInput {
+                    now,
+                    car: &input.car,
+                    model: &input.model,
+                    valid: indicator.valid,
+                    lateral_active: input.lateral_active,
+                    desire_enabled: config.model_desire,
+                    path_enabled: config.model_path,
+                    busy,
+                    manual_edge,
+                    command_curvature: indicator.curvature,
+                    feedback: indicator.feedback.as_ref(),
+                    manual_turn_enabled: config.manual_turn,
+                    yaw_rate: indicator.yaw_rate,
+                },
+                &mut self.boundary_indicator,
+            );
+        } else if self.boundary_indicator.blocked != 0 || !self.boundary_indicator.initialized {
+            // Expire a voice-owned lamp mask without PE-only geometry observation.
+            self.boundary_indicator.update(
+                indicator.now,
+                &input.car,
+                &input.model,
+                false,
+                indicator.assistant_valid,
+                false,
+            );
+        }
+    }
+
+    /// `indicatorPrepareDirection/Source`: display only, never actuation.
+    pub fn indicator_preparation(&self) -> (u8, &'static str) {
+        if self.model_indicator.active.is_some() {
+            return (0, "");
+        }
+        let config = self.indicator_config;
+        let mut preparation = self.model_indicator.candidate.filter(|(_, source)| {
+            if *source == "model_path" {
+                config.model_path
+            } else {
+                config.model_desire
+            }
+        });
+        if config.boundary {
+            if let Some(episode) = &self.boundary_indicator.episode {
+                preparation = Some((episode.direction, "manual"));
+            }
+        }
+        if config.manual_turn {
+            if let Some(candidate) = self.model_indicator.manual_turn.candidate {
+                preparation = Some(candidate);
+            }
+        }
+        preparation.unwrap_or((0, ""))
+    }
     /// Side of a lever press since the last update. The lamp cannot show a press while
     /// already flashing; the counters can, and never miss a press between updates.
     fn stalk_press(&mut self, counts: [u8; 2]) -> u8 {
@@ -231,6 +379,7 @@ impl DesireHelper {
         if self.frame.is_multiple_of(100) {
             self.config = config();
         }
+        self.update_indicators(input);
         self.carrot_lane_change_count = self.carrot_lane_change_count.saturating_sub(1);
         self.lane_change_delay = maximum(0.0, self.lane_change_delay - DT);
         let car = &input.car;
@@ -255,12 +404,15 @@ impl DesireHelper {
         } else {
             self.turn_disable_count = self.turn_disable_count.saturating_sub(1);
         }
-        let driver = u8::from(car.left_blinker) + 2 * u8::from(car.right_blinker);
+        let driver = self
+            .boundary_indicator
+            .filter_lamp(u8::from(car.left_blinker) + 2 * u8::from(car.right_blinker));
         let mut driver_changed = driver != self.driver_blinker_state;
         self.driver_blinker_state = driver;
         let mut driver_enabled = matches!(driver, 1 | 2) && self.config.need_torque >= 0;
         let previous_state = self.lane_change_state;
-        let stalk_press = self.stalk_press(car.stalk_counts);
+        let physical_stalk_press = self.stalk_press(car.stalk_counts);
+        let stalk_press = self.boundary_indicator.filter_lamp(physical_stalk_press);
         let lever = car.blinker_lever;
         let forced_turn = self.lever_forced_turn.update(lever, car.blinker_lamp);
         if self.lever_wait.update(
@@ -550,6 +702,27 @@ impl DesireHelper {
                 self.keep_pulse_timer = 0.0;
             } else if matches!(self.desire, 5 | 6) {
                 self.desire = 0;
+            }
+        }
+        // Origin is latched before injected lamps can look like driver input.
+        // preLaneChange is excluded: indicate only actual lane changes.
+        let turning = matches!(self.desire, 1 | 2);
+        let changing = matches!(self.lane_change_state, State::Starting | State::Finishing);
+        let continuing = if self.auto_turn_signal_lane_change {
+            changing
+        } else {
+            turning
+        };
+        if !continuing || self.lane_change_direction != self.auto_turn_signal {
+            self.auto_turn_signal = 0;
+        }
+        if self.auto_turn_signal == 0 && atc_enabled && !driver_enabled && self.atc_active == 1 {
+            if turning && matches!(self.atc_type.as_str(), "turn left" | "turn right") {
+                self.auto_turn_signal = self.lane_change_direction;
+                self.auto_turn_signal_lane_change = false;
+            } else if self.lane_change_state == State::Starting && atc_only {
+                self.auto_turn_signal = self.lane_change_direction;
+                self.auto_turn_signal_lane_change = true;
             }
         }
         Ok(self.desire)

@@ -31,6 +31,16 @@ pub struct Config {
     pub lever_wait: bool,
 }
 
+/// Physical-indicator observer switches, read every 20 frames on supported
+/// cars (`lamp_mode` and the four observer settings).
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize)]
+pub struct IndicatorConfig {
+    pub boundary: bool,
+    pub manual_turn: bool,
+    pub model_desire: bool,
+    pub model_path: bool,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Car {
@@ -50,6 +60,13 @@ pub struct Car {
     pub blinker_lever: u8,
     pub blinker_lamp: u8,
     pub stalk_counts: [u8; 2],
+    /// `gearShifter == drive`.
+    pub drive: bool,
+    pub steer_fault_temporary: bool,
+    pub steer_fault_permanent: bool,
+    /// OEM lane type observation time (ns); zero means unknown.
+    pub lane_line_info_mono_time: u64,
+    pub cruise_cancel_state: bool,
 }
 
 impl Default for Car {
@@ -71,6 +88,11 @@ impl Default for Car {
             blinker_lever: 0,
             blinker_lamp: 0,
             stalk_counts: [0, 0],
+            drive: true,
+            steer_fault_temporary: false,
+            steer_fault_permanent: false,
+            lane_line_info_mono_time: 0,
+            cruise_cancel_state: false,
         }
     }
 }
@@ -83,6 +105,15 @@ pub struct Model {
     pub road_edges: [Vec<f64>; 2],
     pub desire_state: [f64; 8],
     pub orientation_rate_z: Vec<f64>,
+    /// Forward distances of each lane line (`laneLines[i].x`).
+    pub lane_line_x: [Vec<f64>; 4],
+    /// Planned centre path (`position.t/x/y`).
+    pub position_t: Vec<f64>,
+    pub position_x: Vec<f64>,
+    pub position_y: Vec<f64>,
+    pub frame_id: u32,
+    /// `meta.desirePrediction`: 4 horizons x 8 desires.
+    pub desire_prediction: Vec<f64>,
 }
 
 impl Default for Model {
@@ -93,6 +124,12 @@ impl Default for Model {
             road_edges: [-7.2, 7.2].map(|value| vec![value; 33]),
             desire_state: [0.0; 8],
             orientation_rate_z: vec![0.0; 33],
+            lane_line_x: std::array::from_fn(|_| (0..33).map(|i| f64::from(i) * 3.0).collect()),
+            position_t: Vec::new(),
+            position_x: Vec::new(),
+            position_y: Vec::new(),
+            frame_id: 0,
+            desire_prediction: Vec::new(),
         }
     }
 }
@@ -152,6 +189,31 @@ pub struct Input {
     pub objects: [Vec<Lead>; 2],
     pub lateral_active: bool,
     pub lane_change_prob: f64,
+    pub indicator: Indicator,
+}
+
+/// Inputs of the physical-indicator observers (carrot's `indicator_*`
+/// arguments of `DesireHelper.update`).
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
+pub struct Indicator {
+    /// `time.monotonic()` seconds.
+    pub now: f64,
+    /// modelV2 valid and carState/carControl fresh.
+    pub valid: bool,
+    /// `carControl.actuators.curvature`.
+    pub curvature: Option<f64>,
+    /// Fresh, valid `livePose.angularVelocityDevice.z`.
+    pub yaw_rate: Option<f64>,
+    /// `physical-hold.json`, read only while an observation is active.
+    #[serde(skip)]
+    pub feedback: Option<serde_json::Value>,
+    /// `boundary-indicator.json` `(time, mask)`, read every 20 frames.
+    pub journal: Option<(f64, i64)>,
+    /// Observer switches, read every 20 frames.
+    pub config: Option<IndicatorConfig>,
+    /// `valid` plus fresh radarState: voice-owned lamp masks expire on it.
+    pub assistant_valid: bool,
 }
 
 impl Default for Input {
@@ -164,6 +226,7 @@ impl Default for Input {
             objects: std::array::from_fn(|_| Vec::new()),
             lateral_active: true,
             lane_change_prob: 0.1,
+            indicator: Indicator::default(),
         }
     }
 }

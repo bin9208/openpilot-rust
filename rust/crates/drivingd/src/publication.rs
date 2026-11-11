@@ -4,7 +4,10 @@ use openpilot_cereal::{
     custom_capnp::carrot_man,
     log_capnp::{event, radar_state},
 };
-use openpilot_desire::{helper::DesireHelper, types::Config};
+use openpilot_desire::{
+    helper::DesireHelper,
+    types::{Config, Indicator},
+};
 use openpilot_modeld::{
     action::{self, ActionInputs, PlanActionInput},
     derived_wire::{self, PoseTiming},
@@ -19,12 +22,23 @@ pub struct Publication {
     publish: PublishState,
 }
 
+impl Publication {
+    pub fn new(desire: DesireHelper) -> Self {
+        Self {
+            desire,
+            publish: PublishState::default(),
+        }
+    }
+}
+
 pub struct Sources<'a> {
     pub car: car_state::Reader<'a>,
     pub navigation: carrot_man::Reader<'a>,
     pub radar: radar_state::Reader<'a>,
     pub lateral_active: bool,
     pub live_lateral_delay: f64,
+    /// Freshness-only observer inputs; `valid` is joined with modelV2 here.
+    pub indicator: Indicator,
 }
 
 pub struct Output<'a> {
@@ -82,12 +96,17 @@ impl Publication {
         let event::ModelV2(data) = event.which()? else {
             return Err(Error::Contract("model output event"));
         };
+        let mut indicator = sources.indicator;
+        let model_valid = event.get_valid();
+        indicator.valid &= model_valid;
+        indicator.assistant_valid &= model_valid;
         let input = wire::desire_input(
             sources.car,
             data?,
             sources.navigation,
             sources.radar,
             sources.lateral_active,
+            indicator,
         )?;
         self.desire.update(&input, config, command)?;
         let event::ModelV2(data) = model.get_root::<event::Builder>()?.which()? else {
