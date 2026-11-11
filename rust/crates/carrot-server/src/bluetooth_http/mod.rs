@@ -21,17 +21,22 @@ pub struct Service {
     runtime: PathBuf,
     command: PathBuf,
     timestamp: Option<f64>,
+    /// The Carrot-B1 monitor (only the device service runs one).
+    b1: Option<Arc<crate::b1::Shared>>,
 }
 
 impl Service {
     pub fn original() -> Arc<Self> {
-        Self::at(
-            "/data/carrot/bluetooth.json".into(),
-            "/dev/shm/carrot-bluetooth".into(),
-            "sudo".into(),
-            None,
-            None,
-        )
+        Arc::new(Self {
+            b1: Some(crate::b1::start()),
+            ..Self::fields(
+                "/data/carrot/bluetooth.json".into(),
+                "/dev/shm/carrot-bluetooth".into(),
+                "sudo".into(),
+                None,
+                None,
+            )
+        })
     }
 
     pub fn at(
@@ -41,7 +46,17 @@ impl Service {
         bus: Option<String>,
         timestamp: Option<f64>,
     ) -> Arc<Self> {
-        Arc::new(Self {
+        Arc::new(Self::fields(config, runtime, command, bus, timestamp))
+    }
+
+    fn fields(
+        config: PathBuf,
+        runtime: PathBuf,
+        command: PathBuf,
+        bus: Option<String>,
+        timestamp: Option<f64>,
+    ) -> Self {
+        Self {
             client: tokio::sync::Mutex::new(Bluez::new(bus)),
             reader: Mutex::new(None),
             mutation: tokio::sync::Mutex::new(()),
@@ -49,7 +64,8 @@ impl Service {
             runtime,
             command,
             timestamp,
-        })
+            b1: None,
+        }
     }
 
     fn now(&self) -> f64 {

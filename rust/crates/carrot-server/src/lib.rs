@@ -2,6 +2,7 @@
 pub mod auto_update;
 pub mod auto_update_pull;
 pub use auto_update_pull::runtime as auto_update_runtime;
+pub mod b1;
 pub mod bluetooth_http;
 mod bootstrap;
 pub mod cars;

@@ -38,7 +38,7 @@ pub struct Record {
     pub ok: bool,
     pub hold: Option<Hold>,
     /// Short taps not held (`events`), most recent last.
-    pub events: Vec<(String, f64, Side)>,
+    pub events: Vec<Command>,
     pub turn_phase: &'static str,
     pub devices: Vec<String>,
     pub activated: bool,
@@ -783,10 +783,7 @@ impl Worker {
             stamp: now,
             ok,
             hold: wire,
-            events: taps
-                .iter()
-                .map(|c| (c.id.clone(), c.time, c.direction))
-                .collect(),
+            events: taps,
             turn_phase: self.automatic.reason,
             devices,
             activated: self.activated_id.is_some(),

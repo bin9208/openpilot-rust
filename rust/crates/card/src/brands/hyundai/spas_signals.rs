@@ -428,14 +428,14 @@ impl SpasSignals {
                 if let Some(hold) = &record.hold {
                     request = Some(hold.id.clone());
                     direction = Some(to_direction(hold.direction));
-                } else if let Some((id, _, side)) = record
+                } else if let Some(event) = record
                     .events
                     .iter()
                     .rev()
-                    .find(|(_, time, _)| (0. ..0.4).contains(&(now - time)))
+                    .find(|event| (0. ..0.4).contains(&(now - event.time)))
                 {
-                    request = Some(id.clone());
-                    direction = Some(to_direction(*side));
+                    request = Some(event.id.clone());
+                    direction = Some(to_direction(event.direction));
                 }
             }
         }

@@ -34,6 +34,7 @@ openpilot-messaging = { path = "../messaging" }
 openpilot-msgq = { path = "../msgq" }
 openpilot-beepd = { path = "../beepd" }
 openpilot-bluetooth = { path = "../bluetooth" }
+openpilot-blink = { path = "../blink" }
 openpilot-process-supervision = { path = "../process-supervision" }
 openpilot-usbgpu = { path = "../usbgpu", default-features = false }
 openpilot-calibrationd = { path = "../calibrationd" }
@@ -54,6 +55,8 @@ ffmpeg-next = { version = "=8.1.0", default-features = false, features = ["codec
 bzip2 = "=0.6.1"
 zstd = "=0.13.3"
 sha2 = "0.10"
+hmac = "=0.12.1"
+hex = "0.4"
 percent-encoding = "2"
 url = "2"
 libc = "0.2"
