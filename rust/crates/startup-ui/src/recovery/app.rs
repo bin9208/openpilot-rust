@@ -396,4 +396,3 @@ pub fn run() -> Result<(), Error> {
     app.worker.stop()?;
     Ok(())
 }
-

@@ -48,4 +48,3 @@ pub use vision_buffer::VisionBufferDescriptor;
 pub use vision_server::UnalignedWebcamImage;
 #[cfg(feature = "native-skip-miri")]
 pub use vision_server::{RawVisionImage, VisionImage, VisionServer};
-

@@ -55,4 +55,3 @@ tempfile = "3"
 name = "openpilot-carrot-man"
 path = "src/main.rs"
 required-features = ["native-skip-miri"]
-

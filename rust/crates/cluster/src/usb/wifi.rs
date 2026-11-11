@@ -110,4 +110,3 @@ impl Wifi<Connection<TcpSocket>> {
         })
     }
 }
-

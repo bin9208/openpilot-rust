@@ -25,4 +25,3 @@ signal-hook = "0.3"
 [[bin]]
 name = "openpilot-process-child"
 path = "src/main.rs"
-

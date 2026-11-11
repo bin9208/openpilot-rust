@@ -86,4 +86,3 @@ path = "src/bin/carrot_command.rs"
 [[bin]]
 name = "openpilot-vision-test"
 path = "src/bin/vision_test.rs"
-

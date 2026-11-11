@@ -26,4 +26,3 @@ signal-hook = "0.3"
 
 [lints]
 workspace = true
-

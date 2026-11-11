@@ -42,4 +42,3 @@ workspace = true
 name = "openpilot-carrot-navi"
 path = "src/main.rs"
 required-features = ["native"]
-

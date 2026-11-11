@@ -83,4 +83,3 @@ fn model_preserves_aliases_copies_and_state_between_runs() {
     );
     assert_eq!(submissions.get(), 0);
 }
-

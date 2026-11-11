@@ -274,4 +274,3 @@ impl Drop for Recorder {
         }
     }
 }
-

@@ -44,4 +44,3 @@ required-features = ["native-skip-miri"]
 name = "openpilot-pandad-supervisor"
 path = "src/bin/supervisor.rs"
 required-features = ["native-skip-miri"]
-

@@ -122,4 +122,3 @@ pub(super) const SET_PROPERTY: libc::c_ulong = request::<Property>(1, 0x32);
 pub(super) const ALLOCATE: libc::c_ulong = request::<Allocate>(3, 0x45);
 pub(super) const FREE: libc::c_ulong = request::<Free>(1, 0x46);
 pub(super) const GPU_COMMAND: libc::c_ulong = request::<GpuCommand>(3, 0x4a);
-

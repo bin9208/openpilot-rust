@@ -38,4 +38,3 @@ serde_json = { version = "1", features = ["float_roundtrip"] }
 name = "openpilot-locationd"
 path = "src/main.rs"
 required-features = ["native"]
-

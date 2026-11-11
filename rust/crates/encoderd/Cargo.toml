@@ -38,4 +38,3 @@ bindgen = { version = "=0.72.1", default-features = false, features = ["runtime"
 name = "openpilot-encoderd"
 path = "src/main.rs"
 required-features = ["native"]
-

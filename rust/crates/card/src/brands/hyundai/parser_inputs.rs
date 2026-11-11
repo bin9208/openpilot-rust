@@ -16,7 +16,8 @@ pub struct Inputs {
     pub alt: Option<Parser>,
     pub captures: BTreeMap<&'static str, (Channel, &'static str)>,
     /// Per message: the frame timestamp it was built from and its signal map.
-    pub(crate) values_cache: std::cell::RefCell<std::collections::HashMap<(u8, u32), (u64, Values)>>,
+    pub(crate) values_cache:
+        std::cell::RefCell<std::collections::HashMap<(u8, u32), (u64, Values)>>,
 }
 
 impl Inputs {

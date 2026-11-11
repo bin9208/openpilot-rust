@@ -38,4 +38,3 @@ tempfile = "3"
 name = "openpilot-torqued"
 path = "src/main.rs"
 required-features = ["native-skip-miri"]
-

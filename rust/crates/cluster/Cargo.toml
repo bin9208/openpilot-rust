@@ -65,4 +65,3 @@ unsafe_code = "forbid"
 [lints.clippy]
 all = "deny"
 pedantic = "deny"
-

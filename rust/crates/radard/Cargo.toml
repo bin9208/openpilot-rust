@@ -46,4 +46,3 @@ serde_json = "1"
 name = "openpilot-radard"
 path = "src/main.rs"
 required-features = ["native-skip-miri"]
-

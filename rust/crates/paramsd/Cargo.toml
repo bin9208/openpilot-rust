@@ -41,4 +41,3 @@ cxx-build = "1.0"
 name = "openpilot-paramsd"
 path = "src/main.rs"
 required-features = ["native"]
-
