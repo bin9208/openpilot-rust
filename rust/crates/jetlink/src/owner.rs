@@ -19,6 +19,9 @@ use std::{
     time::Duration,
 };
 
+/// carrot's jetlink client FRAME_TIMEOUT: past it the far end is gone, not slow.
+const FRAME_TIMEOUT: Duration = Duration::from_secs(3);
+
 pub trait Backend: Send + 'static {
     fn after_reply(&mut self) -> Result<(), Error> {
         Ok(())
@@ -119,7 +122,13 @@ pub fn infer_request(
     };
     backend.source_sof(source_sof);
     backend.session_contract().check_input(warped, &packed)?;
-    let output = backend.infer(frame, warped, &packed, deadline, payload[29] == 1)?;
+    // The peer gets carrot's FRAME_TIMEOUT, not modeld's frame budget. A frame
+    // that misses the budget is one dropped frame for modeld, which leaves and
+    // joins again; only a stall this long means the far end is gone. Using the
+    // 50 ms budget here closed the link, and the phone saw the cable drop and
+    // come back every 20-30 s.
+    let link = Deadline::after(FRAME_TIMEOUT)?;
+    let output = backend.infer(frame, warped, &packed, link, payload[29] == 1)?;
     backend.session_contract().check_output(&output)?;
     deadline.remaining()?;
     let mut response = Vec::with_capacity(21 + output.len() * 4);
