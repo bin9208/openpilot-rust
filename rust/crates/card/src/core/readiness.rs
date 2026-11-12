@@ -147,8 +147,16 @@ pub(super) fn guard(
     gate: &mut Gate,
     state: &State,
     car: car_state::Reader<'_>,
-) -> Result<Option<Message>, Error> {
+) -> Result<(bool, Option<Message>), Error> {
     let ready = update(gate, state, car)?;
+    Ok((ready, guard_control(ready, state, car)?))
+}
+
+fn guard_control(
+    ready: bool,
+    state: &State,
+    car: car_state::Reader<'_>,
+) -> Result<Option<Message>, Error> {
     let control = input::control(state)?;
     if !control.get_lat_active() || ready {
         return Ok(None);
@@ -256,6 +264,7 @@ mod tests {
             car.get_root_as_reader::<car_state::Reader>().unwrap(),
         )
         .unwrap()
+        .1
         .unwrap();
         let cc = blocked.get_root_as_reader::<car_control::Reader>().unwrap();
         let a = cc.get_actuators().unwrap();
@@ -286,6 +295,7 @@ mod tests {
             car.get_root_as_reader::<car_state::Reader>().unwrap()
         )
         .unwrap()
+        .1
         .is_none());
         assert!(gate.ready);
         state.update(100., &[]).unwrap();
@@ -295,6 +305,7 @@ mod tests {
             car.get_root_as_reader::<car_state::Reader>().unwrap()
         )
         .unwrap()
+        .1
         .is_none());
     }
 

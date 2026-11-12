@@ -1,4 +1,5 @@
 mod controller;
+pub mod lane_signals;
 mod parameters;
 mod runtime;
 pub mod speed_limit;

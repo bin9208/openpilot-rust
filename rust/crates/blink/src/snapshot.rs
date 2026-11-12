@@ -121,6 +121,16 @@ pub fn model(md: model_data_v2::Reader<'_>) -> Result<(Model, Meta), Error> {
         position_x: floats(position.get_x()?),
         position_y: floats(position.get_y()?),
         frame_id: md.get_frame_id(),
+        road_edge_stds: {
+            let stds = md.get_road_edge_stds()?;
+            std::array::from_fn(|i| {
+                if (i as u32) < stds.len() {
+                    f64::from(stds.get(i as u32))
+                } else {
+                    f64::NAN
+                }
+            })
+        },
         desire_prediction: floats(meta.get_desire_prediction()?),
     };
     let text = |r: capnp::Result<capnp::text::Reader<'_>>| -> String {

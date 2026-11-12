@@ -80,7 +80,7 @@ impl BoundaryIndicator {
         }
     }
 
-    fn reset_geometry(&mut self) {
+    pub fn reset_geometry(&mut self) {
         self.previous = None;
         self.confident = [None, None];
         self.rates = [0., 0.];
@@ -112,6 +112,22 @@ impl BoundaryIndicator {
         enabled: bool,
         valid: bool,
         busy: bool,
+    ) {
+        let admission = self.lane_admission;
+        self.update_with(now, car, model, enabled, valid, busy, &admission);
+    }
+
+    /// `update` with a caller-supplied lane admission (Tesla lane signals).
+    #[allow(clippy::too_many_arguments)]
+    pub fn update_with(
+        &mut self,
+        now: f64,
+        car: &Car,
+        model: &Model,
+        enabled: bool,
+        valid: bool,
+        busy: bool,
+        admission: &dyn Fn(&Car, &Model, u8, f64) -> bool,
     ) {
         let lamps = u8::from(car.left_blinker) | (u8::from(car.right_blinker) << 1);
         if !self.initialized {
@@ -171,20 +187,26 @@ impl BoundaryIndicator {
             self.reset_geometry();
             // Preserve the same fresh edge after torque release, never replay a timer.
             if !(0. ..0.2).contains(&(now - self.request_time))
-                || !(self.lane_admission)(car, model, self.request_direction, now)
+                || !admission(car, model, self.request_direction, now)
             {
                 self.request_direction = 0;
             }
             return;
         }
         self.request_direction = 0;
-        if self.geometry(now, car, model).is_none() {
+        if self.geometry(now, car, model, admission).is_none() {
             self.reset_geometry();
         }
     }
 
     /// `None` is carrot's exception path, which resets geometry.
-    fn geometry(&mut self, now: f64, car: &Car, model: &Model) -> Option<()> {
+    fn geometry(
+        &mut self,
+        now: f64,
+        car: &Car,
+        model: &Model,
+        admission: &dyn Fn(&Car, &Model, u8, f64) -> bool,
+    ) -> Option<()> {
         let left = *model.lane_lines[1].first()?;
         let right = *model.lane_lines[2].first()?;
         let probs = [model.lane_line_probs[1], model.lane_line_probs[2]];
@@ -218,7 +240,7 @@ impl BoundaryIndicator {
             self.rates[i] = 0.5 * self.rates[i] + 0.5 * (prev_y[i] - y[i]) / dt;
         }
         for i in 0..2 {
-            self.lane_since[i] = if (self.lane_admission)(car, model, i as u8 + 1, now) {
+            self.lane_since[i] = if admission(car, model, i as u8 + 1, now) {
                 Some(self.lane_since[i].unwrap_or(now))
             } else {
                 None

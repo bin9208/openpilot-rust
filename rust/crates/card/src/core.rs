@@ -111,6 +111,12 @@ pub struct ApplyInput<'a> {
     /// services' freshness (Hyundai SPAS indicators).
     pub subscribers: Option<&'a openpilot_messaging::state::State>,
     pub initialized: bool,
+    /// carrot `lateral_startup.update(...)`.
+    pub lateral_ready: bool,
+    pub impact_reboot: bool,
+    /// Latest Xiaoge vision result and `CLOCK_MONOTONIC` ns.
+    pub vision: Option<&'a VisionResult>,
+    pub monotonic_ns: u64,
     pub model: Option<model_data_v2::Reader<'a>>,
     pub radar: Option<radar_state::Reader<'a>>,
 }

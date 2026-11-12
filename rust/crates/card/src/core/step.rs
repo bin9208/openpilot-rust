@@ -157,13 +157,14 @@ impl Card {
             }
             if io.subscribers().all_alive(&["carControl"])? {
                 let apply_start = io.monotonic_ns();
+                let monotonic_ns = apply_start;
                 let now_ns = if self.replay {
                     self.replay_time.ok_or(Error::ReplayTimestamp)?
                 } else {
                     publication::event_time(io)?
                 };
                 let reboot = self.settings.get_bool("ImpactDashcamReboot")?;
-                let mut guarded = readiness::guard(
+                let (lateral_ready, mut guarded) = readiness::guard(
                     &mut self.lateral_startup,
                     io.subscribers(),
                     message.get_root_as_reader::<car_state::Reader>()?,
@@ -196,6 +197,10 @@ impl Card {
                     now_ns,
                     subscribers: Some(io.subscribers()),
                     initialized: self.initialized_previous,
+                    lateral_ready,
+                    impact_reboot: reboot,
+                    vision: self.vision.as_ref(),
+                    monotonic_ns,
                     model: input::model(io.subscribers())?,
                     radar: input::radar(io.subscribers())?,
                 });

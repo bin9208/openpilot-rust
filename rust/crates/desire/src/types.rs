@@ -123,6 +123,7 @@ pub struct Model {
     pub position_x: Vec<f64>,
     pub position_y: Vec<f64>,
     pub frame_id: u32,
+    pub road_edge_stds: [f64; 2],
     /// `meta.desirePrediction`: 4 horizons x 8 desires.
     pub desire_prediction: Vec<f64>,
 }
@@ -140,6 +141,7 @@ impl Default for Model {
             position_x: Vec::new(),
             position_y: Vec::new(),
             frame_id: 0,
+            road_edge_stds: [0.; 2],
             desire_prediction: Vec::new(),
         }
     }

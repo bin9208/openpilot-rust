@@ -6,7 +6,7 @@ use crate::types::{Car, Model};
 pub const MANUAL_INDICATOR_MIN_SPEED: f64 = 5. / 3.6;
 pub const LINE_CONFIDENCE: f64 = 0.10;
 
-pub(crate) fn finite(values: &[f64]) -> bool {
+pub fn finite(values: &[f64]) -> bool {
     values.iter().all(|v| v.is_finite())
 }
 

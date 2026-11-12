@@ -32,7 +32,7 @@ pub struct Movement {
 }
 
 impl Movement {
-    fn new(now: f64, direction: u8, source: &'static str, model: &Model) -> Option<Self> {
+    pub fn new(now: f64, direction: u8, source: &'static str, model: &Model) -> Option<Self> {
         let initial = model.lane_lines[usize::from(direction)].first()?.abs();
         let (left, right) = near(model)?;
         Some(Self {
@@ -49,7 +49,7 @@ impl Movement {
         })
     }
 
-    fn update(&mut self, now: f64, car: &Car, model: &Model) -> bool {
+    pub fn update(&mut self, now: f64, car: &Car, model: &Model) -> bool {
         let Some((left, right)) = near(model) else {
             self.reason = "geometry";
             return false;

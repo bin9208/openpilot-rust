@@ -101,6 +101,16 @@ pub fn desire_input(
             position_x: floats(position.get_x()?),
             position_y: floats(position.get_y()?),
             frame_id: model.get_frame_id(),
+            road_edge_stds: {
+                let stds = model.get_road_edge_stds()?;
+                std::array::from_fn(|i| {
+                    if (i as u32) < stds.len() {
+                        f64::from(stds.get(i as u32))
+                    } else {
+                        f64::NAN
+                    }
+                })
+            },
             desire_prediction: floats(model.get_meta()?.get_desire_prediction()?),
         },
         navigation: Navigation {
