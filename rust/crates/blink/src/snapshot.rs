@@ -38,6 +38,11 @@ pub fn car(cs: car_state::Reader<'_>) -> (Car, TbtCar) {
             steer_fault_permanent: cs.get_steer_fault_permanent(),
             lane_line_info_mono_time: cs.get_lane_line_info_mono_time(),
             cruise_cancel_state: cs.get_cruise_cancel_state(),
+            turn_signal_driver_valid: cs.get_turn_signal_driver_valid(),
+            turn_signal_driver_direction: cs.get_turn_signal_driver_direction(),
+            auto_turn_signal_ready_request_id: cs.get_auto_turn_signal_ready_request_id(),
+            vehicle_sensors_invalid: cs.get_vehicle_sensors_invalid(),
+            standstill: cs.get_standstill(),
         },
         TbtCar {
             rear_inputs_available: cs.get_tbt_rear_inputs_available(),
