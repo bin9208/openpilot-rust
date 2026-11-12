@@ -257,6 +257,40 @@ impl CruiseCarrot {
         if self.commands.is_repeat && !enabled {
             remote = None;
         }
+        let voice = {
+            let minimum = self.s._cruise_speed_min.max(if self.pcm_cruise {
+                30.
+            } else {
+                self.s._cruise_speed_min
+            });
+            let current = speed.value;
+            let allowed = self.assistant_speed_valid
+                && cs.get_can_valid()
+                && enabled
+                && self.long_active
+                && self.openpilot_longitudinal
+                && cs.get_cruise_state()?.get_available()
+                && cs.get_gear_shifter()? == car_state::GearShifter::Drive
+                && !(cs.get_brake_pressed()
+                    || cs.get_gas_pressed()
+                    || !cs.get_button_events()?.is_empty()
+                    || remote.is_some()
+                    || self.s.button_cnt != 0
+                    || self.s._hold_interlock_active)
+                && self.s._soft_hold_active == 0
+                && minimum <= current
+                && current <= self.s._cruise_speed_max
+                && !(self.pcm_cruise
+                    && (self.s.speed_from_pcm == 1
+                        || (self.s.speed_from_pcm == 3 && self.brand == "toyota")))
+                && self.s.carrot_cmd_index_last == self.s.carrot_cmd_index;
+            self.assistant_speed
+                .read(now, allowed, current, minimum, self.s._cruise_speed_max)
+        };
+        if voice.as_ref().is_some_and(|v| v.action == "speed_up") {
+            // Same RES/+ handling, without driver-attention input.
+            remote = Some("accelCruise".to_owned());
+        }
         let (button_speed, button, long) = self.prepare_buttons(cs, speed, remote.as_deref())?;
         let remote_enable = remote.as_deref().is_some_and(|r| {
             [
@@ -269,6 +303,11 @@ impl CruiseCarrot {
         }) && !enabled
             && !(remote.as_deref() == Some("decelCruise") && self.s._soft_hold_active > 0);
         let (mut speed, button, long) = self.carrot_command(speed, button, long)?;
+        if let Some(target) = voice.as_ref().and_then(|v| v.target) {
+            speed = Number::float(target);
+            self.s._pause_auto_speed_up = true;
+            self.s._v_cruise_kph_at_brake = Number::int(0.);
+        }
         if [
             Button::AccelCruise,
             Button::DecelCruise,

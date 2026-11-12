@@ -125,6 +125,7 @@ fn update(gate: &mut Gate, state: &State, car: car_state::Reader<'_>) -> Result<
 
 /// carrot's card.py `native_cancelled`: while the cruise CANCEL latch is set a
 /// requested turn signal is not passed to the vehicle.
+#[cfg(test)]
 pub(super) fn cancelled_blinkers(
     control: car_control::Reader<'_>,
     car: car_state::Reader<'_>,
