@@ -36,6 +36,8 @@ pub struct Controller {
     pub lkas_active: bool,
     pub lane_check: i32,
     pub steering_template_ready: bool,
+    /// Comma Pedal command source on configured cars (carrot `PedalInterceptor`).
+    pub pedal: Option<super::pedal::Interceptor>,
 }
 
 impl Controller {
@@ -44,6 +46,11 @@ impl Controller {
             frame: 0,
             external_hold: 0,
             writer: CanWriter::from_dbc(std::sync::Arc::clone(&state.inputs.pt.dbc)),
+            pedal: super::pedal::configured(&state.config.candidate, state.config.flags)
+                .zip(state.inputs.pedal.as_ref())
+                .map(|(profile, parser)| {
+                    super::pedal::Interceptor::new(std::sync::Arc::clone(&parser.dbc), profile)
+                }),
             settings: Settings::new(
                 TorqueLimits::new(&state.config.candidate, state.config.flags),
                 &state.settings,
@@ -154,6 +161,7 @@ impl Controller {
         if self.frame.is_multiple_of(100)
             && state.config.flags & f::CAMERA_SCC == 0
             && state.config.longitudinal
+            && self.pedal.is_none()
         {
             let (address, bus) = if state.config.flags & f::HDA2 != 0 {
                 (0x730, state.config.bus.ecan)

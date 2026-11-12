@@ -16,7 +16,7 @@ pub(crate) fn payload(app: &Application) -> Result<Value, Error> {
         .map_err(|_| Error::Source("Params lock poisoned".into()))?;
     let _fresh_params = crate::system::fresh::reopen(params.native_params())?;
     let original = app.catalog(&params)?;
-    let visible = original.for_brand(&params.vehicle_brand())?;
+    let visible = original.for_brand(&params.vehicle_brand(), params.ray_pedal_control())?;
     let mut names = HashSet::new();
     let mut values = Vec::new();
     for (_, items) in fields(&visible.groups)? {

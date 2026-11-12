@@ -35,6 +35,7 @@ pub mod monitor;
 pub mod navigation;
 pub mod parameters;
 pub mod parser_inputs;
+pub mod pedal;
 mod runtime;
 pub mod settings_float;
 pub mod spas;

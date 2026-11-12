@@ -77,6 +77,9 @@ pub struct State {
     pub avh_latched: bool,
     pub avh_grace: u32,
     pub scc_hold: bool,
+    /// Comma Pedal sensor state and OEM cruise blocking (Ray EV adapter).
+    pub pedal: super::pedal::State,
+    pub pedal_cruise_blocked: bool,
     pub gear_values: BTreeMap<i64, String>,
     pub capabilities: Capabilities,
     pub time_zone: Option<&'static str>,
@@ -173,6 +176,8 @@ impl State {
             avh_latched: false,
             avh_grace: 0,
             scc_hold: false,
+            pedal: super::pedal::State::default(),
+            pedal_cruise_blocked: true,
             gear_values,
             capabilities,
             time_zone: None,

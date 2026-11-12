@@ -6,7 +6,7 @@ use crate::{
 };
 
 impl Catalog {
-    pub fn for_brand(&self, brand: &str) -> Result<Self, Error> {
+    pub fn for_brand(&self, brand: &str, ray_pedal_control: bool) -> Result<Self, Error> {
         let brand = brand.trim().to_lowercase();
         let mut hidden = Vec::new();
         if !brand.is_empty() {
@@ -23,6 +23,14 @@ impl Catalog {
                     }
                 }
             }
+        }
+        // The Ray EV Comma Pedal keeps adjustable speed PID gains.
+        if brand == "hyundai" && ray_pedal_control {
+            hidden.retain(|name| {
+                !["LongTuningKpV", "LongTuningKiV", "LongTuningKf"]
+                    .iter()
+                    .any(|gain| *name == Value::text(gain))
+            });
         }
         if hidden.is_empty() {
             return Ok(self.clone());

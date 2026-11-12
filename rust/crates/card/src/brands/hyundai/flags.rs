@@ -27,6 +27,7 @@ pub const FCEV: u32 = 1 << 25;
 pub const ALT_LIMITS_2: u32 = 1 << 26;
 pub const CLUSTER_DIRECT_TX: u32 = 1 << 27;
 pub const CANFD_SPAS_BLINKERS: u32 = 1 << 28;
+pub const PEDAL_INTERCEPTOR: u32 = 1 << 29;
 pub const CC_ONLY_CAR: u32 = 1 << 31;
 
 pub mod ext {
@@ -58,4 +59,6 @@ pub mod safety {
     pub const ALT_LIMITS_2: u16 = 512;
     pub const CLUSTER_DIRECT_TX: u16 = 2048;
     pub const CANFD_SPAS_BLINKERS: u16 = 4096;
+    pub const PEDAL_INTERCEPTOR: u16 = 8192;
+    pub const PEDAL_INTERCEPTOR_RAY: u16 = 16384;
 }

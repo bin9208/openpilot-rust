@@ -127,6 +127,39 @@ pub fn parameters(input: ParamsInput<'_>) -> Result<Builder<HeapAllocator>, Erro
     tuning.reborrow().init_kp_b_p(1).set(0, 0.);
     tuning.reborrow().init_kp_v(1).set(0, 1.);
     tuning.set_kf(1.);
+    // carrot interface.py: only an explicitly enabled, ACC-less classic-CAN
+    // adapter with the 0x201 sensor uses the Comma Pedal protocol.
+    if let Some(profile) = super::pedal::profile(input.candidate) {
+        let fp = input.fingerprints;
+        let has = |bus: u8, address: u32| super::bus::size(fp, bus, address).is_some();
+        if detection.flags & flags::CC_ONLY_CAR != 0
+            && input.settings.get_bool("CommaPedalEnabled")?
+            && detection.flags & (flags::CANFD | flags::LEGACY | flags::CAMERA_SCC) == 0
+            && super::bus::size(fp, super::pedal::BUS, super::pedal::SENSOR_ADDR) == Some(6)
+            && ![0, 2]
+                .iter()
+                .any(|bus| has(*bus, 0x420) || has(*bus, 0x421))
+        {
+            detection.flags |= flags::PEDAL_INTERCEPTOR;
+            cp.set_flags(detection.flags);
+            cp.set_enable_gas_interceptor_d_e_p_r_e_c_a_t_e_d(true);
+            cp.set_alpha_longitudinal_available(true);
+            cp.set_openpilot_longitudinal_control(true);
+            cp.set_pcm_cruise(false);
+            cp.set_radar_unavailable(true);
+            cp.set_auto_resume_sng(false);
+            cp.set_min_enable_speed(profile.min_enable_speed);
+            let mut configs = cp.reborrow().get_safety_configs()?;
+            let last = configs.len() - 1;
+            let mut safety = configs.reborrow().get(last);
+            safety.set_safety_param(
+                safety.reborrow_as_reader().get_safety_param()
+                    | flags::safety::LONG
+                    | flags::safety::PEDAL_INTERCEPTOR
+                    | profile.safety_profile,
+            );
+        }
+    }
     vehicle_params::finish(
         cp,
         input.settings,

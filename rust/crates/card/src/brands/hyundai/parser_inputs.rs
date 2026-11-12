@@ -14,6 +14,8 @@ pub struct Inputs {
     pub pt: Parser,
     pub cam: Parser,
     pub alt: Option<Parser>,
+    /// Comma Pedal sensor parser (`Bus.party`), only on configured cars.
+    pub pedal: Option<Parser>,
     pub captures: BTreeMap<&'static str, (Channel, &'static str)>,
     /// Per message: the frame timestamp it was built from and its signal map.
     pub(crate) values_cache:
@@ -56,11 +58,23 @@ impl Inputs {
         } else {
             pt.add("EMS21", Some(f64::NAN), false, now)?;
         }
+        let pedal = match super::pedal::configured(&config.candidate, config.flags) {
+            Some(profile) => {
+                // Register the configured OEM CC input at its actual receive rate.
+                pt.add(profile.cruise_ready.0, Some(10.), false, now)?;
+                let dbc = Arc::new(Dbc::load(&path.with_file_name("pedal_interceptor.dbc"))?);
+                let mut parser = Parser::new(dbc, super::pedal::BUS, now);
+                parser.add("GAS_SENSOR", Some(super::pedal::RX_FREQUENCY), false, now)?;
+                Some(parser)
+            }
+            None => None,
+        };
         Ok(Self {
             diagnostics: super::diagnostics::Diagnostics::default(),
             pt,
             cam: Parser::new(dbc, if fd { config.bus.cam } else { 2 }, now),
             alt,
+            pedal,
             captures: BTreeMap::new(),
             values_cache: Default::default(),
         })
@@ -99,6 +113,9 @@ impl Inputs {
             self.diagnostics.seen((alt, Channel::Alt), packets)?;
             alt.update(packets)?;
             self.diagnostics.retain_warnings(alt);
+        }
+        if let Some(pedal) = &mut self.pedal {
+            pedal.update(packets)?;
         }
         Ok(())
     }

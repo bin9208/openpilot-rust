@@ -19,7 +19,32 @@ pub struct Longitudinal {
     pub stopping_accel: f64,
     pub reads: u8,
 }
+/// carrot `is_ray_pedal_control`: the Ray EV Comma Pedal keeps adjustable
+/// speed PID gains instead of Hyundai's fixed longitudinal tuning.
+pub fn ray_pedal_control(config: &Config) -> bool {
+    const REQUIRED: u32 = (1 << 31) | (1 << 29); // CC_ONLY_CAR | PEDAL_INTERCEPTOR
+    config.brand == "hyundai"
+        && config.openpilot_long
+        && config.fingerprint == "KIA_RAY_EV"
+        && config.flags & REQUIRED == REQUIRED
+}
+
 impl Longitudinal {
+    fn refresh_tuning(
+        &mut self,
+        config: &Config,
+        params: &mut impl Parameters,
+    ) -> Result<(), Error> {
+        if config.brand == "hyundai" && !ray_pedal_control(config) {
+            self.pid.gains = Gains::constants(1., 0., 1.);
+        } else if config.long_gains.p.x.len() == 1 && config.long_gains.i.x.len() == 1 {
+            self.pid.gains.p.y = vec![params.float("LongTuningKpV")? * 0.01];
+            self.pid.gains.i.y = vec![params.float("LongTuningKiV")? * 0.001];
+            self.pid.gains.f = params.float("LongTuningKf")? * 0.01;
+        }
+        Ok(())
+    }
+
     pub fn new(config: &Config, params: &mut impl Parameters) -> Result<Self, Error> {
         let mut out = Self {
             state: State::Off,
@@ -30,8 +55,10 @@ impl Longitudinal {
             reads: 0,
         };
         out.refresh_stop(params)?;
-        if config.brand == "hyundai" {
+        if config.brand == "hyundai" && !ray_pedal_control(config) {
             out.pid.gains = Gains::constants(1., 0., 1.);
+        } else if ray_pedal_control(config) {
+            out.refresh_tuning(config, params)?;
         }
         Ok(out)
     }
@@ -92,13 +119,7 @@ impl Longitudinal {
             self.reads = 0;
             self.refresh_stop(params)?;
         } else if self.reads == 10 {
-            if config.brand == "hyundai" {
-                self.pid.gains = Gains::constants(1., 0., 1.);
-            } else if config.long_gains.p.x.len() == 1 && config.long_gains.i.x.len() == 1 {
-                self.pid.gains.p.y = vec![params.float("LongTuningKpV")? * 0.01];
-                self.pid.gains.i.y = vec![params.float("LongTuningKiV")? * 0.001];
-                self.pid.gains.f = params.float("LongTuningKf")? * 0.01;
-            }
+            self.refresh_tuning(config, params)?;
         }
         self.pid.low = limits[0];
         self.pid.high = limits[1];

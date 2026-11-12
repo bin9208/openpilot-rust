@@ -261,6 +261,7 @@ mod tests {
             pt: Parser::new(dbc, 0, 1_000_000_000),
             cam,
             alt: None,
+            pedal: None,
             captures: BTreeMap::new(),
             values_cache: Default::default(),
         }

@@ -176,7 +176,9 @@ impl Application {
             .params
             .lock()
             .map_err(|_| Error::Source("Params lock poisoned".into()))?;
-        let catalog = self.catalog(&params)?.for_brand(&params.vehicle_brand())?;
+        let catalog = self
+            .catalog(&params)?
+            .for_brand(&params.vehicle_brand(), params.ray_pedal_control())?;
         let payload = catalog.payload(&self.config.settings, params.has_params());
         let mut response = Value::object([("ok", Value::Bool(true))]);
         if let Value::Object(items) = payload {
