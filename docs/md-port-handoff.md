@@ -178,6 +178,17 @@ Rust가 원본과 다른 부분(지연에 얼마나 기여하는지는 재지 �
    - [x] B07 점등 표시 배지(HUD)·B1 연결 배지(C3·C4): `d7d4c525f`. 계기판(cluster) 쪽 점등 표시는 B08과 함께
    - [ ] CANable/PEAK USB 출력의 comma 쪽 `blink_protocol.Sender`(jetlink BEGIN/ACK/DATA 0x4030–0x4032, 추론 텔레메트리의 `carrot_blinker`). Jetson 쪽 `blink_can.py`는 Python 그대로. 실주행 중인 폰 jetlink 교환을 건드리므로 따로 신중히
    - [ ] 음성 점등 CAN 출력(`voice_indicator.py`)은 A12와 함께
+   - [x] A05 레이 EV 콤마페달: `97210443c`. card 감지·센서·명령, controlsd 게인, 설정 화면·문서. 기기 확인 없음
+   - [x] A07 테슬라 CAN 신호 정지: `5f547aa5c`. card APP_trafficControl, plannerd 정지선 제약. 기기 확인 없음
+
+#### 2026-11-12 주행 로그 (`0a33373fe`, 경로 `00000cab--44bdd51ec8`)
+
+- jetlink 처리 p50 47 ms / p95 50 ms(이전 63 ms에서 개선). 1–3번 세그먼트 100% 인게이지.
+- 문제: "즉시 수동 조작하세요 / locationd 일시적 오류"가 1번 세그먼트에서 20% 시간 동안 표시.
+  원인 사슬: 폰 처리가 프레임 간격 50 ms를 넘는 프레임(약 7%)에서 conflate 주 카메라가 한 프레임을 건너뜀 →
+  그 프레임의 `cameraOdometry.valid=False`(원본 `fill_pose_msg`와 같은 규칙) → `livePose.inputsOK=False` →
+  `locationdTemporaryError`(soft-disable 경고). 때때로 `liveCalibration` invalid로 `commIssue`까지 번짐.
+  규칙은 원본과 같고, 폰 처리 시간이 프레임 간격에 붙어 있는 것이 원인. 프레임이 끝난 뒤 게시까지 p50 76 ms.
 5. **C 항목의 설정 15개**는 위 기능을 옮기면서 같이 연결한다.
 
 검토 문서의 새 결함:
