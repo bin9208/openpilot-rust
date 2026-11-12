@@ -129,9 +129,21 @@ pub(super) fn cancelled_blinkers(
     control: car_control::Reader<'_>,
     car: car_state::Reader<'_>,
 ) -> Result<Option<Message>, Error> {
-    if !car.get_cruise_cancel_state()
-        || !(control.get_left_blinker() || control.get_right_blinker())
-    {
+    cancelled_voice_blinkers(control, car, true)
+}
+
+/// carrot card.py: a cruise CANCEL latch, or a native voice id no longer
+/// backed by a fresh admitted model request, clears the lamps and the id.
+/// `voice_backed` is that freshness check (always true without an id).
+pub(super) fn cancelled_voice_blinkers(
+    control: car_control::Reader<'_>,
+    car: car_state::Reader<'_>,
+    voice_backed: bool,
+) -> Result<Option<Message>, Error> {
+    let id = !control.get_assistant_lane_signal_id()?.is_empty();
+    let native_cancelled = car.get_cruise_cancel_state()
+        && (control.get_left_blinker() || control.get_right_blinker() || id);
+    if !native_cancelled && !(id && !voice_backed) {
         return Ok(None);
     }
     let mut message = Message::new_default();
@@ -139,6 +151,7 @@ pub(super) fn cancelled_blinkers(
     let mut control = message.get_root::<car_control::Builder>()?;
     control.set_left_blinker(false);
     control.set_right_blinker(false);
+    control.set_assistant_lane_signal_id("");
     Ok(Some(message))
 }
 

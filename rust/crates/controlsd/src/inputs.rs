@@ -51,6 +51,9 @@ pub struct Model {
     pub lane_change: bool,
     pub lane_left: bool,
     pub lane_right: bool,
+    /// meta.assistantLaneSignalId / Route (carrot voice_indicator).
+    pub assistant_id: String,
+    pub assistant_route: String,
     pub desire: Vec<f64>,
     pub orientation_x: Vec<f64>,
     pub orientation_y: Vec<f64>,

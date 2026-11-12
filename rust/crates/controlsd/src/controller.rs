@@ -21,6 +21,8 @@ pub struct Command {
     pub longitudinal: bool,
     pub left: bool,
     pub right: bool,
+    /// `carControl.assistantLaneSignalId` for a native voice indicator.
+    pub assistant_id: String,
     pub accel: f32,
     pub target: f32,
     pub jerk: f32,
@@ -252,12 +254,23 @@ impl Controls {
                 curvature_limited,
             },
         )?;
+        let route = input.model.assistant_route.as_str();
+        let native_voice = route == "native" && !input.model.assistant_id.is_empty() && lateral;
+        let lane_lamps =
+            input.model.lane_change && (matches!(route, "" | "ordinary") || native_voice);
         let mut command = Command {
             enabled: input.selfdrive.enabled && !impact_reboot,
             lateral,
             longitudinal,
-            left: input.model.lane_change && input.model.lane_left,
-            right: input.model.lane_change && input.model.lane_right,
+            // carrot voice_indicator.set_lane_change_blinkers: only ordinary or
+            // admitted native voice maneuvers drive the lane-change lamps.
+            left: lane_lamps && input.model.lane_left,
+            right: lane_lamps && input.model.lane_right,
+            assistant_id: if native_voice {
+                input.model.assistant_id.clone()
+            } else {
+                String::new()
+            },
             accel: accel as f32,
             target: target as f32,
             jerk: jerk as f32,

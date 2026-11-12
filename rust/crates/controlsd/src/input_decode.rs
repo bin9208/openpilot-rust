@@ -97,6 +97,18 @@ pub fn decode(state: &State, now: f64) -> Result<Inputs, Error> {
         lane_change: meta.get_lane_change_state() != Ok(log_capnp::LaneChangeState::Off),
         lane_left: meta.get_lane_change_direction() == Ok(log_capnp::LaneChangeDirection::Left),
         lane_right: meta.get_lane_change_direction() == Ok(log_capnp::LaneChangeDirection::Right),
+        assistant_id: meta
+            .get_assistant_lane_signal_id()
+            .ok()
+            .and_then(|t| t.to_str().ok())
+            .unwrap_or_default()
+            .to_owned(),
+        assistant_route: meta
+            .get_assistant_lane_signal_route()
+            .ok()
+            .and_then(|t| t.to_str().ok())
+            .unwrap_or_default()
+            .to_owned(),
         desire: floats(meta.get_desire_state()?),
         orientation_x: floats(model.get_orientation()?.get_x()?),
         orientation_y: floats(model.get_orientation()?.get_y()?),

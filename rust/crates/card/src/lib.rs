@@ -21,4 +21,5 @@ pub mod state_helpers;
 pub mod toggle;
 pub mod vehicle_params;
 pub mod vin;
+pub mod voice_indicator;
 pub mod xiaoge;

@@ -253,6 +253,7 @@ pub struct Card {
     experimental: bool,
     pub remaining: f64,
     pub diagnostics: Diagnostics,
+    native_voice: Option<crate::voice_indicator::NativeVoiceIndicator>,
 }
 impl Card {
     pub fn new(
@@ -268,6 +269,9 @@ impl Card {
         previous_state.init_root::<car_state::Builder>();
         let mut last_actuators = Message::new_default();
         last_actuators.init_root::<car_control::actuators::Builder>();
+        let native_voice =
+            crate::voice_indicator::native(params.get_root_as_reader::<car_params::Reader>()?)
+                .map(crate::voice_indicator::NativeVoiceIndicator::new);
         Ok(Self {
             params,
             settings,
@@ -291,6 +295,7 @@ impl Card {
             experimental,
             remaining: 0.,
             diagnostics: Diagnostics::default(),
+            native_voice,
         })
     }
 }
