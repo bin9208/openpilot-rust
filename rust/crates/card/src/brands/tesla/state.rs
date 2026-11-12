@@ -67,6 +67,8 @@ pub struct State {
     pub soft_hold: i16,
     /// APP_trafficControl observer, only with TeslaCanTrafficStop.
     pub traffic_control: Option<super::traffic_control::TrafficControl>,
+    /// Driver turn stalk, only with TeslaAutoTurnSignals.
+    pub stalk: Option<super::stalk::Stalk>,
 }
 const MPH_TO_MS: f64 = 1.609344 * (1. / 3.6);
 const TPMS_MAX_AGE_NS: i128 = 10_000_000_000;
@@ -174,6 +176,7 @@ impl State {
             pcm,
             cluster_seen: false,
             traffic_control,
+            stalk: (flags & super::AUTO_TURN_SIGNALS != 0).then(super::stalk::Stalk::default),
             prints: Vec::new(),
             logs: Vec::new(),
             soft_hold: 0,
@@ -266,6 +269,10 @@ impl State {
             for f in &p.frames {
                 if f.address == 0x3c2 && f.bus == 1 {
                     self.observe_speed_wheel(&f.data, p.mono_time);
+                } else if f.address == super::stalk::ADDRESS {
+                    if let Some(stalk) = &mut self.stalk {
+                        stalk.observe(&f.data, f.bus, p.mono_time);
+                    }
                 } else if f.address == super::traffic_control::ADDRESS {
                     if let Some(traffic) = &mut self.traffic_control {
                         traffic.observe(&f.data, f.bus, p.mono_time, now)?;
@@ -598,6 +605,13 @@ impl State {
             "rightBlinkerBlinking",
             now,
         )?));
+        if let Some(stalk) = &mut self.stalk {
+            let out = stalk.update(now);
+            ret.set_turn_signal_driver_valid(out.valid);
+            ret.set_turn_signal_driver_direction(out.direction);
+            ret.set_left_blinker_stalk_count(out.counts[0]);
+            ret.set_right_blinker_stalk_count(out.counts[1]);
+        }
         ret.set_generic_toggle(self.party.signal_lazy("UI_warning", "highBeam", now)? == 1.);
         ret.set_seatbelt_unlatched(
             self.party.signal_lazy("UI_warning", "buckleStatus", now)? != 1.,

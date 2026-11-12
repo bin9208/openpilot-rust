@@ -76,6 +76,12 @@ pub fn parameters(input: ParamsInput<'_>) -> Result<Message, Error> {
     {
         flags |= super::CAN_TRAFFIC_STOP;
     }
+    if matches!(input.candidate, "TESLA_MODEL_3" | "TESLA_MODEL_Y")
+        && input.settings.get_bool("TeslaAutoTurnSignals")?
+    {
+        flags |= super::AUTO_TURN_SIGNALS;
+        safety |= 8; // TeslaSafetyFlags.AUTO_TURN_SIGNALS
+    }
     cp.set_flags(flags);
     cp.set_dashcam_only(input.candidate == "TESLA_MODEL_X");
     let mut config = cp.reborrow().init_safety_configs(1).get(0);
