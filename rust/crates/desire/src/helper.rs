@@ -84,6 +84,29 @@ pub struct DesireHelper {
     pub auto_turn_signal: u8,
     #[serde(skip)]
     pub auto_turn_signal_lane_change: bool,
+    /// Tesla automatic turn signals (carrot `tesla_auto_signals`).
+    #[serde(skip)]
+    pub tesla: Tesla,
+}
+
+/// The Tesla automatic-signal state of carrot's DesireHelper.
+#[derive(Clone, Debug, Default)]
+pub struct Tesla {
+    pub enabled: bool,
+    /// modelV2.meta.autoTurnSignalDirection / RequestId.
+    pub signal_direction: u8,
+    pub signal_request_id: u64,
+    counter: u64,
+    lane_completed: bool,
+    lane_direction: u8,
+    app_direction: u8,
+    app_wait: f64,
+    app_deadline: f64,
+    atc_type: String,
+    driver_counts: Option<[u8; 2]>,
+    manual_direction: u8,
+    manual_grace: f64,
+    journey: crate::indicator::tesla_turn::TeslaTurnJourney,
 }
 
 impl Default for DesireHelper {
@@ -139,6 +162,7 @@ impl Default for DesireHelper {
             indicator_journal_time: 0.,
             auto_turn_signal: 0,
             auto_turn_signal_lane_change: false,
+            tesla: Tesla::default(),
         }
     }
 }
@@ -156,6 +180,220 @@ impl DesireHelper {
             ),
             ..Self::default()
         }
+    }
+
+    /// carrot `DesireHelper(tesla_auto_signals=...)`; `counter_ns` seeds the
+    /// request id as `time.monotonic_ns()` does.
+    pub fn with_tesla(mut self, enabled: bool, counter_ns: u64) -> Self {
+        self.tesla.enabled = enabled;
+        self.tesla.counter = counter_ns;
+        self
+    }
+
+    /// carrot `_update_driver_blinker` Tesla branch: the stalk, not the lamp.
+    fn tesla_driver(&mut self, car: &crate::types::Car, lamp: u8) -> u8 {
+        let t = &mut self.tesla;
+        let driver = car.turn_signal_driver_direction;
+        let counts = car.stalk_counts;
+        let last = t.driver_counts.replace(counts);
+        let (left, right) = last.map_or((false, false), |l| (counts[0] != l[0], counts[1] != l[1]));
+        let press = if left != right {
+            if left {
+                1
+            } else {
+                2
+            }
+        } else {
+            0
+        };
+        if lamp == 3 {
+            t.manual_direction = 0;
+            t.manual_grace = 0.;
+            lamp
+        } else if !car.turn_signal_driver_valid {
+            t.manual_direction = 0;
+            t.manual_grace = 0.;
+            0
+        } else if matches!(driver, 1 | 2) || press != 0 {
+            t.manual_direction = if driver != 0 { driver } else { press };
+            t.manual_grace = 1.;
+            t.manual_direction
+        } else if lamp == t.manual_direction && lamp != 0 {
+            t.manual_grace = 0.5;
+            lamp
+        } else if lamp != 3 && t.manual_grace > DT {
+            t.manual_grace -= DT;
+            0
+        } else {
+            t.manual_direction = 0;
+            t.manual_grace = 0.;
+            0
+        }
+    }
+
+    /// carrot `_update_auto_app_request`.
+    fn tesla_app_request(
+        &mut self,
+        input: &Input,
+        remote: Option<&str>,
+        driver: u8,
+        stalk_press: u8,
+    ) {
+        let (car, nav) = (&input.car, &input.navigation);
+        let new_command =
+            nav.command_index != self.carrot_cmd_index_last && nav.command == "LANECHANGE";
+        if new_command {
+            // Consume even rejected commands: recovery must never replay an old action.
+            self.carrot_cmd_index_last = nav.command_index;
+        }
+        let requested = match remote {
+            Some("laneLeft") => 1,
+            Some("laneRight") => 2,
+            _ if new_command && nav.argument == "LEFT" => 1,
+            _ if new_command && nav.argument == "RIGHT" => 2,
+            _ => 0,
+        };
+        let waiting = matches!(self.lane_change_state, State::Off | State::PreLaneChange);
+        let now = input.indicator.boot;
+        let permitted = input.lateral_active
+            && car.can_valid
+            && !car.trailer_connected
+            && !car.vehicle_sensors_invalid
+            && car.drive
+            && car.turn_signal_driver_valid
+            && driver == 0
+            && stalk_press == 0
+            && self.tesla.manual_direction == 0
+            && !(car.left_blinker && car.right_blinker)
+            && (!waiting || car.v_ego >= MIN_SPEED)
+            && self.desire_disable_count == 0;
+        if self.tesla.app_direction != 0 && waiting {
+            self.tesla.app_wait += DT;
+        }
+        let expired = waiting
+            && self.tesla.app_direction != 0
+            && (self.tesla.app_wait >= 10. || now >= self.tesla.app_deadline);
+        if !permitted || expired {
+            if self.tesla.app_direction != 0 && driver == 0 {
+                self.lane_change_state = State::Off;
+                self.lane_change_direction = 0;
+            }
+            self.tesla.app_direction = 0;
+        }
+        if requested != 0
+            && permitted
+            && self.tesla.app_direction == 0
+            && self.lane_change_state == State::Off
+            && self.tesla.signal_request_id == 0
+        {
+            self.tesla.app_direction = requested;
+            self.tesla.app_wait = 0.;
+            self.tesla.app_deadline = now + 10.;
+        }
+    }
+
+    /// carrot `_update_auto_signal`.
+    fn tesla_auto_signal(
+        &mut self,
+        input: &Input,
+        atc_enabled: bool,
+        atc: u8,
+        driver: u8,
+        previous: State,
+    ) {
+        let car = &input.car;
+        let nav = &input.navigation;
+        if self.atc_type != self.tesla.atc_type {
+            self.tesla.lane_completed = false;
+        }
+        self.tesla.atc_type.clone_from(&self.atc_type);
+        if previous == State::Finishing && self.lane_change_state != previous {
+            self.tesla.lane_completed = true;
+        }
+        if self.lane_change_state == State::Starting && previous != self.lane_change_state {
+            self.tesla.lane_completed = false;
+        }
+        if (self.carrot_lane_change_count > 0 || self.tesla.app_direction != 0)
+            && previous == State::Off
+            && self.lane_change_state == State::PreLaneChange
+        {
+            self.tesla.lane_completed = false;
+        }
+        let common = !car.cruise_cancel_state
+            && car.can_valid
+            && !car.trailer_connected
+            && !car.vehicle_sensors_invalid
+            && car.drive
+            && car.turn_signal_driver_valid
+            && driver == 0
+            && self.tesla.manual_direction == 0
+            && !(car.left_blinker && car.right_blinker)
+            && self.desire_disable_count == 0;
+        let stopped_hold = self.tesla.journey.direction != 0
+            && input.indicator.turn_hold_allowed
+            && car.standstill
+            && car.v_ego.is_finite()
+            && car.v_ego.abs() < 0.1
+            && self.tesla.signal_request_id != 0
+            && car.auto_turn_signal_ready_request_id == self.tesla.signal_request_id;
+        let turn_desire = if atc_enabled {
+            match self.desire {
+                1 => 1,
+                2 => 2,
+                _ => 0,
+            }
+        } else {
+            0
+        };
+        let mut direction = self
+            .tesla
+            .journey
+            .update(crate::indicator::tesla_turn::JourneyInput {
+                now: input.indicator.now,
+                car,
+                pose: input.indicator.turn_pose,
+                nav: &self.atc_type,
+                distance: Some(nav.x_dist_to_turn),
+                desire: turn_desire,
+                permitted: common && (input.lateral_active || stopped_hold),
+                lateral_active: input.lateral_active,
+            });
+        let permitted = common && input.lateral_active;
+        if !permitted || self.lane_change_state == State::Off || self.tesla.lane_completed {
+            if !permitted && self.tesla.lane_direction != 0 {
+                self.tesla.lane_completed = true;
+            }
+            self.tesla.lane_direction = 0;
+        } else if atc_enabled
+            && self.tesla.lane_direction == 0
+            && (self.lane_change_state == State::PreLaneChange || previous == State::PreLaneChange)
+        {
+            // The FSM owns the maneuver, including a bounded App wait.
+            self.tesla.lane_direction = if atc == 1 { 1 } else { 2 };
+        }
+        if permitted && direction == 0 && !self.tesla.journey.consumed {
+            if self.tesla.lane_direction != 0 {
+                direction = self.tesla.lane_direction;
+            } else if !self.tesla.lane_completed
+                && self.atc_active != 2
+                && !self.blinker_ignore
+                && matches!(self.atc_type.as_str(), "atc left" | "atc right")
+                && matches!(nav.x_turn_info, 1 | 2)
+                && 0. < nav.x_dist_to_turn
+                && nav.x_dist_to_turn <= (car.v_ego * 8. + 20.).max(40.).min(250.)
+            {
+                direction = if nav.x_turn_info == 1 { 1 } else { 2 };
+            }
+        }
+        if direction != 0 && direction != self.tesla.signal_direction {
+            self.tesla.counter += 1;
+        }
+        self.tesla.signal_direction = direction;
+        self.tesla.signal_request_id = if direction != 0 {
+            self.tesla.counter
+        } else {
+            0
+        };
     }
 
     fn update_indicators(&mut self, input: &Input) {
@@ -261,10 +499,27 @@ impl DesireHelper {
     }
     /// Side of a lever press since the last update. The lamp cannot show a press while
     /// already flashing; the counters can, and never miss a press between updates.
-    fn stalk_press(&mut self, counts: [u8; 2]) -> u8 {
+    fn stalk_press(&mut self, car: &crate::types::Car) -> u8 {
+        let counts = car.stalk_counts;
         let Some(last) = self.stalk_counts.replace(counts) else {
             return 0;
         };
+        if self.tesla.enabled {
+            let (left, right) = (counts[0] != last[0], counts[1] != last[1]);
+            if (car.left_blinker && car.right_blinker)
+                || !car.turn_signal_driver_valid
+                || left == right
+            {
+                return 0;
+            }
+            let direction = if left { 1 } else { 2 };
+            let driver = car.turn_signal_driver_direction;
+            return if driver == 0 || driver == direction {
+                direction
+            } else {
+                0
+            };
+        }
         if counts[0] != last[0] {
             1
         } else if counts[1] != last[1] {
@@ -281,14 +536,19 @@ impl DesireHelper {
         remote: Option<&str>,
     ) -> (u8, bool) {
         let kind = navigation.atc_type.as_str();
+        let tesla = self.tesla.enabled;
+        let app = self.tesla.app_direction;
         let mut blinker = 0;
-        if self.carrot_lane_change_count > 0 {
+        if tesla && app != 0 {
+            blinker = app;
+        } else if self.carrot_lane_change_count > 0 {
             blinker = self.carrot_blinker_state;
-        } else if matches!(remote, Some("laneLeft" | "laneRight")) {
+        } else if !tesla && matches!(remote, Some("laneLeft" | "laneRight")) {
             self.carrot_lane_change_count = 4;
             self.carrot_blinker_state = if remote == Some("laneLeft") { 1 } else { 2 };
             blinker = self.carrot_blinker_state;
-        } else if navigation.command_index != self.carrot_cmd_index_last
+        } else if !tesla
+            && navigation.command_index != self.carrot_cmd_index_last
             && navigation.command == "LANECHANGE"
         {
             self.carrot_cmd_index_last = navigation.command_index;
@@ -318,6 +578,11 @@ impl DesireHelper {
             self.atc_active = 2;
         }
         let mut enabled = matches!(blinker, 1 | 2);
+        if tesla && app != 0 && !matches!(self.lane_change_state, State::Off | State::PreLaneChange)
+        {
+            // The FSM now owns execution: keep the side for torque cancel only.
+            enabled = false;
+        }
         if driver == 0 {
             self.blinker_ignore = false;
         }
@@ -325,7 +590,7 @@ impl DesireHelper {
             blinker = 0;
             enabled = false;
         }
-        if self.atc_type != kind {
+        if self.atc_type != kind && !(tesla && app != 0) {
             enabled = false;
         }
         self.atc_type.clone_from(&navigation.atc_type);
@@ -404,14 +669,19 @@ impl DesireHelper {
         } else {
             self.turn_disable_count = self.turn_disable_count.saturating_sub(1);
         }
-        let driver = self
+        let lamp = self
             .boundary_indicator
             .filter_lamp(u8::from(car.left_blinker) + 2 * u8::from(car.right_blinker));
+        let driver = if self.tesla.enabled {
+            self.tesla_driver(car, lamp)
+        } else {
+            lamp
+        };
         let mut driver_changed = driver != self.driver_blinker_state;
         self.driver_blinker_state = driver;
         let mut driver_enabled = matches!(driver, 1 | 2) && self.config.need_torque >= 0;
         let previous_state = self.lane_change_state;
-        let physical_stalk_press = self.stalk_press(car.stalk_counts);
+        let physical_stalk_press = self.stalk_press(car);
         let stalk_press = self.boundary_indicator.filter_lamp(physical_stalk_press);
         let lever = car.blinker_lever;
         let forced_turn = self.lever_forced_turn.update(lever, car.blinker_lamp);
@@ -429,6 +699,9 @@ impl DesireHelper {
         }
         let mut lever_decided_turn = false;
         let remote = command(input.lateral_active && car.can_valid && !below_speed && !trailer);
+        if self.tesla.enabled {
+            self.tesla_app_request(input, remote.as_deref(), driver, stalk_press);
+        }
         let (atc, atc_enabled) = self.atc_blinker(&input.navigation, driver, remote.as_deref());
         let enabled = driver_enabled || atc_enabled;
         let blinker = if driver_enabled { driver } else { atc };
@@ -438,6 +711,7 @@ impl DesireHelper {
             _ => None,
         };
         let atc_requested = atc_enabled
+            && self.tesla.app_direction == 0
             && matches!(
                 self.atc_type.as_str(),
                 "fork left" | "fork right" | "atc left" | "atc right"
@@ -450,7 +724,9 @@ impl DesireHelper {
             atc_only && side.is_some_and(|side| !matches!(side.lane_line_info_mod, 0 | 5));
         let mut auto_trigger = false;
         if let Some(side) = side.filter(|_| enabled && !trailer) {
-            auto_trigger = if self.carrot_lane_change_count > 0 {
+            auto_trigger = if self.carrot_lane_change_count > 0
+                || (self.tesla.enabled && self.tesla.app_direction != 0)
+            {
                 side.lane_change_available
             } else {
                 self.auto_lane_change_enable
@@ -493,6 +769,9 @@ impl DesireHelper {
                 ),
                 None => Maneuver::None,
             };
+            if self.tesla.enabled && self.tesla.app_direction != 0 {
+                new_type = Maneuver::LaneChange;
+            }
             // BlinkerLatchedTurn: the driver's lever replaces the speed/lane-line guess.
             let (lever_type, lever_undecided) = if driver_enabled && side.is_some() {
                 lever_maneuver(lever, car.v_ego, self.config.latched_turn, forced_turn)
@@ -599,7 +878,14 @@ impl DesireHelper {
                                                 || block_released)))
                                         && (side.lane_change_available || line_release)
                                 };
-                                if gate && start && !lever_undecided {
+                                // Only automatic Tesla requests wait for their own
+                                // echoed, physically confirmed lamp session.
+                                let signal_ready = !self.tesla.enabled
+                                    || driver_enabled
+                                    || (self.tesla.signal_request_id != 0
+                                        && car.auto_turn_signal_ready_request_id
+                                            == self.tesla.signal_request_id);
+                                if gate && start && !lever_undecided && signal_ready {
                                     self.lane_change_state = State::Starting;
                                 }
                             }
@@ -694,6 +980,12 @@ impl DesireHelper {
         } else {
             0
         };
+        if self.tesla.enabled {
+            self.tesla_auto_signal(input, atc_enabled, atc, driver, previous_state);
+            if self.lane_change_state == State::Off || self.tesla.lane_completed {
+                self.tesla.app_direction = 0;
+            }
+        }
         if matches!(self.lane_change_state, State::Off | State::Starting) {
             self.keep_pulse_timer = 0.0;
         } else if self.lane_change_state == State::PreLaneChange {

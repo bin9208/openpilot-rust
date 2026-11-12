@@ -6,5 +6,6 @@ pub mod echo;
 pub mod lane;
 pub mod manual_turn;
 pub mod observer;
+pub mod tesla_turn;
 #[cfg(test)]
 mod tests;

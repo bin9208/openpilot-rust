@@ -67,6 +67,12 @@ pub struct Car {
     /// OEM lane type observation time (ns); zero means unknown.
     pub lane_line_info_mono_time: u64,
     pub cruise_cancel_state: bool,
+    /// Tesla automatic turn signals.
+    pub turn_signal_driver_valid: bool,
+    pub turn_signal_driver_direction: u8,
+    pub auto_turn_signal_ready_request_id: u64,
+    pub vehicle_sensors_invalid: bool,
+    pub standstill: bool,
 }
 
 impl Default for Car {
@@ -93,6 +99,11 @@ impl Default for Car {
             steer_fault_permanent: false,
             lane_line_info_mono_time: 0,
             cruise_cancel_state: false,
+            turn_signal_driver_valid: false,
+            turn_signal_driver_direction: 0,
+            auto_turn_signal_ready_request_id: 0,
+            vehicle_sensors_invalid: false,
+            standstill: false,
         }
     }
 }
@@ -177,6 +188,8 @@ pub struct Navigation {
     pub command_index: i64,
     pub command: String,
     pub argument: String,
+    pub x_turn_info: i32,
+    pub x_dist_to_turn: f64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -214,6 +227,12 @@ pub struct Indicator {
     pub config: Option<IndicatorConfig>,
     /// `valid` plus fresh radarState: voice-owned lamp masks expire on it.
     pub assistant_valid: bool,
+    /// Tesla `turn_signal_context`: a stopped turn may keep its lamp.
+    pub turn_hold_allowed: bool,
+    /// Tesla `turn_signal_context` heading `(logMonoTime ns, NED z)`.
+    pub turn_pose: Option<(u64, f64)>,
+    /// `CLOCK_BOOTTIME` seconds for App request deadlines.
+    pub boot: f64,
 }
 
 impl Default for Input {

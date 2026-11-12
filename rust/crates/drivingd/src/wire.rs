@@ -78,6 +78,11 @@ pub fn desire_input(
             steer_fault_permanent: car.get_steer_fault_permanent(),
             lane_line_info_mono_time: car.get_lane_line_info_mono_time(),
             cruise_cancel_state: car.get_cruise_cancel_state(),
+            turn_signal_driver_valid: car.get_turn_signal_driver_valid(),
+            turn_signal_driver_direction: car.get_turn_signal_driver_direction(),
+            auto_turn_signal_ready_request_id: car.get_auto_turn_signal_ready_request_id(),
+            vehicle_sensors_invalid: car.get_vehicle_sensors_invalid(),
+            standstill: car.get_standstill(),
         },
         model: Model {
             lane_lines: lanes
@@ -103,6 +108,8 @@ pub fn desire_input(
             command_index: navigation.get_carrot_cmd_index().into(),
             command: navigation.get_carrot_cmd()?.to_str()?.to_owned(),
             argument: navigation.get_carrot_arg()?.to_str()?.to_owned(),
+            x_turn_info: navigation.get_x_turn_info(),
+            x_dist_to_turn: f64::from(navigation.get_x_dist_to_turn()),
         },
         leads: [lead(radar.get_lead_left()?), lead(radar.get_lead_right()?)],
         objects: [
@@ -147,6 +154,8 @@ pub fn apply_desire(
     let nanos = |seconds: f64| (seconds * 1e9) as u64;
     meta.set_auto_turn_signal(direction(helper.auto_turn_signal)?);
     meta.set_auto_turn_signal_lane_change(helper.auto_turn_signal_lane_change);
+    meta.set_auto_turn_signal_direction(direction(helper.tesla.signal_direction)?);
+    meta.set_auto_turn_signal_request_id(helper.tesla.signal_request_id);
     let boundary = &helper.boundary_indicator;
     meta.set_manual_lane_indicator(direction(boundary.request_direction)?);
     meta.set_manual_lane_indicator_mono_time(nanos(boundary.request_time));

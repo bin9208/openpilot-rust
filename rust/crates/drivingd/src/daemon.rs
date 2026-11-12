@@ -152,14 +152,21 @@ pub fn run(
         .to_str()?
         .to_owned();
     let supported = indicator::supported(&fingerprint);
-    let mut publication = Publication::new(DesireHelper::new(
-        supported,
-        if supported {
-            indicator::startup_journal()
-        } else {
-            None
-        },
-    ));
+    let tesla_signals = {
+        let cp = car_params.get_root::<car_params::Reader>()?;
+        cp.get_brand()?.to_str()? == "tesla" && cp.get_flags() & 32 != 0 // TeslaFlags.AUTO_TURN_SIGNALS
+    };
+    let mut publication = Publication::new(
+        DesireHelper::new(
+            supported,
+            if supported {
+                indicator::startup_journal()
+            } else {
+                None
+            },
+        )
+        .with_tesla(tesla_signals, (process::monotonic() * 1e9) as u64),
+    );
     let mut commands = CommandReader::new(
         Path::new("/dev/shm/carrot-bluetooth"),
         "lane",

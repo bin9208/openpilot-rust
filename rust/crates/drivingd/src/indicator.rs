@@ -87,6 +87,52 @@ fn yaw_rate(state: &State, now: f64) -> Result<Option<f64>, Error> {
     .then(|| f64::from(angular.get_z())))
 }
 
+/// carrot `turn_signal_context` (Tesla only): whether a stopped turn may
+/// keep its lamp, and the fresh heading `(logMonoTime ns, NED z)`.
+fn turn_signal_context(
+    state: &State,
+    car: openpilot_cereal::car_capnp::car_state::Reader<'_>,
+    now: f64,
+    boot: u64,
+    always_lateral: bool,
+) -> Result<(bool, Option<(u64, f64)>), Error> {
+    let heading = if fresh(state, "livePose", now, 0.35)? {
+        let reader = state.topic("livePose")?.event()?;
+        let stamp = reader.get_log_mono_time();
+        match reader.which()? {
+            event::LivePose(pose) => {
+                let pose = pose?;
+                let o = pose.get_orientation_n_e_d()?;
+                let z = f64::from(o.get_z());
+                (0 < stamp
+                    && stamp <= boot
+                    && boot - stamp <= 350_000_000
+                    && pose.get_inputs_o_k()
+                    && pose.get_sensors_o_k()
+                    && pose.get_posenet_o_k()
+                    && o.get_valid()
+                    && z.is_finite())
+                .then_some((stamp, z))
+            }
+            _ => None,
+        }
+    } else {
+        None
+    };
+    let active = match state.topic("selfdriveState")?.event()?.which()? {
+        event::SelfdriveState(s) => s?.get_active(),
+        _ => false,
+    };
+    let allowed = heading.is_some()
+        && fresh(state, "selfdriveState", now, 0.35)?
+        && fresh(state, "carControl", now, 0.35)?
+        && car.get_lat_enabled()
+        && (active || always_lateral)
+        && !car.get_steer_fault_temporary()
+        && !car.get_steer_fault_permanent();
+    Ok((allowed, heading))
+}
+
 /// Observer inputs for the next model frame. `valid` here covers carState
 /// and carControl freshness; the caller joins it with modelV2 validity.
 pub fn inputs(
@@ -97,6 +143,24 @@ pub fn inputs(
     now: f64,
 ) -> Result<Indicator, Error> {
     let valid = fresh(state, "carState", now, 0.35)? && fresh(state, "carControl", now, 0.35)?;
+    let boot = boottime_ns();
+    let (turn_hold_allowed, turn_pose) = if helper.tesla.enabled {
+        let car = match state.topic("carState")?.event()?.which()? {
+            event::CarState(car) => Some(car?),
+            _ => None,
+        };
+        match car {
+            Some(car) => {
+                let always = !control.get_lat_active()
+                    && params.get("AlwaysLateral")?.is_some_and(|v| v == b"1");
+                let (allowed, pose) = turn_signal_context(state, car, now, boot, always)?;
+                (allowed && valid, pose)
+            }
+            None => (false, None),
+        }
+    } else {
+        (false, None)
+    };
     // The helper increments its frame before reading these.
     let frame = helper.frame.wrapping_add(1);
     let periodic = helper.indicator_supported && (frame == 1 || frame.is_multiple_of(20));
@@ -117,5 +181,8 @@ pub fn inputs(
             None
         },
         assistant_valid: valid && fresh(state, "radarState", now, 0.35)?,
+        turn_hold_allowed,
+        turn_pose,
+        boot: boot as f64 / 1e9,
     })
 }
