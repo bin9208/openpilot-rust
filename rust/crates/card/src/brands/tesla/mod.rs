@@ -6,6 +6,7 @@ pub mod stalk;
 pub mod state;
 mod steering;
 pub mod traffic_control;
+pub mod turn_signals;
 pub use parameters::{parameters, ParamsInput};
 pub use runtime::{Setup, Tesla};
 
