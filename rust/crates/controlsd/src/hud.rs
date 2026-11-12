@@ -16,6 +16,15 @@ pub(crate) fn write(
     speed: f64,
 ) -> Result<(), Error> {
     hud.set_active_carrot(narrow(input.carrot.active)?);
+    let now = {
+        let t = rustix::time::clock_gettime(rustix::time::ClockId::Monotonic);
+        t.tv_sec as f64 + t.tv_nsec as f64 * 1e-9
+    };
+    hud.set_physical_blinker_hold(
+        controls
+            .physical_hold
+            .read(input.car.can_valid, now, params)?,
+    );
     hud.set_atc_distance(input.carrot.turn_distance as f32);
     if controls.config.meb() {
         navigation(controls, input, params, hud.reborrow())?;
@@ -48,6 +57,7 @@ pub(crate) fn write(
             .map_err(|_| Error::Contract("HUD distance bars out of range"))?,
     );
     hud.set_visual_alert(input.selfdrive.visual_alert.try_into()?);
+    hud.set_driver_monitoring_alert(input.driver_monitoring_alert);
     let lead = &input.radar.lead;
     hud.set_lead_distance(if lead.status {
         lead.distance as f32
@@ -61,6 +71,28 @@ pub(crate) fn write(
     });
     hud.set_lead_radar(i16::from(lead.radar));
     hud.set_lead_d_path(lead.path as f32);
+    // A low-speed signal-stop CAN object, never a radar/planner observation.
+    const STOP_OBJECT_SCOPE: u32 = (1 << 13) | (1 << 3); // HyundaiFlags CANFD | CAMERA_SCC
+    hud.set_signal_stop_object(
+        input.stop_object_inputs
+            && controls.config.brand == "hyundai"
+            && controls.config.flags & STOP_OBJECT_SCOPE == STOP_OBJECT_SCOPE
+            && controls.config.openpilot_long
+            && command.enabled
+            && command.longitudinal
+            && input.car.can_valid
+            && !input.car.can_timeout
+            && input.car.drive
+            && !(input.car.gas
+                || input.car.brake
+                || input.car.parking_brake
+                || input.car.brake_hold)
+            && input.longitudinal.stop
+            && matches!(input.longitudinal.x_state, 3 | 5)
+            && !input.longitudinal.has_lead
+            && !lead.status
+            && !input.radar.lead_two,
+    );
     let desire = if input.model.desire.len() > 4 {
         (1..5).find(|i| input.model.desire[*i] > 0.1).unwrap_or(0)
     } else {

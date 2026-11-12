@@ -110,6 +110,7 @@ impl Application {
             Err(error) => (None, Some(error.to_string())),
         };
         let web_navi = crate::web_navi::Service::start(params.native_params().cloned()).ok();
+        crate::egpu_library::start_maintenance(&config.repository, params.native_params().cloned());
         let mut application = Self {
             terminal: crate::terminal::Config::original()
                 .and_then(crate::terminal::Service::start)
@@ -176,7 +177,9 @@ impl Application {
             .params
             .lock()
             .map_err(|_| Error::Source("Params lock poisoned".into()))?;
-        let catalog = self.catalog(&params)?.for_brand(&params.vehicle_brand())?;
+        let catalog = self
+            .catalog(&params)?
+            .for_brand(&params.vehicle_brand(), params.ray_pedal_control())?;
         let payload = catalog.payload(&self.config.settings, params.has_params());
         let mut response = Value::object([("ok", Value::Bool(true))]);
         if let Value::Object(items) = payload {

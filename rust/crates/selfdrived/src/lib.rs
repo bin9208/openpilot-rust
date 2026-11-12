@@ -8,5 +8,6 @@ pub mod helpers;
 pub mod impact_detector;
 pub mod runtime;
 pub mod state;
+pub mod vehicle_faults;
 
 pub mod radar_only_warning;

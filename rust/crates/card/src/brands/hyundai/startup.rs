@@ -10,7 +10,8 @@ pub fn init(state: &mut State, io: &mut impl StartupIo) -> Result<(), Error> {
     let config = &state.config;
     let bosch_passive = config.ext_flags & f::ext::BOSCH_RADAR != 0
         && setting_int(&state.settings, "EnableRadarTracks")? > 0;
-    if config.longitudinal && config.flags & f::CAMERA_SCC == 0 && !bosch_passive {
+    let pedal = super::pedal::configured(&config.candidate, config.flags).is_some();
+    if config.longitudinal && config.flags & f::CAMERA_SCC == 0 && !pedal && !bosch_passive {
         let target = if config.flags & f::HDA2 != 0 {
             EcuAddress(0x730, None, config.bus.ecan)
         } else {
@@ -28,6 +29,7 @@ pub fn init(state: &mut State, io: &mut impl StartupIo) -> Result<(), Error> {
     }
     if setting_int(&state.settings, "EnableRadarTracks")? > 0
         && config.flags & f::CANFD == 0
+        && !pedal
         && !bosch_passive
     {
         let result = enable_tracks(

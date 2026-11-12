@@ -34,6 +34,10 @@ pub fn decode(state: &State, now: f64) -> Result<Inputs, Error> {
         steer_torque: f64::from(car.get_steering_torque()),
         steering_pressed: car.get_steering_pressed(),
         can_valid: car.get_can_valid(),
+        can_timeout: car.get_can_timeout(),
+        drive: matches!(car.get_gear_shifter(), Ok(GearShifter::Drive)),
+        parking_brake: car.get_parking_brake(),
+        brake_hold: car.get_brake_hold_active(),
         driving_gear: !matches!(
             car.get_gear_shifter(),
             Ok(GearShifter::Neutral
@@ -57,6 +61,7 @@ pub fn decode(state: &State, now: f64) -> Result<Inputs, Error> {
         steer_curvature: f64::from(car.get_steering_curvature()),
     };
     let live = service!(state, "liveParameters", LiveParameters);
+    let center_to_front_ratio = f64::from(live.get_center_to_front_ratio());
     let live = LiveParameters {
         stiffness: f64::from(live.get_stiffness_factor()),
         ratio: f64::from(live.get_steer_ratio()),
@@ -92,6 +97,18 @@ pub fn decode(state: &State, now: f64) -> Result<Inputs, Error> {
         lane_change: meta.get_lane_change_state() != Ok(log_capnp::LaneChangeState::Off),
         lane_left: meta.get_lane_change_direction() == Ok(log_capnp::LaneChangeDirection::Left),
         lane_right: meta.get_lane_change_direction() == Ok(log_capnp::LaneChangeDirection::Right),
+        assistant_id: meta
+            .get_assistant_lane_signal_id()
+            .ok()
+            .and_then(|t| t.to_str().ok())
+            .unwrap_or_default()
+            .to_owned(),
+        assistant_route: meta
+            .get_assistant_lane_signal_route()
+            .ok()
+            .and_then(|t| t.to_str().ok())
+            .unwrap_or_default()
+            .to_owned(),
         desire: floats(meta.get_desire_state()?),
         orientation_x: floats(model.get_orientation()?.get_x()?),
         orientation_y: floats(model.get_orientation()?.get_y()?),
@@ -175,6 +192,14 @@ pub fn decode(state: &State, now: f64) -> Result<Inputs, Error> {
         override_long: service!(state, "onroadEvents", OnroadEvents)
             .iter()
             .any(|event| event.get_override_longitudinal()),
+        vehicle_fault: service!(state, "onroadEvents", OnroadEvents)
+            .iter()
+            .any(|event| {
+                matches!(
+                    event.get_name(),
+                    Ok(log_capnp::onroad_event::EventName::PandaCanFault)
+                )
+            }),
         monitoring_disabled: service!(state, "driverMonitoringState", DriverMonitoringState)
             .get_dm2_disabled(),
         distracted: service!(state, "driverMonitoringState", DriverMonitoringState)
@@ -184,6 +209,28 @@ pub fn decode(state: &State, now: f64) -> Result<Inputs, Error> {
         torque_checks: state.all_checks(&["liveTorqueParameters"])?,
         model_checks: state.all_checks(&["modelV2"])?,
         carrot_fresh,
+        // Only export a current, enabled DM warning (including AlwaysOnDM).
+        driver_monitoring_alert: {
+            let dm = service!(state, "driverMonitoringState", DriverMonitoringState);
+            if !state.all_checks(&["driverMonitoringState"])? || dm.get_dm2_disabled() {
+                0
+            } else {
+                match dm.get_alert_level() {
+                    Ok(log_capnp::driver_monitoring_state::AlertLevel::One) => 1,
+                    Ok(log_capnp::driver_monitoring_state::AlertLevel::Two) => 2,
+                    Ok(log_capnp::driver_monitoring_state::AlertLevel::Three) => 3,
+                    _ => 0,
+                }
+            }
+        },
+        center_to_front_ratio,
+        stop_object_inputs: state.all_checks(&["longitudinalPlan", "radarState"])?
+            && (0. ..=0.2).contains(
+                &((state.frame() - state.topic("longitudinalPlan")?.receive_frame) as f64 * 0.01),
+            )
+            && (0. ..=0.2).contains(
+                &((state.frame() - state.topic("radarState")?.receive_frame) as f64 * 0.01),
+            ),
         frame: state.frame(),
         plan_age: (state.frame() - state.topic("longitudinalPlan")?.receive_frame) as f64 * 0.01,
         long_time: state.topic("longitudinalPlan")?.log_mono_time,

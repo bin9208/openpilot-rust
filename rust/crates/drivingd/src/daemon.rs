@@ -1,10 +1,10 @@
 use crate::{process, Options};
 use openpilot_cereal::car_capnp::car_params;
-use openpilot_desire::command::CommandReader;
+use openpilot_desire::{command::CommandReader, helper::DesireHelper};
 use openpilot_driving_modeld::{
     bus::{self, Inputs},
     diagnostics::{thread_cpu, FrameTiming},
-    jetlink, parameters,
+    indicator, jetlink, parameters,
     publication::{Output, Publication, Sources},
     state::State,
     usb_selection, Error,
@@ -22,7 +22,7 @@ use openpilot_messaging::{
 use openpilot_model_runtime::catalog::Catalog;
 use openpilot_modeld::{
     calibration::DrivingCalibration,
-    camera::{receive_pair, CameraSource},
+    camera::{receive_pair_traced, CameraSource},
     inputs::DropTracker,
     model_wire::ModelTiming,
 };
@@ -146,7 +146,35 @@ pub fn run(
     );
     let mut calibration = DrivingCalibration::default();
     let mut drops = DropTracker::default();
-    let mut publication = Publication::default();
+    let fingerprint = car_params
+        .get_root::<car_params::Reader>()?
+        .get_car_fingerprint()?
+        .to_str()?
+        .to_owned();
+    let supported = indicator::supported(&fingerprint);
+    let (tesla_signals, native_voice) = {
+        let cp = car_params.get_root::<car_params::Reader>()?;
+        let brand = cp.get_brand()?.to_str()?;
+        let flags = cp.get_flags();
+        // carrot voice_indicator.native_indicator: EA_02 or Hyundai SPAS2.
+        const HYUNDAI_NATIVE: u32 = (1 << 13) | 1 | (1 << 5); // CANFD | CANFD_HDA2 | ENABLE_BLINKERS
+        let native = !cp.get_passive()
+            && ((brand == "volkswagen" && flags & 16384 != 0)
+                || (brand == "hyundai" && flags & HYUNDAI_NATIVE == HYUNDAI_NATIVE));
+        (brand == "tesla" && flags & 32 != 0, native) // TeslaFlags.AUTO_TURN_SIGNALS
+    };
+    let mut publication = Publication::new(
+        DesireHelper::new(
+            supported,
+            if supported {
+                indicator::startup_journal()
+            } else {
+                None
+            },
+        )
+        .with_tesla(tesla_signals, (process::monotonic() * 1e9) as u64)
+        .with_assistant(&fingerprint, native_voice),
+    );
     let mut commands = CommandReader::new(
         Path::new("/dev/shm/carrot-bluetooth"),
         "lane",
@@ -159,15 +187,16 @@ pub fn run(
         .parse::<i64>()
         .map_err(|_| Error::Contract("invalid SIMULATION"))?
         != 0;
-    let mut external = openpilot_jetlink::runtime::Runtime::new(
-        Path::new("/dev/shm/carrot-jetlink.sock"),
-        params.get_bool("JetlinkActive")? || params.get_bool("JetlinkLossLatched")?,
-    )?;
+    let mut external =
+        openpilot_jetlink::runtime::Runtime::new(Path::new("/dev/shm/carrot-jetlink.sock"))?;
     let mut external_stored = None;
     let mut external_display = jetlink::ModelStatusWriter::new(std::path::Path::new(
         openpilot_jetlink::status::MODEL_STATUS,
     ));
     let mut frame_count = 0u64;
+    // Set while frames are answered by the peer model only.
+    let mut internal_stale = false;
+    let mut camera_gap = openpilot_driving_modeld::camera_gap::CameraGapTrace::default();
     let mut diagnostics = RuntimeDiagnostics::new("modeld", 1.0);
     while !stop.load(Ordering::Relaxed) {
         let loop_start = process::monotonic();
@@ -175,7 +204,10 @@ pub fn run(
         if state.begin_iteration() {
             state.refresh(parameters::settings(&params)?);
         }
-        let Some(pair) = receive_pair(&mut main, extra.as_mut())? else {
+        camera_gap.received.clear();
+        let Some(pair) =
+            receive_pair_traced(&mut main, extra.as_mut(), Some(&mut camera_gap.received))?
+        else {
             logger.emit(
                 log_site!(),
                 Record::text(
@@ -213,29 +245,39 @@ pub fn run(
             )?;
         }
         let (lateral, longitudinal) = state.action_times();
-        runtime.update_inputs(openpilot_driving_modeld::usb_model::Controls {
+        let model_controls = openpilot_driving_modeld::usb_model::Controls {
             desire: i32::from(publication.desire.desire),
             is_rhd: sources.monitoring.get_is_r_h_d(),
             lateral_time: lateral,
             longitudinal_time: longitudinal,
-        });
+        };
+        runtime.update_inputs(model_controls);
         let start = Instant::now();
+        let inference_started = process::monotonic();
         let camera_age_at_run_ms =
             (process::monotonic() - frame.metadata.timestamp_eof as f64 * 1e-9) * 1000.0;
         let inference_cpu_start = thread_cpu();
-        let controls_fresh = subscribers.state.all_valid(&["carState", "carControl"])?
-            && subscribers.state.all_alive(&["carState", "carControl"])?;
+        let join_now = process::monotonic();
+        let mut join_valid = [false; 3];
+        let mut join_received = [0.; 3];
+        for (index, name) in ["carState", "selfdriveState", "carControl"]
+            .into_iter()
+            .enumerate()
+        {
+            let topic = subscribers.state.topic(name)?;
+            join_valid[index] = topic.valid && topic.alive;
+            join_received[index] = topic.receive_time;
+        }
         let controls = openpilot_jetlink::transition::ControlState {
-            standstill: controls_fresh && sources.car.get_standstill(),
-            cruise_enabled: sources.car.get_cruise_state()?.get_enabled(),
-            lateral_active: sources.control.get_lat_active(),
-            enabled: sources.control.get_enabled(),
+            join_allowed: openpilot_driving_modeld::recovery::may_join(
+                join_now,
+                join_valid,
+                join_received,
+                sources.car.get_standstill(),
+                f64::from(sources.car.get_v_ego()),
+                sources.car.get_steering_pressed(),
+            ),
         };
-        let mode = openpilot_jetlink::transition::Mode::from_setting(parameters::integer(
-            &params,
-            "JetlinkMode",
-        )?);
-        let validation = params.get("JetlinkValidation")?;
         let mut desire = [0.0; 8];
         let desire_index = usize::from(u16::from(publication.desire.desire));
         if let Some(value) = desire.get_mut(desire_index) {
@@ -248,15 +290,11 @@ pub fn run(
         };
         external.begin(
             openpilot_jetlink::runtime::FrameInput {
-                mode,
                 controls,
                 frame: frame.metadata.frame_id,
                 source_sof: frame.metadata.timestamp_sof,
                 prepare_only: dropped.prepare_only,
-                camera_ready: calibration.seen()
-                    && controls_fresh
-                    && !params.get_bool("UsbGpuActive")?,
-                validation: validation.as_deref(),
+                camera_ready: calibration.seen() && !params.get_bool("UsbGpuActive")?,
                 desire,
                 traffic,
                 action: [lateral as f32, longitudinal as f32],
@@ -272,12 +310,26 @@ pub fn run(
             },
         );
         jetlink::persist(&params, &mut external_stored, &external.status)?;
-        let prediction = runtime.infer(
-            &frame.buffer.bytes,
-            &extra_frame.buffer.bytes,
-            [calibration.main(), calibration.extra()],
-            dropped.prepare_only,
-        );
+        // carrot's JoiningModel.run: a frame the peer model answers is not also
+        // run on the internal model. The internal model's history goes stale
+        // meanwhile and is cleared before its next run.
+        let external_frame = external.awaiting_frame() && !runtime.uses_usb();
+        let prediction = if external_frame {
+            internal_stale = true;
+            Ok(None)
+        } else {
+            if internal_stale {
+                runtime.reset_internal()?;
+                runtime.update_inputs(model_controls);
+                internal_stale = false;
+            }
+            runtime.infer(
+                &frame.buffer.bytes,
+                &extra_frame.buffer.bytes,
+                [calibration.main(), calibration.extra()],
+                dropped.prepare_only,
+            )
+        };
         let prediction = match prediction {
             Ok(prediction) => prediction,
             Err(error) if runtime.uses_usb() => {
@@ -307,7 +359,24 @@ pub fn run(
             }
             Err(error) => return Err(error),
         };
-        let prediction = external.finish(prediction);
+        let mut prediction = external.finish(prediction);
+        if external_frame && prediction.is_none() {
+            // "Jetlink failed; restoring local model": the peer's frame was
+            // lost (the fault file already asks for disengagement), so this
+            // frame is answered by the internal model from a cleared history.
+            runtime.reset_internal()?;
+            runtime.update_inputs(model_controls);
+            internal_stale = false;
+            prediction = runtime.infer(
+                &frame.buffer.bytes,
+                &extra_frame.buffer.bytes,
+                [calibration.main(), calibration.extra()],
+                dropped.prepare_only,
+            )?;
+            if prediction.is_some() {
+                external.count_native_output();
+            }
+        }
         jetlink::persist(&params, &mut external_stored, &external.status)?;
         external_display.update_selected(
             &external.status,
@@ -354,6 +423,13 @@ pub fn run(
                     radar: sources.radar,
                     lateral_active: sources.control.get_lat_active(),
                     live_lateral_delay: sources.delay.get_lateral_delay().into(),
+                    indicator: indicator::inputs(
+                        &subscribers.state,
+                        sources.control,
+                        &params,
+                        &publication.desire,
+                        process::monotonic(),
+                    )?,
                 },
                 || config.clone().unwrap_or_default(),
                 |allowed| commands.read(allowed, process::monotonic()),
@@ -410,6 +486,35 @@ pub fn run(
                 }
             }
         }
+        {
+            let now = process::monotonic();
+            let backend = if external.status.decision.source
+                == openpilot_jetlink::transition::Source::Jetlink
+            {
+                "jetlink"
+            } else if runtime.uses_usb() {
+                "usbgpu"
+            } else {
+                "internal"
+            };
+            camera_gap.record(
+                logger,
+                now,
+                frame.metadata.frame_id,
+                dropped.dropped,
+                backend,
+                &[
+                    ("camera_wait", (camera_ready - loop_start) * 1000.0),
+                    (
+                        "before_inference",
+                        (inference_started - camera_ready) * 1000.0,
+                    ),
+                    ("inference", model_execution_time * 1000.0),
+                    ("postprocess", (now - inference_finished) * 1000.0),
+                    ("loop", (now - loop_start) * 1000.0),
+                ],
+            );
+        }
         FrameTiming {
             frame_id: frame.metadata.frame_id,
             loop_start,
@@ -424,6 +529,7 @@ pub fn run(
             cpu_end: thread_cpu(),
             dropped: dropped.dropped,
             published,
+            jetlink: external.frame_stages_ms(),
         }
         .record(&mut diagnostics, logger);
         frame_count += 1;

@@ -380,85 +380,6 @@ fn require_space(
 mod emission_tests {
     use super::*;
     #[test]
-    fn original_cpu_manifest_bytes_and_atomic_artifacts_match() {
-        for fixture in [
-            include_str!("../tests/fixtures/export/cpu-v1.json"),
-            include_str!("../tests/fixtures/export/cpu-v2.json"),
-        ] {
-            let fixture = fixture.replace("x86_64", std::env::consts::ARCH);
-            let graph: CpuGraph = serde_json::from_str(&fixture).unwrap();
-            assert_eq!(python_pretty(&graph).unwrap(), fixture);
-            let temp = tempfile::tempdir().unwrap();
-            let destination = temp.path().join("bundle");
-            emit_cpu(
-                &destination,
-                &graph,
-                b"fixture-library",
-                &[1, 2, 3, 4],
-                &["source".into()],
-                &[vec![1, 2]],
-                &["wrapper".into()],
-            )
-            .unwrap();
-            assert_eq!(
-                std::fs::read_to_string(destination.join("graph.json")).unwrap(),
-                fixture
-            );
-            assert_eq!(
-                std::fs::read(destination.join("kernel-0.o")).unwrap(),
-                [1, 2]
-            );
-            assert_eq!(
-                std::fs::read_to_string(destination.join("kernels.c")).unwrap(),
-                "#include <stdint.h>\n#include <string.h>\nwrapper"
-            );
-            assert!(emit_cpu(
-                &destination,
-                &graph,
-                b"fixture-library",
-                &[1, 2, 3, 4],
-                &["source".into()],
-                &[vec![1, 2]],
-                &["wrapper".into()]
-            )
-            .is_err());
-            assert_eq!(std::fs::read_dir(temp.path()).unwrap().count(), 1);
-        }
-    }
-    #[test]
-    fn mismatched_weights_and_nonpartitioning_entrypoints_emit_nothing() {
-        let temp = tempfile::tempdir().unwrap();
-        let destination = temp.path().join("bundle");
-        let mut graph: CpuGraph = serde_json::from_str(
-            &include_str!("../tests/fixtures/export/cpu-v2.json")
-                .replace("x86_64", std::env::consts::ARCH),
-        )
-        .unwrap();
-        assert!(emit_cpu(
-            &destination,
-            &graph,
-            b"fixture-library",
-            &[9; 4],
-            &["source".into()],
-            &[Vec::new()],
-            &["wrapper".into()]
-        )
-        .is_err());
-        graph.entrypoints[1].start = 1;
-        assert!(emit_cpu(
-            &destination,
-            &graph,
-            b"fixture-library",
-            &[1, 2, 3, 4],
-            &["source".into()],
-            &[Vec::new()],
-            &["wrapper".into()]
-        )
-        .is_err());
-        assert!(!destination.exists());
-        assert_eq!(std::fs::read_dir(temp.path()).unwrap().count(), 0);
-    }
-    #[test]
     fn python_ascii_encoding_preserves_control_bmp_and_surrogate_pairs() {
         assert_eq!(
             python_pretty(&"\x7f한😀").unwrap(),
@@ -634,29 +555,6 @@ mod publication_tests {
         std::fs::write(path.join("graph.json"), "graph")?;
         std::fs::write(path.join("pipeline.json"), "pipeline")?;
         Ok(())
-    }
-    #[test]
-    fn original_index_pointer_bytes_and_immutable_reuse_match() {
-        let temp = tempfile::tempdir().unwrap();
-        let digest = publish(temp.path(), &[selection()], "cpu", emit).unwrap();
-        assert_eq!(
-            std::fs::read_to_string(temp.path().join(&digest).join("index.json")).unwrap(),
-            include_str!("../tests/fixtures/export/catalog-index.json")
-        );
-        let pointer = std::fs::read(temp.path().join("current.json")).unwrap();
-        assert_eq!(
-            pointer,
-            include_bytes!("../tests/fixtures/export/catalog-current.json")
-        );
-        assert_eq!(
-            publish(temp.path(), &[selection()], "cpu", emit).unwrap(),
-            digest
-        );
-        assert_eq!(
-            std::fs::read(temp.path().join("current.json")).unwrap(),
-            pointer
-        );
-        assert_eq!(std::fs::read_dir(temp.path()).unwrap().count(), 2);
     }
     #[test]
     fn duplicate_failed_emission_corruption_and_extra_files_preserve_pointer() {

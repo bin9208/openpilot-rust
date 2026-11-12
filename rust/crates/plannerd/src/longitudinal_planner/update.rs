@@ -65,6 +65,29 @@ impl LongitudinalPlanner {
             !input.enabled
         }) || car.v_cruise == 255.
             || carrot.soft_hold_active != 0;
+        if let Some(stop) = &mut self.tesla_stop {
+            let decision = stop.update(
+                &input.tesla,
+                input.boot_ns,
+                input.enabled,
+                !reset && input.long_active_checks,
+            );
+            if decision.fault {
+                carrot.add_tesla_event(true, mono_clock);
+            } else if decision.warn {
+                carrot.add_tesla_event(false, mono_clock);
+            }
+            self.tesla_blended = self.mpc.mode == PlannerMode::Blended && decision.active;
+            if decision.active {
+                self.mpc.mode = PlannerMode::Acc;
+            }
+            self.tesla_decision = Some(decision);
+        }
+        let tesla_stop_distance = self
+            .tesla_decision
+            .as_ref()
+            .filter(|d| d.active)
+            .map(|d| maximum(0., d.distance - crate::tesla_traffic_stop::STOP_BUFFER));
         let previous_constraint = !(reset || car.standstill);
         let (limits, mut turn_limits) = if self.mpc.mode == PlannerMode::Acc {
             let limits = [-2., carrot.acceleration(speed)?];
@@ -162,6 +185,7 @@ impl LongitudinalPlanner {
                     && !car.gas_pressed
                     && !input.force_deceleration
                     && !self.should_stop,
+                tesla_stop_distance,
             },
             mono_clock,
         )?;
@@ -178,13 +202,24 @@ impl LongitudinalPlanner {
             },
             mono_clock,
         );
+        if let Some(decision) = self.tesla_decision.clone().filter(|d| d.active) {
+            self.coasting_target = 0.;
+            self.coasting.reset();
+            if decision.hold {
+                self.should_stop = true;
+                self.target_speed = 0.;
+                self.target_acceleration = minimum(self.target_acceleration, 0.);
+                self.desired_acceleration = minimum(self.desired_acceleration, 0.);
+            }
+        }
         if signal_owner {
             self.apply_signal_constraints(&crate::signal::longitudinal::Input {
                 now: mono_clock(),
                 dt: self.dt,
                 prepare_active: carrot.prepare_decision.as_ref().is_some_and(|d| d.active),
                 control_active: carrot.prepare_control_active,
-                hold: carrot.start_decision.as_ref().is_some_and(|d| d.hold),
+                hold: !crate::signal::start::departed_signal_stop(car.v_ego)
+                    && carrot.start_decision.as_ref().is_some_and(|d| d.hold),
                 reset,
                 gas: car.gas_pressed,
                 brake: car.brake_pressed,

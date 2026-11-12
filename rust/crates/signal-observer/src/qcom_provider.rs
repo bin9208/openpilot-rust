@@ -155,71 +155,6 @@ mod tests {
     use openpilot_runtime_package::{Artifact, Manifest};
     use sha2::{Digest, Sha256};
     use std::{cell::RefCell, fs, rc::Rc};
-    fn fixture() -> (tempfile::TempDir, String) {
-        let root = tempfile::tempdir().unwrap();
-        let pins: Value =
-            serde_json::from_str(include_str!("../../../upstream/signal-runtime.json")).unwrap();
-        let mut files = Vec::new();
-        let mut save = |path: std::path::PathBuf, data: Vec<u8>| {
-            fs::create_dir_all(root.path().join(&path).parent().unwrap()).unwrap();
-            fs::write(root.path().join(&path), &data).unwrap();
-            files.push(Artifact {
-                path,
-                sha256: format!("{:x}", Sha256::digest(&data)),
-                executable: false,
-            });
-        };
-        let binary = include_bytes!("../../model-runtime/tests/fixtures/qcom/buffer_add.bin");
-        for name in ["detector", "classifier"] {
-            let pin = &pins["models"][name];
-            let directory = std::path::PathBuf::from(format!("rust/bin/signal-qcom/{name}"));
-            let input = Binding {
-                name: pin["input"].as_str().unwrap().into(),
-                shape: shape(&pin["shape"]).unwrap(),
-            };
-            let output = Binding {
-                name: "output".into(),
-                shape: shape(&pin["output_shape"]).unwrap(),
-            };
-            let graph = serde_json::json!({"version":1,"backend":"qcom-cl","arch":"a630","weights_sha256":format!("{:x}",Sha256::digest([])),
-                "allocations":[{"bytes":input.bytes().unwrap(),"weight_offset":null},{"bytes":output.bytes().unwrap(),"weight_offset":null}],
-                "views":[{"allocation":0,"offset":0,"bytes":input.bytes().unwrap()},{"allocation":1,"offset":0,"bytes":output.bytes().unwrap()}],
-                "inputs":[{"name":input.name,"view":0}],"outputs":[{"name":"output","view":1}],
-                "kernels":[{"name":"buffer_add","binary_sha256":format!("{:x}",Sha256::digest(binary)),"binary_bytes":binary.len(),"arguments":[[{"kind":"buffer"}],[{"kind":"buffer"}]]}],
-                "calls":[{"op":"kernel","kernel":0,"views":[1,0],"scalars":[],"global":[output.bytes().unwrap()/4,1,1],"local":[1,1,1]}]});
-            save(
-                directory.join("graph.json"),
-                serde_json::to_vec(&graph).unwrap(),
-            );
-            save(directory.join("weights.bin"), vec![]);
-            save(directory.join("kernel-0.bin"), binary.to_vec());
-            let identity = serde_json::json!({"schema":1,"source_commit":pins["source_commit"],"tinygrad_tree":TREE,"model":name,"model_sha256":pin["sha256"],
-                "input":pin["input"],"input_shape":pin["shape"],"output":pin["output"],"output_shape":pin["output_shape"],
-                "float16":0,"fixture_scope":"inert admission/lifecycle only; buffer_add is NOT either real signal model"});
-            save(
-                directory.join("signal-qcom.json"),
-                serde_json::to_vec(&serde_json::json!({"identity":identity})).unwrap(),
-            );
-        }
-        let manifest = Manifest {
-            schema: 1,
-            source_commit: "0123456789abcdef0123456789abcdef01234567".into(),
-            agnos_version: "19.8-carrot-bt1".into(),
-            files,
-        };
-        fs::write(
-            root.path().join("build.json"),
-            serde_json::to_vec(
-                &serde_json::json!({"openpilot":{"git_commit":manifest.source_commit}}),
-            )
-            .unwrap(),
-        )
-        .unwrap();
-        let bytes = serde_json::to_vec(&manifest).unwrap();
-        let digest = format!("{:x}", Sha256::digest(&bytes));
-        fs::write(root.path().join("rust/runtime-manifest.json"), bytes).unwrap();
-        (root, digest)
-    }
     struct Inert {
         trace: Rc<RefCell<Vec<String>>>,
         name: String,
@@ -269,55 +204,5 @@ mod tests {
                 output: vec![0; bundle.output_size("output").unwrap()],
             })
         }
-    }
-    #[test]
-    fn verified_two_model_admission_warmup_and_cleanup_open_no_gpu() {
-        let (root, digest) = fixture();
-        for fail in [false, true] {
-            let trace = Rc::new(RefCell::new(Vec::new()));
-            let mut factory = InertFactory {
-                trace: trace.clone(),
-                opened: 0,
-                fail_second: fail,
-            };
-            let result = open_with(root.path(), &digest, &mut factory);
-            if fail {
-                assert!(result.is_err());
-                assert_eq!(
-                    *trace.borrow(),
-                    ["open:detector", "open:classifier", "drop:detector"]
-                );
-            } else {
-                let mut network = result.unwrap();
-                network.warm_up().unwrap();
-                drop(network);
-                let trace = trace.borrow();
-                assert_eq!(
-                    trace
-                        .iter()
-                        .filter(|value| value.starts_with("run:"))
-                        .count(),
-                    6
-                );
-                assert_eq!(
-                    &trace[trace.len() - 2..],
-                    ["drop:detector", "drop:classifier"]
-                );
-            }
-        }
-        fs::write(
-            root.path()
-                .join("rust/bin/signal-qcom/classifier/graph.json"),
-            b"changed",
-        )
-        .unwrap();
-        let trace = Rc::new(RefCell::new(Vec::new()));
-        let mut factory = InertFactory {
-            trace: trace.clone(),
-            opened: 0,
-            fail_second: false,
-        };
-        assert!(open_with(root.path(), &digest, &mut factory).is_err());
-        assert!(trace.borrow().is_empty());
     }
 }

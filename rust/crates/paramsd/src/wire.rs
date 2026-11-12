@@ -93,6 +93,7 @@ pub fn encode(value: &Parameters, time: u64) -> Result<Vec<u8>, Error> {
     root.set_log_mono_time(time);
     let mut out = root.init_live_parameters();
     out.set_posenet_valid(true);
+    out.set_center_to_front_ratio(value.center_to_front_ratio as f32);
     out.set_sensor_valid(value.sensor_valid);
     out.set_steer_ratio(value.x[1] as f32);
     out.set_stiffness_factor(value.x[0] as f32);

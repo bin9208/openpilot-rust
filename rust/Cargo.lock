@@ -2192,6 +2192,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-blink"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "openpilot-cereal",
+ "openpilot-desire",
+ "openpilot-messaging",
+ "openpilot-params",
+ "rustix",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "openpilot-bluetooth"
 version = "0.1.0"
 dependencies = [
@@ -2326,6 +2341,7 @@ dependencies = [
  "libc",
  "num-bigint",
  "num-traits",
+ "openpilot-blink",
  "openpilot-can",
  "openpilot-cereal",
  "openpilot-control-policy",
@@ -2456,6 +2472,8 @@ dependencies = [
  "ffmpeg-next",
  "flate2",
  "futures-util",
+ "hex",
+ "hmac",
  "http-body-util",
  "httpdate",
  "hyper",
@@ -2467,6 +2485,7 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "openpilot-beepd",
+ "openpilot-blink",
  "openpilot-bluetooth",
  "openpilot-calibrationd",
  "openpilot-carrot-navi",
@@ -2731,33 +2750,11 @@ dependencies = [
 name = "openpilot-dev-tools"
 version = "0.1.0"
 dependencies = [
- "base64 0.22.1",
- "flate2",
- "openpilot-disk-space",
- "openpilot-model-runtime",
- "openpilot-usbgpu",
  "regex",
- "rsa",
- "rustix",
  "serde",
  "serde_json",
- "sha1",
- "sha2",
- "tar",
  "tempfile",
  "toml",
- "xz2",
- "zip",
-]
-
-[[package]]
-name = "openpilot-disk-space"
-version = "0.1.0"
-dependencies = [
- "rustix",
- "serde",
- "serde_json",
- "tempfile",
 ]
 
 [[package]]
@@ -2940,6 +2937,7 @@ version = "0.1.0"
 dependencies = [
  "libc",
  "openpilot-http-transport",
+ "openpilot-logging",
  "openpilot-managed-entry",
  "openpilot-modeld",
  "openpilot-params",
@@ -3407,6 +3405,7 @@ dependencies = [
  "cxx",
  "cxx-build",
  "openpilot-cereal",
+ "openpilot-control-policy",
  "openpilot-locationd",
  "openpilot-logging",
  "openpilot-managed-entry",
@@ -6035,12 +6034,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "typed-path"
-version = "0.12.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e28f89b80c87b8fb0cf04ab448d5dd0dd0ade2f8891bae878de66a75a28600e"
-
-[[package]]
 name = "typenum"
 version = "1.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6721,20 +6714,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.6",
-]
-
-[[package]]
-name = "zip"
-version = "9.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2d98561b612a84ae525331a7a094429ef8a5772514ed507ff6db5f54badc971"
-dependencies = [
- "crc32fast",
- "flate2",
- "indexmap",
- "memchr",
- "nix 0.31.3",
- "typed-path",
 ]
 
 [[package]]

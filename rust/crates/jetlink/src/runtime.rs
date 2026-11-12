@@ -1,9 +1,10 @@
-//! Single background RPC worker; native execution stays on the frame thread.
+//! Single RPC worker at the frame thread's priority; native execution stays on
+//! the frame thread.
 use crate::{
     adapter::Adapter,
     contract,
     rpc::ProxyClient,
-    transition::{ControlState, Decision, Mode, Outcome, Phase, Source, Transition},
+    transition::{ControlState, Decision, Outcome, Phase, Source, Transition},
     Deadline, Error,
 };
 use openpilot_modeld::prediction::DrivingPrediction;
@@ -30,7 +31,36 @@ enum Work {
         source_sof: u64,
         deadline: Deadline,
         started: Instant,
+        /// When the frame thread handed the warped frame to the worker.
+        prepared: Instant,
     },
+}
+/// Where one peer frame spent its time, in the order it happened: camera warp
+/// and input packing on the frame thread, the wait for the RPC worker, the
+/// request/reply with the daemon (USB and the peer's inference), and parsing.
+/// carrot's model.py reports the same split for a slow frame.
+#[derive(Clone, Copy, Debug)]
+struct Stages {
+    warp: Duration,
+    handoff: Duration,
+    roundtrip: Duration,
+    parse: Duration,
+}
+impl Stages {
+    fn total(&self) -> Duration {
+        self.warp + self.handoff + self.roundtrip + self.parse
+    }
+}
+fn slow_frame_line(frame: u32, stages: &Stages) -> String {
+    let ms = |duration: Duration| duration.as_secs_f64() * 1000.0;
+    format!(
+        "Jetlink slow frame {frame}: {:.1} ms; warp {:.1}, handoff {:.1}, roundtrip {:.1}, parse {:.1}",
+        ms(stages.total()),
+        ms(stages.warp),
+        ms(stages.handoff),
+        ms(stages.roundtrip),
+        ms(stages.parse),
+    )
 }
 enum Complete {
     Connected(Box<Model>),
@@ -38,7 +68,7 @@ enum Complete {
         model: Box<Model>,
         output: Box<DrivingPrediction>,
         frame: u32,
-        elapsed: Duration,
+        stages: Stages,
     },
 }
 #[derive(Clone, Debug)]
@@ -49,18 +79,22 @@ pub struct Status {
     pub execution_ms: f64,
     pub validated: bool,
 }
-pub struct FrameInput<'a> {
-    pub mode: Mode,
+pub struct FrameInput {
     pub controls: ControlState,
     pub frame: u32,
     pub source_sof: u64,
     pub prepare_only: bool,
     pub camera_ready: bool,
-    pub validation: Option<&'a [u8]>,
     pub desire: [f32; 8],
     pub traffic: [f32; 2],
     pub action: [f32; 2],
 }
+/// How long modeld waits for the peer's answer to one frame: carrot's local
+/// client timeout (link.py `timeout=.15`). A frame slower than 50 ms is late,
+/// not lost. With a 50 ms budget every late frame swapped the published model
+/// to the internal one for five seconds and back, twice a minute in the car.
+pub const FRAME_BUDGET_NS: u64 = 150_000_000;
+
 pub struct Runtime {
     work: Option<SyncSender<Work>>,
     results: Receiver<Result<Complete, Error>>,
@@ -75,23 +109,27 @@ pub struct Runtime {
     connecting: bool,
     cancel: Option<UnixStream>,
     retry_at: Instant,
-    mode: Mode,
+    /// Local outputs produced so far; a cold first execution precedes any join.
+    small_runs: u32,
     controls: ControlState,
     deadline: Deadline,
     started: Instant,
+    slow_logged: Option<Instant>,
+    /// Stage times of the peer frame collected since the last `begin`.
+    last_stages: Option<Stages>,
     frame: u32,
     pub status: Status,
     pub detail: String,
 }
 impl Runtime {
     /// Construct before assigning the realtime frame thread's scheduler/affinity.
-    pub fn new(path: &Path, previously_active: bool) -> Result<Self, Error> {
+    pub fn new(path: &Path) -> Result<Self, Error> {
         let (work_tx, work_rx) = mpsc::sync_channel::<Work>(1);
         let (result_tx, results) = mpsc::sync_channel(1);
         let worker = thread::Builder::new()
             .name("jetlink-rpc".into())
             .spawn(move || {
-                crate::platform::background();
+                crate::platform::frame_worker();
                 while let Ok(work) = work_rx.recv() {
                     let result = execute(work);
                     if result_tx.send(result).is_err() {
@@ -108,27 +146,26 @@ impl Runtime {
             selected_sha: contract::SHA256.into(),
             abandoned: false,
             path: path.to_owned(),
-            transition: Transition::new(previously_active),
+            transition: Transition::default(),
             model: None,
             pending: false,
             connecting: false,
             cancel: None,
             retry_at: now,
-            mode: Mode::Off,
+            small_runs: 0,
             controls: ControlState {
-                standstill: false,
-                cruise_enabled: false,
-                lateral_active: false,
-                enabled: false,
+                join_allowed: false,
             },
             deadline: Deadline(0),
             started: now,
+            slow_logged: None,
+            last_stages: None,
             frame: 0,
             status: Status {
                 decision: Decision {
                     source: Source::Native,
                     phase: Phase::Off,
-                    loss_latched: previously_active,
+                    loss_latched: false,
                     reset_required: false,
                 },
                 generation: String::new(),
@@ -163,13 +200,7 @@ impl Runtime {
             }
         }
         self.detail = error.to_string().chars().take(240).collect();
-        self.status.decision = self.transition.update(
-            self.mode,
-            false,
-            self.status.validated,
-            self.controls,
-            Outcome::Lost,
-        );
+        self.status.decision = self.transition.update(false, self.controls, Outcome::Lost);
         self.cancel();
         self.model = None;
         self.identity = None;
@@ -205,9 +236,21 @@ impl Runtime {
                 model,
                 output,
                 frame,
-                elapsed,
+                stages,
             }) => {
+                let elapsed = stages.total();
+                self.last_stages = Some(stages);
                 self.status.execution_ms = elapsed.as_secs_f64() * 1000.0;
+                // As carrot's model.py: a frame over 50 ms is reported, at most
+                // once a second, and still used.
+                if elapsed > Duration::from_millis(50)
+                    && self
+                        .slow_logged
+                        .is_none_or(|at| at.elapsed() >= Duration::from_secs(1))
+                {
+                    self.slow_logged = Some(Instant::now());
+                    eprintln!("{}", slow_frame_line(frame, &stages));
+                }
                 self.status.frame = frame;
                 self.model = Some(model);
                 Some(*output)
@@ -226,24 +269,22 @@ impl Runtime {
     pub fn selected_sha(&self) -> &str {
         &self.selected_sha
     }
-    pub fn begin(&mut self, input: FrameInput<'_>, warp: impl FnOnce() -> Result<Vec<u8>, Error>) {
+    pub fn begin(&mut self, input: FrameInput, warp: impl FnOnce() -> Result<Vec<u8>, Error>) {
         let FrameInput {
-            mode,
             controls,
             frame,
             source_sof,
             prepare_only,
             camera_ready,
-            validation,
             desire,
             traffic,
             action,
         } = input;
         self.started = Instant::now();
-        self.deadline = Deadline(crate::now_ns().saturating_add(50_000_000));
+        self.last_stages = None;
+        self.deadline = Deadline(crate::now_ns().saturating_add(FRAME_BUDGET_NS));
         self.frame = frame;
         self.controls = controls;
-        self.mode = mode;
         if self.pending || self.connecting {
             match self.results.try_recv() {
                 Ok(result) => {
@@ -253,14 +294,7 @@ impl Runtime {
                 Err(TryRecvError::Disconnected) => self.lost(Error::Closed),
             }
         }
-        if mode == Mode::Off {
-            self.cancel();
-            self.model = None;
-            self.identity = None;
-            if self.pending || self.connecting {
-                self.abandoned = true;
-            }
-        } else if self.model.is_none()
+        if self.model.is_none()
             && !self.pending
             && !self.connecting
             && Instant::now() >= self.retry_at
@@ -276,14 +310,11 @@ impl Runtime {
             .as_ref()
             .is_some_and(|model| !model.client.dead())
             && camera_ready
+            && self.small_runs >= 3
             && !self.pending;
-        self.status.validated = self.identity.as_ref().is_some_and(|identity| {
-            contract::validation_matches_model(validation, identity, &self.selected_sha)
-        });
-        self.status.decision =
-            self.transition
-                .update(mode, ready, self.status.validated, controls, Outcome::None);
-        if !ready || mode == Mode::Off {
+        self.status.validated = ready;
+        self.status.decision = self.transition.update(ready, controls, Outcome::None);
+        if !ready {
             return;
         }
         let Some(mut model) = self.model.take() else {
@@ -292,11 +323,12 @@ impl Runtime {
         if self.status.decision.reset_required {
             model.adapter.reset();
         }
-        if prepare_only {
-            model.adapter.reset();
-            self.model = Some(model);
-            return;
-        }
+        // A camera gap (`prepare_only`) is not a reason to restart the peer
+        // model. carrot's model.py runs the full recurrent graph for each
+        // received pair and lets the gap show in pose validity. Resetting here
+        // cleared the phone's history every few frames whenever its answers
+        // took longer than a frame period, and the published path shook.
+        let _ = prepare_only;
         let prepared = warp().and_then(|warped| {
             let packed = model.adapter.prepare_session(
                 &warped,
@@ -317,6 +349,7 @@ impl Runtime {
                     source_sof,
                     deadline: self.deadline,
                     started: self.started,
+                    prepared: Instant::now(),
                 }) {
                     Ok(()) => self.pending = true,
                     Err(error) => self.lost(error),
@@ -325,8 +358,38 @@ impl Runtime {
             Err(error) => self.lost(error),
         }
     }
+    /// Warp, hand-off, round trip and parse of this iteration's peer frame in
+    /// ms, when one was collected.
+    pub fn frame_stages_ms(&self) -> Option<[f64; 4]> {
+        let ms = |duration: Duration| duration.as_secs_f64() * 1000.0;
+        self.last_stages.map(|stages| {
+            [
+                ms(stages.warp),
+                ms(stages.handoff),
+                ms(stages.roundtrip),
+                ms(stages.parse),
+            ]
+        })
+    }
+    /// True between `begin` and `finish` when this frame went to the peer and
+    /// the peer is the published model. carrot's JoiningModel.run does not run
+    /// the internal model for such a frame.
+    pub fn awaiting_frame(&self) -> bool {
+        self.pending && self.status.decision.source == Source::Jetlink
+    }
+    /// An internal output produced outside `finish` (the fallback run after a
+    /// lost peer frame) counts toward the warm-up that precedes a join.
+    pub fn count_native_output(&mut self) {
+        self.small_runs = self.small_runs.saturating_add(1);
+    }
     pub fn finish(&mut self, native: Option<DrivingPrediction>) -> Option<DrivingPrediction> {
-        if native.is_none() || self.status.decision.source != Source::Jetlink {
+        if native.is_some() {
+            self.small_runs = self.small_runs.saturating_add(1);
+        }
+        // While the peer model is the published one its answer is used for
+        // every received frame, including frames where the internal model only
+        // advanced its history (`native` is None), as carrot's model.py does.
+        if self.status.decision.source != Source::Jetlink {
             return native;
         }
         if !self.pending {
@@ -359,7 +422,7 @@ impl Runtime {
     }
     pub fn valid_at_publish(&mut self) -> bool {
         if self.status.decision.source == Source::Jetlink && crate::now_ns() > self.deadline.0 {
-            self.lost("Jetlink publication exceeded 50ms");
+            self.lost("Jetlink publication exceeded its frame budget");
             return false;
         }
         !(self.status.decision.loss_latched && crate::now_ns() > self.deadline.0)
@@ -380,7 +443,9 @@ fn execute(work: Work) -> Result<Complete, Error> {
             source_sof,
             deadline,
             started,
+            prepared,
         } => {
+            let picked_up = Instant::now();
             model.client.set_source_sof(source_sof);
             let values = model.client.infer(
                 frame,
@@ -389,12 +454,18 @@ fn execute(work: Work) -> Result<Complete, Error> {
                 deadline,
                 model.adapter.reset_next(),
             )?;
+            let replied = Instant::now();
             let output = Box::new(model.adapter.parse(&values, deadline)?);
             Ok(Complete::Inferred {
                 model,
                 output,
                 frame,
-                elapsed: started.elapsed(),
+                stages: Stages {
+                    warp: prepared.saturating_duration_since(started),
+                    handoff: picked_up.saturating_duration_since(prepared),
+                    roundtrip: replied.saturating_duration_since(picked_up),
+                    parse: replied.elapsed(),
+                },
             })
         }
     }
@@ -403,7 +474,7 @@ impl Drop for Runtime {
     fn drop(&mut self) {
         self.cancel();
         self.work.take();
-        // Connect is bounded at 500ms and inference by its original 50ms deadline.
+        // Connect is bounded at 500ms and inference by FRAME_BUDGET_NS.
         let until = Instant::now() + Duration::from_millis(600);
         while self
             .worker
@@ -426,5 +497,25 @@ impl Drop for Runtime {
                 eprintln!("jetlink RPC worker did not stop within 600ms");
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn slow_frame_line_keeps_the_total_first_and_names_each_stage() {
+        let stages = Stages {
+            warp: Duration::from_micros(4_200),
+            handoff: Duration::from_micros(300),
+            roundtrip: Duration::from_micros(57_000),
+            parse: Duration::from_micros(1_500),
+        };
+        assert_eq!(stages.total(), Duration::from_micros(63_000));
+        assert_eq!(
+            slow_frame_line(812, &stages),
+            "Jetlink slow frame 812: 63.0 ms; warp 4.2, handoff 0.3, roundtrip 57.0, parse 1.5"
+        );
     }
 }

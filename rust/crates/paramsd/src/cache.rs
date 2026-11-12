@@ -160,15 +160,32 @@ pub struct Initial {
     pub offset_degrees: f64,
     pub covariance: Option<Vec<f64>>,
 }
-fn cached(bytes: &[u8], previous: &[u8], car: &Car, debug: bool) -> Result<Initial, Error> {
+fn cached(
+    bytes: &[u8],
+    previous: &[u8],
+    car: &Car,
+    debug: bool,
+    expected_ratio: f64,
+) -> Result<Initial, Error> {
     let message = serialize::read_message(bytes, ReaderOptions::new())?;
     let root = message.get_root::<event::Reader<'_>>()?;
     let event::LiveParameters(value) = root.which()? else {
         return Err(Error::Contract("cached service"));
     };
     let value = value?;
-    if crate::wire::car(previous)?.fingerprint != car.fingerprint {
+    let last = crate::wire::car(previous)?;
+    if last.fingerprint != car.fingerprint {
         return Err(Error::Contract("Car model mismatch"));
+    }
+    let close = |a: f64, b: f64| (a - b).abs() <= 1e-6 * a.abs().max(b.abs());
+    let stored_ratio = f64::from(value.get_center_to_front_ratio());
+    let previous_ratio = if stored_ratio != 0. {
+        stored_ratio
+    } else {
+        last.center_to_front_ratio()
+    };
+    if !close(last.wheelbase(), car.wheelbase()) || !close(previous_ratio, expected_ratio) {
+        return Err(Error::Contract("Vehicle geometry changed"));
     }
     let ratio = f64::from(value.get_steer_ratio());
     if !(0.5 * car.ratio <= ratio && ratio <= 2. * car.ratio) {
@@ -192,13 +209,14 @@ pub fn retrieve(
     car: &Car,
     replay: bool,
     debug: bool,
+    expected_ratio: f64,
     logs: &mut Vec<(String, String)>,
 ) -> Initial {
     let value = store.get("LiveParametersV2");
     let previous = store.get("CarParamsPrevRoute");
     let mut initial = None;
     if let (Some(value), Some(previous)) = (value, previous) {
-        match cached(&value, &previous, car, debug) {
+        match cached(&value, &previous, car, debug, expected_ratio) {
             Ok(value) => initial = Some(value),
             Err(error) => {
                 logs.push((

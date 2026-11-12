@@ -1,5 +1,8 @@
 use crate::Error;
-use std::sync::atomic::{fence, AtomicU64, Ordering::SeqCst};
+use std::sync::atomic::{
+    fence, AtomicU64,
+    Ordering::{Relaxed, SeqCst},
+};
 
 pub(crate) const READERS: usize = 40;
 pub(crate) const HEADER_WORDS: usize = 3 + 3 * READERS;
@@ -205,9 +208,17 @@ impl<'a> QueueMemory<'a> {
         let first_word = HEADER_WORDS + offset_index(write.offset) / 8 + 1;
         for (index, chunk) in bytes.chunks(8).enumerate() {
             let word = &self.words[first_word + index];
-            let mut value = word.load(SeqCst).to_ne_bytes();
-            value[..chunk.len()].copy_from_slice(chunk);
-            word.store(u64::from_ne_bytes(value), SeqCst);
+            // Payload words are published by the fence and write-pointer store below.
+            let value = if chunk.len() == 8 {
+                let mut value = [0; 8];
+                value.copy_from_slice(chunk);
+                value
+            } else {
+                let mut value = word.load(Relaxed).to_ne_bytes();
+                value[..chunk.len()].copy_from_slice(chunk);
+                value
+            };
+            word.store(u64::from_ne_bytes(value), Relaxed);
         }
         fence(SeqCst);
         write.offset = u32::try_from(end).map_err(|_| Error::Corrupt("write offset overflow"))?;
@@ -333,7 +344,8 @@ impl Reader {
             fence(SeqCst);
             let first_word = HEADER_WORDS + offset_index(old_offset) / 8 + 1;
             for index in 0..size.div_ceil(8) {
-                let value = queue.words[first_word + index].load(SeqCst).to_ne_bytes();
+                // Ordered by the surrounding fences, like the original memcpy.
+                let value = queue.words[first_word + index].load(Relaxed).to_ne_bytes();
                 let remaining = size - bytes.len();
                 bytes.extend_from_slice(&value[..remaining.min(8)]);
             }

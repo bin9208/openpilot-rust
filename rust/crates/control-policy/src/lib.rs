@@ -1,6 +1,7 @@
 pub mod drive;
 #[cfg(feature = "numerics")]
 pub mod flux;
+pub mod geometry;
 pub mod identity;
 pub mod lateral_readiness;
 pub mod math;

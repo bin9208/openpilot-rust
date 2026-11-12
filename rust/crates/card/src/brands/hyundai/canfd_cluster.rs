@@ -38,6 +38,19 @@ pub struct ClusterInput<'a> {
     pub path: (&'a [f64], &'a [f64]),
     pub hud_lateral: Option<f64>,
     pub lane_warnings: [bool; 2],
+    pub scc_main_ready: bool,
+}
+
+/// The camera's SCC output is replaced only with openpilot longitudinal control.
+/// Keep its MAIN available for OEM display objects independently of engagement.
+pub(super) fn keep_stock_scc_main(i: &ClusterInput<'_>, source: &ClusterMessages<'_>) -> bool {
+    i.corner_radar > 0
+        && source.scc.is_some()
+        && source.lfahda.is_some()
+        && i.scc_main_ready
+        && i.speed.is_finite()
+        && i.speed > 3.
+        && !i.interlock
 }
 
 pub use super::cluster_buttons::alt2_request;
@@ -65,7 +78,28 @@ pub fn messages(
             result.push(alt2_request(writer, i, source)?);
         } else if let Some(original) = source.buttons {
             let mut data = original.clone();
+            let driver_pressed = get(original, "LFA_BTN")? != 0.
+                || get(original, "CRUISE_BUTTONS")? != 0.
+                || original
+                    .get("ADAPTIVE_CRUISE_MAIN_BTN")
+                    .copied()
+                    .unwrap_or(0.)
+                    != 0.
+                || original
+                    .get("NORMAL_CRUISE_MAIN_BTN")
+                    .copied()
+                    .unwrap_or(0.)
+                    != 0.;
             data.insert("NORMAL_CRUISE_MAIN_BTN".into(), 0.);
+            if keep_stock_scc_main(i, source)
+                && !i.hud.enabled
+                && !i.main_mode
+                && !driver_pressed
+                && frame % 200 > 10
+                && frame % 200 <= 16
+            {
+                data.insert("ADAPTIVE_CRUISE_MAIN_BTN".into(), 1.);
+            }
             if lfa == 0. && !frame.is_multiple_of(200) && frame % 200 < 12 {
                 data.insert("LFA_BTN".into(), 1.);
             }
@@ -166,6 +200,7 @@ pub fn messages(
                 .into_iter()
                 .enumerate()
                 .map(|(index, value)| (format!("BYTE_{}", index + 1), value))
+                .map(|(k, v)| (std::sync::Arc::<str>::from(k), v))
                 .collect();
             result.push(writer.frame("NEW_MSG_4B9", i.bus.cam, &data, None)?);
         }

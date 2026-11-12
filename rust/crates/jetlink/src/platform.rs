@@ -64,6 +64,62 @@ pub fn background() {
         eprintln!("jetlink worker affinity: {error}");
     }
 }
+/// carrot's daemon.py `update_affinity`: while onroad the daemon's serving
+/// thread is realtime at the lowest priority, so a request from modeld or a
+/// reply from the peer is not left waiting behind ordinary processes; offroad
+/// it is an ordinary thread again. carrot also confines the daemon to cores
+/// 0-3 at the same point; that part is not applied here (see the hand-off).
+#[derive(Default)]
+pub struct OnroadScheduling {
+    applied: Option<bool>,
+    checked: Option<std::time::Instant>,
+}
+impl OnroadScheduling {
+    /// Re-evaluated at most once a second; `onroad` is only called then.
+    pub fn update(&mut self, onroad: impl FnOnce() -> bool) {
+        let now = std::time::Instant::now();
+        if self
+            .checked
+            .is_some_and(|checked| now.duration_since(checked).as_secs() < 1)
+        {
+            return;
+        }
+        self.checked = Some(now);
+        if !std::path::Path::new("/TICI").is_file() {
+            return;
+        }
+        let onroad = onroad()
+            && std::fs::read_to_string("/sys/devices/system/cpu/cpu7/online")
+                .is_ok_and(|online| online.trim() == "1");
+        if self.applied == Some(onroad) {
+            return;
+        }
+        match scheduler(onroad.then_some(1)) {
+            Ok(()) => self.applied = Some(onroad),
+            Err(error) => eprintln!("jetlink daemon scheduling: {error}"),
+        }
+    }
+}
+
+/// modeld's priority (`config_realtime_process(7, 54)`).
+const FRAME_PRIORITY: i32 = 54;
+
+/// Scheduling for the thread that carries one frame to the daemon and back.
+/// carrot's modeld does this exchange on its own realtime thread; here a
+/// separate thread does it while the frame thread waits, so it gets the same
+/// priority. As a normal-priority thread it was woken up to 20 ms late on a
+/// busy device (drive 2026-11-11: 6 of 20 slow frames).
+pub fn frame_worker() {
+    if let Err(error) = widen_affinity() {
+        eprintln!("jetlink worker affinity: {error}");
+    }
+    // Only the device grants realtime scheduling; elsewhere keep the default.
+    if std::path::Path::new("/TICI").is_file() {
+        if let Err(error) = scheduler(Some(FRAME_PRIORITY)) {
+            eprintln!("jetlink worker priority: {error}");
+        }
+    }
+}
 fn widen_affinity() -> io::Result<()> {
     let inherited = rustix::thread::sched_getaffinity(None)?;
     let mut all = rustix::thread::CpuSet::new();

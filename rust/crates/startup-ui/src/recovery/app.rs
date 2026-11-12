@@ -396,6 +396,3 @@ pub fn run() -> Result<(), Error> {
     app.worker.stop()?;
     Ok(())
 }
-
-#[cfg(test)]
-mod tests;

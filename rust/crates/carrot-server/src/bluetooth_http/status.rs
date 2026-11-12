@@ -16,6 +16,8 @@ pub(super) async fn status(service: &Service) -> Result<Value, Failure> {
         "cancelLong",
         "laneLeft",
         "laneRight",
+        "blinkerLeft",
+        "blinkerRight",
         "paddleDecel",
         "carrotCruise",
     ];
@@ -46,6 +48,20 @@ pub(super) async fn status(service: &Service) -> Result<Value, Failure> {
         ),
         ("radioEnabled", Value::Bool(service.radio_enabled().await?)),
     ]);
+    if let Some(b1) = &service.b1 {
+        let enrolled: serde_json::Value = std::fs::read(crate::b1::ENROLLMENT)
+            .ok()
+            .and_then(|bytes| serde_json::from_slice(&bytes).ok())
+            .unwrap_or(serde_json::Value::Null);
+        let text =
+            |slot: &std::sync::Mutex<String>| slot.lock().map(|s| s.clone()).unwrap_or_default();
+        set(
+            &mut result,
+            "b1",
+            super::value(&serde_json::json!({"address": enrolled.get("address"),
+                "state": text(&b1.state), "firmware": text(&b1.firmware)}))?,
+        )?;
+    }
     match service.snapshot().await {
         Ok(snapshot) => {
             if let Value::Object(fields) = super::value(&snapshot)? {

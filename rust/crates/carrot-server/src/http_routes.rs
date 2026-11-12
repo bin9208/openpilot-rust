@@ -75,6 +75,10 @@ pub(crate) async fn dispatch(
     if path == "/api/heartbeat_status" {
         return Ok(crate::heartbeat::handle(&request, &app.heartbeat));
     }
+    if path == crate::egpu_library::ROUTE {
+        let repository = app.config.repository.clone();
+        return Ok(crate::egpu_library::handle(request, &repository).await);
+    }
     if crate::egpu_model::matches(&path) {
         let files = Arc::clone(&app.egpu_model);
         return Ok(crate::egpu_model::handle(&request, app, files, &path).await);

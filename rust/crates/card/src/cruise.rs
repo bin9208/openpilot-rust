@@ -1,4 +1,5 @@
 //! Source-equivalent VCruiseCarrot state tail from selfdrive/car/cruise.py.
+mod assistant_speed;
 mod buttons;
 mod integer;
 mod number;
@@ -28,6 +29,9 @@ pub struct CruiseCarrot {
     fingerprint: String,
     openpilot_longitudinal: bool,
     commands: CommandReader,
+    assistant_speed: assistant_speed::AssistantSpeed,
+    assistant_speed_valid: bool,
+    long_active: bool,
     writes: Vec<(String, Vec<u8>)>,
     prints: Vec<String>,
 }
@@ -52,6 +56,9 @@ impl CruiseCarrot {
             fingerprint: cp.get_car_fingerprint()?.to_str()?.to_owned(),
             openpilot_longitudinal: cp.get_openpilot_longitudinal_control(),
             commands: CommandReader::new(root, "cruise", started),
+            assistant_speed: assistant_speed::AssistantSpeed::new(started),
+            assistant_speed_valid: false,
+            long_active: false,
             writes: Vec::new(),
             prints: Vec::new(),
         })
@@ -156,6 +163,10 @@ impl CruiseCarrot {
             return Err(Error::Event("carControl"));
         };
         let cc = cc?;
+        let control = sm.topic("carControl")?;
+        self.assistant_speed_valid =
+            control.valid && control.alive && (0. ..0.35).contains(&(now - control.receive_time));
+        self.long_active = cc.get_long_active();
         self.update_inputs(sm, now)?;
         self.s.v_cruise_kph_last = self.s.v_cruise_kph;
         self.s.is_metric = is_metric;
@@ -181,7 +192,12 @@ impl CruiseCarrot {
         if cc.get_enabled() {
             self.s._cruise_ready = false;
         }
+        let previous_lat_enabled = self.s._lat_enabled;
         let mut speed = self.update_buttons(cs, cc.get_enabled(), self.s.v_cruise_kph, now)?;
+        if self.assistant_speed.active() {
+            // A speed request must not enable lateral control.
+            self.s._lat_enabled = previous_lat_enabled;
+        }
         let eligible = self.fingerprint == "TOYOTA_RAV4_TSS2_2022"
             && self.brand == "toyota"
             && self.pcm_cruise
@@ -228,6 +244,7 @@ impl CruiseCarrot {
         }
         self.s.cruise_state_available_last = cruise.get_available();
         self.s.enabled_last = cc.get_enabled();
+        self.assistant_speed.finish(now, self.s.v_cruise_kph.value);
         Ok(())
     }
     fn update_inputs(&mut self, sm: &State, now: f64) -> Result<(), Error> {
@@ -322,6 +339,7 @@ impl CruiseCarrot {
                 .ok_or(Error::Numeric)?
         });
         cs.set_soft_hold_active(self.s._soft_hold_active);
+        cs.set_cruise_cancel_state(self.s._cruise_cancel_state);
         cs.set_activate_cruise(self.s._activate_cruise);
         cs.set_lat_enabled(self.s._lat_enabled);
         cs.set_use_lane_line_speed(

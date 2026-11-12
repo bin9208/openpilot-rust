@@ -1,9 +1,13 @@
 mod controller;
+pub mod lane_signals;
 mod parameters;
 mod runtime;
 pub mod speed_limit;
+pub mod stalk;
 pub mod state;
 mod steering;
+pub mod traffic_control;
+pub mod turn_signals;
 pub use parameters::{parameters, ParamsInput};
 pub use runtime::{Setup, Tesla};
 
@@ -11,6 +15,8 @@ pub const FSD_14: u32 = 2;
 pub const MISSING_DAS_SETTINGS: u32 = 4;
 pub const HAS_VEHICLE_BUS: u32 = 8;
 pub const AUTO_SPEED_LIMIT: u32 = 16;
+pub const AUTO_TURN_SIGNALS: u32 = 32;
+pub const CAN_TRAFFIC_STOP: u32 = 64;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

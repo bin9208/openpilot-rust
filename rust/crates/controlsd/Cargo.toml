@@ -36,11 +36,3 @@ libc = { version = "0.2", optional = true }
 name = "openpilot-controlsd"
 path = "src/main.rs"
 required-features = ["native"]
-
-[[example]]
-name = "controlsd_trace"
-required-features = ["native"]
-
-[[example]]
-name = "controlsd_peer"
-required-features = ["native"]

@@ -216,13 +216,16 @@ pub fn hud(data: &mut Values, i: &HudInput) -> Result<(), Error> {
         } else {
             0.
         };
-        data.insert(format!("LANELINE_{side}"), lane);
         data.insert(
-            format!("LCA_{side}_ARROW"),
+            std::sync::Arc::<str>::from(format!("LANELINE_{side}")),
+            lane,
+        );
+        data.insert(
+            std::sync::Arc::<str>::from(format!("LCA_{side}_ARROW")),
             if i.blinker[index] { 2. } else { 0. },
         );
         data.insert(
-            format!("LCA_{side}_ICON"),
+            std::sync::Arc::<str>::from(format!("LCA_{side}_ICON")),
             if i.active {
                 if i.trailer || i.blindspot[index] {
                     1.
@@ -239,7 +242,7 @@ pub fn hud(data: &mut Values, i: &HudInput) -> Result<(), Error> {
             _ => false,
         };
         data.insert(
-            format!("LANE_{side}"),
+            std::sync::Arc::<str>::from(format!("LANE_{side}")),
             if !i.trailer && desire { 1. } else { 0. },
         );
     }

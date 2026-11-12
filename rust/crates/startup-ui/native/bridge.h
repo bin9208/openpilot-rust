@@ -1,4 +1,5 @@
 #pragma once
+#include <unordered_map>
 #include "raylib.h"
 #include "rust/cxx.h"
 #include <memory>
@@ -197,6 +198,10 @@ private:
   std::vector<::Mesh> meshes;
   std::vector<::Shader> shaders;
   std::vector<::Font> fonts;
+  // raylib's GetGlyphIndex scans every glyph per character; Korean fonts hold thousands.
+  struct GlyphLookup { const ::GlyphInfo *glyphs = nullptr; int count = 0; int fallback = 0; std::unordered_map<int, int> index; };
+  std::unordered_map<uint32_t, GlyphLookup> glyph_lookup;
+  void draw_text_indexed(uint32_t font, const std::string &text, ::Vector2 position, float size, float spacing, ::Color tint);
   int64_t default_font_index = -1;
   std::vector<::Texture> textures;
   ::RenderTexture target{};

@@ -25,6 +25,33 @@ impl Service {
         super::http::guard(request, self)?;
         let mut client = self.client.lock().await;
         match operation {
+            "b1-register" => {
+                let mac = address(&body)?;
+                let snapshot = client.snapshot().await?;
+                if !snapshot.devices.iter().any(|device| {
+                    device.address.as_deref() == Some(mac.as_str())
+                        && crate::b1::compatible(Some(&device.name), &device.uuids)
+                }) {
+                    return Err(bad("Scan for a Carrot-B1 service first"));
+                }
+                let _ = std::fs::remove_file(crate::b1::ENROLLMENT);
+                openpilot_bluetooth::atomic_json(
+                    std::path::Path::new(crate::b1::SETUP),
+                    &serde_json::json!({"selected": mac.as_str()}),
+                )?;
+                if let Some(b1) = &self.b1 {
+                    if let Ok(mut next) = b1.next_discovery.lock() {
+                        *next = 0.;
+                    }
+                }
+            }
+            "b1-forget" => {
+                openpilot_bluetooth::atomic_json(
+                    std::path::Path::new(crate::b1::SETUP),
+                    &serde_json::json!({"disabled": true}),
+                )?;
+                let _ = std::fs::remove_file(crate::b1::ENROLLMENT);
+            }
             "scan" => {
                 self.cache(Some(client.snapshot_reader().await?))?;
                 client.scan().await?;

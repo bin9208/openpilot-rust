@@ -22,6 +22,7 @@ from openpilot.system.hardware import HARDWARE, TICI, AGNOS, PC
 from openpilot.system.loggerd.config import get_available_percent
 from openpilot.system.statsd import statlog
 from openpilot.common.swaglog import cloudlog
+from openpilot.system.memory_trace import FullGCTrace
 from openpilot.system.hardware.power_monitoring import PowerMonitoring
 from openpilot.system.hardware.fan_controller import FanController
 from openpilot.system.hardware.tici.pins import GPIO
@@ -478,6 +479,11 @@ def hardware_thread(end_event, hw_queue) -> None:
 
 
 def main():
+  with FullGCTrace('hardwared') as trace:
+    run_hardware(trace)
+
+
+def run_hardware(trace):
   hw_queue = queue.Queue(maxsize=1)
   end_event = threading.Event()
 
@@ -495,6 +501,9 @@ def main():
   try:
     while True:
       time.sleep(1)
+      now = time.monotonic()
+      if trace.due(now):
+        trace.report(now, hw_queue=hw_queue.qsize())
       if not all(t.is_alive() for t in threads):
         break
   finally:

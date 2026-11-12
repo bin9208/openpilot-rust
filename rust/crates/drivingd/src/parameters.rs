@@ -73,5 +73,9 @@ pub fn desire_config(params: &Params) -> Result<Config, Error> {
         bsd: integer(params, "LaneChangeBsd")?,
         line_check: integer(params, "LaneLineCheck")?,
         delay_tenths: float(params, "LaneChangeDelay")?,
+        latched_turn: f64::from(integer(params, "BlinkerLatchedTurn")?) * (1. / 3.6),
+        lever_wait: params
+            .get("LaneChangeLeverWait")?
+            .is_some_and(|value| value == b"1"),
     })
 }

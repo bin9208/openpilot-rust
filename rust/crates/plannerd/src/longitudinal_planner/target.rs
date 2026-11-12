@@ -41,8 +41,12 @@ impl LongitudinalPlanner {
         } else {
             &input.carrot.radar.lead_one
         };
-        let preview_enabled =
-            self.mpc.mode == PlannerMode::Acc && !reset && !car.gas_pressed && !car.brake_pressed;
+        let tesla_active = self.tesla_decision.as_ref().is_some_and(|d| d.active);
+        let preview_enabled = self.mpc.mode == PlannerMode::Acc
+            && !reset
+            && !car.gas_pressed
+            && !car.brake_pressed
+            && !tesla_active;
         let request = preview::request(PreviewInput {
             lead_status: preview_enabled && lead.status && lead.radar && lead.radar_track_id >= 0,
             lead_acceleration: lead.a_lead_k,
@@ -65,7 +69,7 @@ impl LongitudinalPlanner {
         } else {
             base
         };
-        if self.mpc.mode == PlannerMode::Acc {
+        if self.mpc.mode == PlannerMode::Acc && !self.tesla_blended {
             self.target_acceleration = acceleration;
             self.target_speed = speed;
             self.should_stop = should_stop;

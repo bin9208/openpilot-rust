@@ -241,7 +241,7 @@ pub fn target_settings(path: &Path, environment: &Environment) -> Result<(String
         openpilot_web_upload::DEFAULT_WEB_UPLOAD_URL,
     )
     .unwrap_or_else(|_| openpilot_web_upload::DEFAULT_WEB_UPLOAD_URL.into());
-    let normalized = if ["https://op.wjcloud.kr", "https://shind0.synology.me"]
+    let normalized = if openpilot_web_upload::LEGACY_WEB_UPLOAD_URLS
         .contains(&normalized.to_lowercase().as_str())
     {
         openpilot_web_upload::DEFAULT_WEB_UPLOAD_URL.to_owned()

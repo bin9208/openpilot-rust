@@ -55,6 +55,24 @@ impl CarrotPlanner {
         self.update_desire(input)?;
         self.events.clear();
         self.soft_hold_active = input.car.soft_hold_active;
+        // The guard may have injected E2eStopped on the previous cycle. Retiring its
+        // latch must retire that injected state too, before the normal model/lead
+        // state machine runs again. Explicit driver holds retain ownership.
+        if self.x_state != XState::E2eStopped {
+            self.signal_stop_owned = false;
+        }
+        if crate::signal::start::departed_signal_stop(input.car.v_ego)
+            && (self.signal_stop_owned || self.start_guard.holding())
+            && self.x_state == XState::E2eStopped
+            && self.soft_hold_active == 0
+            && self.user_stop_distance < 0.
+            && !self.carrot_stay_stop
+        {
+            self.x_state = XState::E2eCruise;
+            self.actual_stop_distance = 0.;
+            self.stopping_count = 0;
+            self.signal_stop_owned = false;
+        }
         self.comfort_brake = 2.4 * self.driving_mode.comfort_brake_factor();
         [self.safe_factor, self.follow_factor] = self.driving_mode.factors();
         let cruise_kph = self.eco_control(input.car.v_ego_cluster * 3.6, cruise_kph);
@@ -112,6 +130,7 @@ impl CarrotPlanner {
             self.user_stop_distance = -1.;
         }
         if start_hold {
+            self.signal_stop_owned = true;
             self.x_state = XState::E2eStopped;
             self.actual_stop_distance = 0.;
             stop_model = 0.;
@@ -133,6 +152,7 @@ impl CarrotPlanner {
             stop_model = 1000.;
         }
         if self.user_stop_distance >= 0. && !start_hold {
+            self.signal_stop_owned = false;
             if self.signal_detection_suspended {
                 stop_model = 0.;
             }

@@ -27,6 +27,9 @@ impl CarKalman {
             .pin_mut()
             .reset(x, covariance, time.unwrap_or(f64::NAN))?)
     }
+    pub fn set_globals(&mut self, globals: &[f64; 6]) -> Result<(), Error> {
+        Ok(self.inner.pin_mut().set_globals(globals)?)
+    }
     pub fn pause(&mut self, time: f64) {
         self.inner.pin_mut().pause(time);
     }

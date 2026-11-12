@@ -21,6 +21,8 @@ pub struct Command {
     pub longitudinal: bool,
     pub left: bool,
     pub right: bool,
+    /// `carControl.assistantLaneSignalId` for a native voice indicator.
+    pub assistant_id: String,
     pub accel: f32,
     pub target: f32,
     pub jerk: f32,
@@ -47,6 +49,7 @@ pub struct Controls {
     pub turn_speed: i32,
     pub calibration: [f64; 3],
     pub pose: Option<Pose>,
+    pub physical_hold: crate::physical_hold::HoldReader,
 }
 impl Controls {
     pub fn new(
@@ -83,6 +86,7 @@ impl Controls {
         let longitudinal = Longitudinal::new(&config, params)?;
         let lateral = Lateral::new(&config, &interface, params)?;
         let vm = VehicleModel::new(config.physical.clone());
+        let physical_hold = crate::physical_hold::HoldReader::new(&config.fingerprint);
         Ok(Self {
             config,
             interface,
@@ -100,6 +104,7 @@ impl Controls {
             turn_speed,
             calibration: [0.; 3],
             pose: None,
+            physical_hold,
         })
     }
     pub fn control(
@@ -123,6 +128,7 @@ impl Controls {
             params.float("SteerRatioRate")?,
             params.float("CustomSR")?,
         );
+        self.vm.update_geometry(input.center_to_front_ratio);
         self.vm.update(maximum(live.stiffness, 0.1), ratio);
         let angle = (cs.steer_angle - live.offset).to_radians();
         self.curvature = -self.vm.curvature(angle, cs.speed, live.roll)?;
@@ -146,9 +152,17 @@ impl Controls {
             && !cs.fault_temporary
             && !cs.fault_permanent
             && ((cs.standstill && standstill) || (!cs.standstill && !below));
-        let lateral = self.suspend.update(cs, lateral, params)? && lateral_ready;
-        let longitudinal =
-            input.selfdrive.enabled && !input.override_long && self.config.openpilot_long;
+        // AlwaysLateral must also stop while manager drains workers for an impact reboot.
+        let impact_reboot = params.boolean("ImpactDashcamReboot")?;
+        let lateral = self.suspend.update(cs, lateral, params)?
+            && lateral_ready
+            && !input.vehicle_fault
+            && !impact_reboot;
+        let longitudinal = input.selfdrive.enabled
+            && !input.override_long
+            && !input.vehicle_fault
+            && !impact_reboot
+            && self.config.openpilot_long;
         if !lateral {
             self.lateral.reset();
         }
@@ -240,12 +254,23 @@ impl Controls {
                 curvature_limited,
             },
         )?;
+        let route = input.model.assistant_route.as_str();
+        let native_voice = route == "native" && !input.model.assistant_id.is_empty() && lateral;
+        let lane_lamps =
+            input.model.lane_change && (matches!(route, "" | "ordinary") || native_voice);
         let mut command = Command {
-            enabled: input.selfdrive.enabled,
+            enabled: input.selfdrive.enabled && !impact_reboot,
             lateral,
             longitudinal,
-            left: input.model.lane_change && input.model.lane_left,
-            right: input.model.lane_change && input.model.lane_right,
+            // carrot voice_indicator.set_lane_change_blinkers: only ordinary or
+            // admitted native voice maneuvers drive the lane-change lamps.
+            left: lane_lamps && input.model.lane_left,
+            right: lane_lamps && input.model.lane_right,
+            assistant_id: if native_voice {
+                input.model.assistant_id.clone()
+            } else {
+                String::new()
+            },
             accel: accel as f32,
             target: target as f32,
             jerk: jerk as f32,

@@ -11,6 +11,7 @@
 #include <string>
 #if defined(__GLIBC__)
 #include <malloc.h>
+#include <sys/stat.h>
 #endif
 bool openpilot_raylib_symbol_available(const char *name);
 uint32_t openpilot_active_framebuffer();
@@ -195,7 +196,7 @@ std::unique_ptr<Image> Surface::capture_image() const {if(!target.id)throw std::
 std::unique_ptr<Image> Surface::target_image(uint32_t index) const {const auto value=targets.at(index);if(!value.id)throw std::runtime_error("render target released");rlDrawRenderBatchActive();return std::make_unique<Image>(value.texture);}
 void Surface::text_batch(rust::Str text,rust::Slice<const TextPaint> paints) {
   const auto encoded=std::string(text);
-  for(const auto &paint:paints) DrawTextEx(fonts.at(paint.font),encoded.c_str(),{paint.position.x,paint.position.y},paint.size,paint.spacing,color(paint.color));
+  for(const auto &paint:paints) draw_text_indexed(paint.font,encoded,{paint.position.x,paint.position.y},paint.size,paint.spacing,color(paint.color));
 }
 void Surface::frame_end() {EndDrawing();}
 void Surface::image_text(Image &image, rust::Str text, TextPaint paint) {
@@ -383,8 +384,88 @@ Point Surface::measure(uint32_t font, rust::Str text, float size,
 }
 void Surface::text(uint32_t font, rust::Str text, Point position, float size,
                    float spacing, uint32_t tint) {
-  DrawTextEx(fonts.at(font), std::string(text).c_str(),
-             {position.x, position.y}, size, spacing, color(tint));
+  draw_text_indexed(font, std::string(text), {position.x, position.y}, size,
+                    spacing, color(tint));
+}
+
+namespace {
+// Same decoding as raylib GetCodepointNext.
+int next_codepoint(const char *ptr, int *bytes) {
+  int codepoint = 0x3f;
+  *bytes = 1;
+  if (0xf0 == (0xf8 & ptr[0])) {
+    if (((ptr[1] & 0xC0) ^ 0x80) || ((ptr[2] & 0xC0) ^ 0x80) || ((ptr[3] & 0xC0) ^ 0x80)) return codepoint;
+    codepoint = ((0x07 & ptr[0]) << 18) | ((0x3f & ptr[1]) << 12) | ((0x3f & ptr[2]) << 6) | (0x3f & ptr[3]);
+    *bytes = 4;
+  } else if (0xe0 == (0xf0 & ptr[0])) {
+    if (((ptr[1] & 0xC0) ^ 0x80) || ((ptr[2] & 0xC0) ^ 0x80)) return codepoint;
+    codepoint = ((0x0f & ptr[0]) << 12) | ((0x3f & ptr[1]) << 6) | (0x3f & ptr[2]);
+    *bytes = 3;
+  } else if (0xc0 == (0xe0 & ptr[0])) {
+    if ((ptr[1] & 0xC0) ^ 0x80) return codepoint;
+    codepoint = ((0x1f & ptr[0]) << 6) | (0x3f & ptr[1]);
+    *bytes = 2;
+  } else if (0x00 == (0x80 & ptr[0])) {
+    codepoint = ptr[0];
+  }
+  return codepoint;
+}
+}  // namespace
+
+// DrawTextEx and DrawTextCodepoint from the pinned raylib, with an indexed glyph lookup.
+void Surface::draw_text_indexed(uint32_t font_index, const std::string &text, ::Vector2 position,
+                                float fontSize, float spacing, ::Color tint) {
+  const ::Font &font = fonts.at(font_index);
+  if (font.texture.id == 0 || font.baseSize <= 0 || font.glyphCount <= 0 || !font.recs || !font.glyphs) {
+    DrawTextEx(font, text.c_str(), position, fontSize, spacing, tint);
+    return;
+  }
+  auto &lookup = glyph_lookup[font_index];
+  if (lookup.glyphs != font.glyphs || lookup.count != font.glyphCount) {
+    lookup.glyphs = font.glyphs;
+    lookup.count = font.glyphCount;
+    lookup.fallback = 0;
+    lookup.index.clear();
+    lookup.index.reserve(font.glyphCount * 2);
+    for (int i = 0; i < font.glyphCount; ++i) {
+      if (font.glyphs[i].value == 63) lookup.fallback = i;
+      lookup.index.emplace(font.glyphs[i].value, i);  // first occurrence wins, like the scan
+    }
+  }
+  auto glyph = [&](int codepoint) {
+    auto found = lookup.index.find(codepoint);
+    if (found != lookup.index.end()) {
+      return found->second;
+    }
+    return font.glyphs[0].value == codepoint ? 0 : lookup.fallback;
+  };
+  const float scale = fontSize / font.baseSize;
+  const float padding = float(font.glyphPadding);
+  float offsetX = 0.0f, offsetY = 0.0f;
+  const char *bytes = text.c_str();
+  const int size = int(text.size());
+  for (int i = 0; i < size && bytes[i];) {
+    int count = 0;
+    const int codepoint = next_codepoint(&bytes[i], &count);
+    const int index = glyph(codepoint);
+    if (codepoint == '\n') {
+      offsetY += fontSize + 2;  // raylib textLineSpacing default; never changed here
+      offsetX = 0.0f;
+    } else {
+      if (codepoint != ' ' && codepoint != '\t') {
+        const auto &rec = font.recs[index];
+        const auto &info = font.glyphs[index];
+        ::Rectangle destination = {position.x + offsetX + info.offsetX * scale - padding * scale,
+                                   position.y + offsetY + info.offsetY * scale - padding * scale,
+                                   (rec.width + 2.0f * padding) * scale, (rec.height + 2.0f * padding) * scale};
+        ::Rectangle source = {rec.x - padding, rec.y - padding, rec.width + 2.0f * padding, rec.height + 2.0f * padding};
+        DrawTexturePro(font.texture, source, destination, {0, 0}, 0.0f, tint);
+      }
+      if (font.glyphs[index].advanceX == 0) offsetX += float(font.recs[index].width) * scale + spacing;
+      else offsetX += float(font.glyphs[index].advanceX) * scale + spacing;
+    }
+    i += count;
+  }
 }
 void Surface::draw_texture(uint32_t texture, Rect rect, Point origin,
                            float rotation) {
@@ -470,7 +551,26 @@ void Surface::finish_content(float scale) {
     if (shader.id) EndShaderMode();
   }
 }
-void Surface::present() { EndDrawing(); frame_open=false; }
+// Remote capture for devices whose panel cannot be looked at: touch
+// /tmp/ui_screenshot.req and the next frame is saved to /tmp/ui_screenshot.png.
+// The request is checked at most once per second; each new mtime is one capture,
+// so a request file owned by another user (and not removable here) fires once.
+static void capture_if_requested() {
+  static double checked = -1;
+  static struct timespec handled = {};
+  double now = GetTime();
+  if (checked >= 0 && now - checked < 1.0) return;
+  checked = now;
+  struct stat request;
+  if (stat("/tmp/ui_screenshot.req", &request) != 0) return;
+  if (request.st_mtim.tv_sec == handled.tv_sec && request.st_mtim.tv_nsec == handled.tv_nsec) return;
+  handled = request.st_mtim;
+  rlDrawRenderBatchActive();
+  auto image = LoadImageFromScreen();
+  ExportImage(image, "/tmp/ui_screenshot.png");
+  UnloadImage(image);
+}
+void Surface::present() { capture_if_requested(); EndDrawing(); frame_open=false; }
 void Surface::end(float scale) { finish_content(scale); present(); }
 bool Surface::has_render_target() const { return target.id != 0; }
 bool Surface::has_capture_frame() const {return frame_target.id != 0;}

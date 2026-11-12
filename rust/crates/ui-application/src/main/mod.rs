@@ -215,7 +215,18 @@ impl Widget for Main {
     fn paint(&mut self, frame: &Frame<'_>, draw: &mut dyn Draw) -> Result<RenderResult, Error> {
         let result = match &mut self.layout {
             Layout::Big(big) => big.paint(&self.context, &self.state, frame, draw)?,
-            Layout::Compact(compact) => compact.paint(&self.state, frame, draw)?,
+            Layout::Compact(compact) => {
+                let result = compact.paint(&self.state, frame, draw)?;
+                // Second row under the HUD runtime badge, clear of the side panel.
+                crate::indicator_display::draw_b1_badge(
+                    draw,
+                    (self.context.now_monotonic)(),
+                    self.state.rect,
+                    Some(52.),
+                    Some(60. + 24.),
+                )?;
+                result
+            }
         };
         self.recording.rendered = true;
         Ok(result)

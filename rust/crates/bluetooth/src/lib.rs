@@ -5,6 +5,8 @@ mod config;
 mod decoder;
 mod engine;
 mod events;
+#[cfg(test)]
+mod fast_tests;
 mod files;
 mod gates;
 mod holds;

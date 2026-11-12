@@ -1,5 +1,6 @@
 //! Native card startup, CAN-driven core and explicit vehicle interface registry.
 pub mod async_params;
+pub use openpilot_blink as blink;
 pub mod brands;
 pub mod can_wire;
 pub mod core;
@@ -20,4 +21,5 @@ pub mod state_helpers;
 pub mod toggle;
 pub mod vehicle_params;
 pub mod vin;
+pub mod voice_indicator;
 pub mod xiaoge;

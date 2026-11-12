@@ -39,6 +39,7 @@ pub fn publish(
         cc.set_long_active(command.longitudinal);
         cc.set_left_blinker(command.left);
         cc.set_right_blinker(command.right);
+        cc.set_assistant_lane_signal_id(command.assistant_id.as_str());
         {
             let mut actuators = cc.reborrow().init_actuators();
             actuators.set_long_control_state(state(controls.longitudinal.state));

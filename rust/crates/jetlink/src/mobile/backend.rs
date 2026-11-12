@@ -129,6 +129,9 @@ impl Backend for MobileBackend {
     fn idle(&mut self) -> Result<(), Error> {
         self.client.as_mut().ok_or(Error::Closed)?.idle()
     }
+    fn session_start(&mut self) -> Result<(), Error> {
+        self.client.as_mut().ok_or(Error::Closed)?.session_start()
+    }
     fn source_sof(&mut self, source_sof: u64) {
         if let Some(client) = &mut self.client {
             client.set_source_sof(source_sof);

@@ -10,9 +10,7 @@ use openpilot_jetlink::{
     Error,
 };
 use openpilot_params::Params;
-use openpilot_runtime_core::jetlink_port::{Input as PortInput, Port};
-use openpilot_runtime_core::jetlink_power::{self, Action as DrawAction, Draw};
-mod usb_policy;
+use openpilot_runtime_core::jetlink_power::{self, InputPower};
 use std::{
     env,
     fs::{self, OpenOptions},
@@ -42,21 +40,8 @@ enum EntryError {
     Jetlink(#[from] Error),
 }
 
-fn bool_param(params: &Params, key: &str) -> Result<bool, EntryError> {
-    Ok(params.get(key)?.is_some_and(|v| v == b"1"))
-}
-fn draw(action: DrawAction) -> std::io::Result<()> {
-    root_command(
-        "--usb-draw",
-        if action == DrawAction::Cut {
-            "off"
-        } else {
-            "on"
-        },
-        Duration::from_secs(2),
-    )
-}
-fn root_command(flag: &str, action: &str, timeout: Duration) -> std::io::Result<()> {
+/// Runs the root cut helper; Ok(true) when the zero-current vote was applied.
+fn cut_input() -> std::io::Result<bool> {
     let mut command = if rustix::process::geteuid().is_root() {
         Command::new(env::current_exe()?)
     } else {
@@ -64,14 +49,14 @@ fn root_command(flag: &str, action: &str, timeout: Duration) -> std::io::Result<
         command.arg("-n").arg(env::current_exe()?);
         command
     };
-    let mut child = command.args([flag, action]).stdin(Stdio::null()).spawn()?;
-    let until = Instant::now() + timeout;
+    let mut child = command.arg("--usb-power").stdin(Stdio::null()).spawn()?;
+    let until = Instant::now() + Duration::from_secs(5);
     loop {
         if let Some(status) = child.try_wait()? {
-            return if status.success() {
-                Ok(())
-            } else {
-                Err(std::io::Error::other(format!("USB helper {action} failed")))
+            return match status.code() {
+                Some(0) => Ok(true),
+                Some(3) => Ok(false),
+                _ => Err(std::io::Error::other("USB input-current helper failed")),
             };
         }
         if Instant::now() >= until {
@@ -79,36 +64,10 @@ fn root_command(flag: &str, action: &str, timeout: Duration) -> std::io::Result<
             child.wait()?;
             return Err(std::io::Error::new(
                 std::io::ErrorKind::TimedOut,
-                format!("USB helper {action} exceeded {}s", timeout.as_secs()),
+                "USB input-current helper exceeded 5s",
             ));
         }
         thread::sleep(Duration::from_millis(5));
-    }
-}
-
-fn usb_command(action: &str) -> bool {
-    let timeout = if matches!(action, "port-source" | "port-sink") {
-        4
-    } else {
-        2
-    };
-    match root_command("--usb-policy", action, Duration::from_secs(timeout)) {
-        Ok(()) => true,
-        Err(error) => {
-            eprintln!("Jetlink {action}: {error}");
-            false
-        }
-    }
-}
-
-fn steer_draw(policy: &mut Draw, wanted: bool) {
-    let role = if !wanted && policy.settled != Some(false) {
-        fs::read_to_string(jetlink_power::POWER_ROLE).ok()
-    } else {
-        None
-    };
-    if let Err(error) = policy.update(wanted, role.as_deref().map(str::trim), draw) {
-        eprintln!("Jetlink USB input-current policy: {error}");
     }
 }
 
@@ -118,7 +77,8 @@ fn setup_backoff(detail: &str) -> Duration {
     {
         Duration::from_secs(2)
     } else {
-        Duration::from_secs(60)
+        // Carrot retries a failed session after 2 s.
+        Duration::from_secs(2)
     }
 }
 fn setup_plain_gadget() -> Result<(), Error> {
@@ -159,7 +119,7 @@ fn setup_gadget(mode: TransportMode) -> Result<(), Error> {
     if mode.composite() {
         return mobile::root("gadget");
     }
-    let gadget = Path::new("/sys/kernel/config/usb_gadget/carrot_jetlink");
+    let gadget = Path::new(openpilot_jetlink::gadget::GADGET);
     if gadget.join("functions/ncm.jetlink").exists()
         || gadget.join("configs/c.1/ncm.jetlink").is_symlink()
     {
@@ -291,34 +251,21 @@ fn options(
 
 fn run() -> Result<(), EntryError> {
     let helper_args = env::args().skip(1).collect::<Vec<_>>();
-    if helper_args.len() == 2 && helper_args[0] == "--usb-policy" {
-        if !rustix::process::geteuid().is_root() {
-            return Err(EntryError::Arguments("USB policy helper requires root"));
-        }
-        if !Path::new("/AGNOS").is_file() {
-            return Err(EntryError::Arguments("USB hardware policy requires AGNOS"));
-        }
-        usb_policy::apply(&helper_args[1])?;
-        return Ok(());
-    }
-    if helper_args.len() == 2 && helper_args[0] == "--usb-draw" {
+    if helper_args == ["--usb-power"] {
         if !rustix::process::geteuid().is_root() {
             return Err(EntryError::Arguments(
                 "USB input-current helper requires root",
             ));
         }
-        if !Path::new("/AGNOS").is_file() {
-            return Err(EntryError::Arguments(
-                "USB input-current policy requires AGNOS",
-            ));
-        }
-        let action = match helper_args[1].as_str() {
-            "off" => DrawAction::Cut,
-            "on" => DrawAction::Restore,
-            _ => return Err(EntryError::Arguments("USB draw action must be off or on")),
-        };
-        jetlink_power::apply(action)?;
-        return Ok(());
+        let cut = jetlink_power::cut_input(
+            Path::new(jetlink_power::POWER_ROLE),
+            Path::new(jetlink_power::VOTER),
+        )?;
+        std::process::exit(if cut == jetlink_power::Cut::Applied {
+            0
+        } else {
+            3
+        });
     }
     if helper_args == ["--wifi-publisher"] {
         openpilot_jetlink::wifi::run()?;
@@ -409,11 +356,8 @@ fn run() -> Result<(), EntryError> {
     let mut effective_transport = transport_mode;
     let mut reconnect_at = Instant::now();
     let mut owner = GadgetOwner::default();
-    let mut draw_policy = Draw::default();
-    let mut port_policy = Port::default();
-    let mut tuning = usb_policy::Tuning::default();
+    let mut input_power = InputPower::default();
     let clock = Instant::now();
-    let mut port_active = true;
     let agnos = Path::new("/AGNOS").is_file();
     let mut link: Option<Link> = None;
     let mut usb_probes = 0usize;
@@ -422,62 +366,16 @@ fn run() -> Result<(), EntryError> {
     let mut failure_detail = String::new();
     let mut count = 0;
     while !stop.load(Ordering::Acquire) {
-        let mode = params
-            .get("JetlinkMode")?
-            .and_then(|v| String::from_utf8(v).ok())
-            .and_then(|v| v.parse::<i32>().ok())
-            .unwrap_or(0);
-        let wants_link = matches!(mode, 1 | 2);
-        let egpu = wants_link
-            && (bool_param(&params, "UsbGpuActive")?
-                || bool_param(&params, "UsbGpuLoading")?
-                || openpilot_jetlink::gadget::egpu_present(Path::new("/sys/bus/usb/devices"))?);
-        // Before provisioning, including when the phone is already connected.
+        // Carrot: no setting gates the link; a USB host attaching starts it.
         if agnos {
-            steer_draw(&mut draw_policy, wants_link && !egpu);
-        }
-        if agnos && wants_link && !egpu {
-            let role = usb_policy::read(jetlink_power::POWER_ROLE);
-            let data = if matches!(role.as_deref(), Some("sink" | "source")) {
-                usb_policy::read(usb_policy::DATA_ROLE)
-            } else {
-                None
-            };
-            let udc_mode = usb_policy::read(usb_policy::UDC_MODE).unwrap_or_default();
-            if (role.as_deref(), data.as_deref())
-                != (
-                    port_policy.roles.0.as_deref(),
-                    port_policy.roles.1.as_deref(),
-                )
-            {
-                eprintln!(
-                    "Jetlink USB-C: power={}, data={}, UDC={}",
-                    role.as_deref().unwrap_or("unknown"),
-                    data.as_deref().unwrap_or("unknown"),
-                    udc_mode
-                );
-            }
-            let configured = usb_policy::own_host_attached();
-            port_policy.update(
-                PortInput {
-                    now: clock.elapsed().as_secs_f64(),
-                    role: role.as_deref(),
-                    data: data.as_deref(),
-                    configured,
-                    host_attached: configured,
-                    egpu,
-                    udc_mode: &udc_mode,
-                    charge: false,
-                    contract: "",
-                    hottest_c: None,
-                },
-                |action| usb_command(action.name()),
+            input_power.step(
+                clock.elapsed().as_secs_f64(),
+                fs::read_to_string(jetlink_power::POWER_ROLE)
+                    .ok()
+                    .as_deref()
+                    .map(str::trim),
+                cut_input,
             );
-            port_active = true;
-        } else if agnos && port_active {
-            port_policy.off(|action| usb_command(action.name()));
-            tuning.update(false, usb_command);
-            port_active = false;
         }
         if failed && Instant::now() >= reconnect_at {
             failed = false;
@@ -533,22 +431,7 @@ fn run() -> Result<(), EntryError> {
             reconnect_at = Instant::now() + Duration::from_secs(5);
             failed = false;
         }
-        let result = if mode == 0 || egpu {
-            let result = owner.disable(|| {
-                if let Some(link) = &mut link {
-                    link.teardown()?;
-                }
-                Ok(())
-            });
-            if result.is_ok() {
-                link = None;
-                failed = false;
-                effective_transport = transport_mode;
-                usb_probes = 0;
-                grace = Duration::from_secs(5);
-            }
-            result
-        } else if attached && matches!(mode, 1 | 2) && !failed && Instant::now() >= reconnect_at {
+        let result = if attached && !failed && Instant::now() >= reconnect_at {
             if owner.enabled() {
                 if let Some(link) = &mut link {
                     if link.server.is_none() {
@@ -570,11 +453,11 @@ fn run() -> Result<(), EntryError> {
                     Err(Error::Contract("enabled gadget has no owner"))
                 }
             } else {
-                owner.enable(egpu, || {
+                owner.enable(false, || {
                     setup_gadget(effective_transport)?;
                     let session = Session::open(
-                        Path::new("/dev/ffs-carrot-jetlink"),
-                        Path::new("/sys/kernel/config/usb_gadget/carrot_jetlink"),
+                        Path::new(openpilot_jetlink::gadget::FFS_MOUNT),
+                        Path::new(openpilot_jetlink::gadget::GADGET),
                         Path::new("/sys/class/udc"),
                     )?;
                     let mut candidate = Link {
@@ -620,9 +503,6 @@ fn run() -> Result<(), EntryError> {
         } else {
             Ok(())
         };
-        if agnos && wants_link && !egpu {
-            tuning.update(true, usb_command);
-        }
         let attempt_error = result.is_err();
         if let Err(error) = result {
             failed = true;
@@ -711,18 +591,6 @@ fn run() -> Result<(), EntryError> {
         }
         thread::sleep(Duration::from_millis(500));
     }
-    let wanted_at_stop = params
-        .get("JetlinkMode")?
-        .is_some_and(|value| matches!(value.as_slice(), b"1" | b"2"))
-        && !bool_param(&params, "UsbGpuActive")?
-        && !bool_param(&params, "UsbGpuLoading")?
-        && !openpilot_jetlink::gadget::egpu_present(Path::new("/sys/bus/usb/devices"))?;
-    if agnos && !wanted_at_stop {
-        // Keep the cut while the link is wanted; restore only on an empty port.
-        steer_draw(&mut draw_policy, false);
-        port_policy.off(|action| usb_command(action.name()));
-        tuning.finish(false, usb_command);
-    }
     if let Some(link) = &mut link {
         link.teardown()?;
     }
@@ -756,6 +624,7 @@ mod tests {
             setup_backoff("a USB gadget already owns the controller"),
             Duration::from_secs(2)
         );
-        assert_eq!(setup_backoff("USB mount failed"), Duration::from_secs(60));
+        // Carrot's daemon sleeps 2 s after every failed session, whatever the cause.
+        assert_eq!(setup_backoff("USB mount failed"), Duration::from_secs(2));
     }
 }

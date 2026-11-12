@@ -195,6 +195,34 @@ impl Backend {
             .unwrap_or(3)
     }
 
+    /// carrot `is_ray_pedal_control` on CarParamsPersistent.
+    pub fn ray_pedal_control(&self) -> bool {
+        let Some(params) = &self.native else {
+            return false;
+        };
+        let Ok(Some(bytes)) = params.get("CarParamsPersistent") else {
+            return false;
+        };
+        (|| {
+            let reader = capnp::serialize::read_message(
+                &mut std::io::Cursor::new(bytes),
+                Default::default(),
+            )
+            .ok()?;
+            let cp = reader
+                .get_root::<openpilot_cereal::car_capnp::car_params::Reader<'_>>()
+                .ok()?;
+            const REQUIRED: u32 = (1 << 31) | (1 << 29); // CC_ONLY_CAR | PEDAL_INTERCEPTOR
+            Some(
+                cp.get_brand().ok()?.to_str().ok()? == "hyundai"
+                    && cp.get_openpilot_longitudinal_control()
+                    && cp.get_car_fingerprint().ok()?.to_str().ok()? == "KIA_RAY_EV"
+                    && cp.get_flags() & REQUIRED == REQUIRED,
+            )
+        })()
+        .unwrap_or(false)
+    }
+
     pub fn vehicle_brand(&self) -> String {
         let Some(params) = &self.native else {
             return String::new();

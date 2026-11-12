@@ -14,7 +14,12 @@ pub struct Inputs {
     pub pt: Parser,
     pub cam: Parser,
     pub alt: Option<Parser>,
+    /// Comma Pedal sensor parser (`Bus.party`), only on configured cars.
+    pub pedal: Option<Parser>,
     pub captures: BTreeMap<&'static str, (Channel, &'static str)>,
+    /// Per message: the frame timestamp it was built from and its signal map.
+    pub(crate) values_cache:
+        std::cell::RefCell<std::collections::HashMap<(u8, u32), (u64, Values)>>,
 }
 
 impl Inputs {
@@ -53,12 +58,25 @@ impl Inputs {
         } else {
             pt.add("EMS21", Some(f64::NAN), false, now)?;
         }
+        let pedal = match super::pedal::configured(&config.candidate, config.flags) {
+            Some(profile) => {
+                // Register the configured OEM CC input at its actual receive rate.
+                pt.add(profile.cruise_ready.0, Some(10.), false, now)?;
+                let dbc = Arc::new(Dbc::load(&path.with_file_name("pedal_interceptor.dbc"))?);
+                let mut parser = Parser::new(dbc, super::pedal::BUS, now);
+                parser.add("GAS_SENSOR", Some(super::pedal::RX_FREQUENCY), false, now)?;
+                Some(parser)
+            }
+            None => None,
+        };
         Ok(Self {
             diagnostics: super::diagnostics::Diagnostics::default(),
             pt,
             cam: Parser::new(dbc, if fd { config.bus.cam } else { 2 }, now),
             alt,
+            pedal,
             captures: BTreeMap::new(),
+            values_cache: Default::default(),
         })
     }
 
@@ -96,6 +114,9 @@ impl Inputs {
             alt.update(packets)?;
             self.diagnostics.retain_warnings(alt);
         }
+        if let Some(pedal) = &mut self.pedal {
+            pedal.update(packets)?;
+        }
         Ok(())
     }
 
@@ -132,6 +153,7 @@ impl Inputs {
             .ok_or(Error::Numeric)
     }
 
+    /// Built once per received frame; later calls in the same cycle share the keys.
     pub fn values(&self, channel: Channel, name: &str) -> Result<Values, Error> {
         let parser = self.parser(channel)?;
         let message = parser.dbc.message(name)?;
@@ -139,12 +161,79 @@ impl Inputs {
             .states
             .get(&message.address)
             .ok_or_else(|| Error::Signal(name.into()))?;
-        Ok(message
+        let stamp = state.timestamps.back().copied().unwrap_or(0);
+        let key = (channel as u8, message.address);
+        let mut cache = self.values_cache.borrow_mut();
+        if let Some((cached, values)) = cache.get_mut(&key) {
+            if *cached == stamp {
+                return Ok(values.clone());
+            }
+            // A new frame of the same message: refresh values, keep the shared names.
+            for (signal, value) in message.signals.iter().zip(&state.values) {
+                if let Some(slot) = values.get_mut(signal.name.as_str()) {
+                    *slot = *value;
+                }
+            }
+            *cached = stamp;
+            return Ok(values.clone());
+        }
+        let values: Values = message
             .signals
             .iter()
             .zip(&state.values)
-            .map(|(signal, value)| (signal.name.clone(), *value))
-            .collect())
+            .map(|(signal, value)| (std::sync::Arc::from(signal.name.as_str()), *value))
+            .collect();
+        cache.insert(key, (stamp, values.clone()));
+        Ok(values)
+    }
+
+    /// Receive time (ns) of the frame a capture was last built from; 0 when
+    /// unknown (carrot `lane_line_time`: all four lane fields share it).
+    pub fn captured_stamp(&self, key: &str) -> u64 {
+        let Some((channel, name)) = self.captures.get(key) else {
+            return 0;
+        };
+        let Ok(parser) = self.parser(*channel) else {
+            return 0;
+        };
+        parser
+            .dbc
+            .names
+            .get(*name)
+            .and_then(|address| parser.states.get(address))
+            .and_then(|state| state.timestamps.back().copied())
+            .unwrap_or(0)
+    }
+
+    /// carrot `rear_gap._fresh`: no bus timeout, a frame of the expected size
+    /// received within `max_age` ns of `now`.
+    pub fn message_fresh(
+        &self,
+        channel: Channel,
+        name: &str,
+        size: usize,
+        now: u64,
+        max_age: u64,
+    ) -> bool {
+        let Ok(parser) = self.parser(channel) else {
+            return false;
+        };
+        let Some(&address) = parser.dbc.names.get(name) else {
+            return false;
+        };
+        let stamp = parser
+            .states
+            .get(&address)
+            .and_then(|state| state.timestamps.back().copied())
+            .unwrap_or(0);
+        !parser.bus_timeout()
+            && stamp > 0
+            && now >= stamp
+            && now - stamp <= max_age
+            && parser
+                .raw
+                .get(&address)
+                .is_some_and(|data| data.len() == size)
     }
 
     pub fn captured(&self, key: &str) -> Result<Option<Values>, Error> {

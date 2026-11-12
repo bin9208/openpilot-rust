@@ -107,6 +107,16 @@ pub enum Error {
 pub struct ApplyInput<'a> {
     pub control: car_control::Reader<'a>,
     pub now_ns: u64,
+    /// The card's subscriptions, for vehicle features that check other
+    /// services' freshness (Hyundai SPAS indicators).
+    pub subscribers: Option<&'a openpilot_messaging::state::State>,
+    pub initialized: bool,
+    /// carrot `lateral_startup.update(...)`.
+    pub lateral_ready: bool,
+    pub impact_reboot: bool,
+    /// Latest Xiaoge vision result and `CLOCK_MONOTONIC` ns.
+    pub vision: Option<&'a VisionResult>,
+    pub monotonic_ns: u64,
     pub model: Option<model_data_v2::Reader<'a>>,
     pub radar: Option<radar_state::Reader<'a>>,
 }
@@ -243,6 +253,7 @@ pub struct Card {
     experimental: bool,
     pub remaining: f64,
     pub diagnostics: Diagnostics,
+    native_voice: Option<crate::voice_indicator::NativeVoiceIndicator>,
 }
 impl Card {
     pub fn new(
@@ -258,6 +269,9 @@ impl Card {
         previous_state.init_root::<car_state::Builder>();
         let mut last_actuators = Message::new_default();
         last_actuators.init_root::<car_control::actuators::Builder>();
+        let native_voice =
+            crate::voice_indicator::native(params.get_root_as_reader::<car_params::Reader>()?)
+                .map(crate::voice_indicator::NativeVoiceIndicator::new);
         Ok(Self {
             params,
             settings,
@@ -281,6 +295,7 @@ impl Card {
             experimental,
             remaining: 0.,
             diagnostics: Diagnostics::default(),
+            native_voice,
         })
     }
 }

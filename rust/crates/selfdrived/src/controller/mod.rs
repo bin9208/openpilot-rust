@@ -114,6 +114,11 @@ pub struct Controller {
     pub(crate) big_model_ready_time: f64,
     pub(crate) state_machine: StateMachine,
     pub(crate) atc_type_previous: String,
+    pub(crate) atc_turn_start: u64,
+    #[serde(skip)]
+    pub(crate) atc_turn_direction: openpilot_cereal::log_capnp::LaneChangeDirection,
+    #[serde(skip)]
+    pub(crate) vehicle_faults: crate::vehicle_faults::VehicleFaultMonitor,
     pub(crate) ignored_processes: BTreeSet<String>,
     #[serde(skip)]
     pub(crate) startup_event: Option<EventName>,

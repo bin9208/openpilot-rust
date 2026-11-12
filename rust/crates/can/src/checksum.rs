@@ -18,10 +18,20 @@ pub enum Kind {
     Tesla,
     Psa,
     VolkswagenMlb,
+    /// `pedal_interceptor` CHECKSUM_PEDAL: CRC8 (0xD5) over reversed bytes.
+    Pedal,
 }
 
 impl Kind {
     pub fn for_signal(dbc: &str, signal: &str) -> Self {
+        // Scoped to its own DBC; other interceptor DBCs keep their handling.
+        if dbc == "pedal_interceptor" {
+            return match signal {
+                "CHECKSUM_PEDAL" => Self::Pedal,
+                "COUNTER_PEDAL" => Self::Counter,
+                _ => Self::Default,
+            };
+        }
         let kind = if dbc.starts_with("honda_") || dbc.starts_with("acura_") {
             Self::Honda
         } else if dbc.starts_with("toyota_") || dbc.starts_with("lexus_") {
@@ -75,6 +85,16 @@ impl Kind {
         let last = data.len().saturating_sub(1);
         let value = match self {
             Self::Default | Self::Counter => return Err(Error::Checksum),
+            Self::Pedal => {
+                let mut crc: u8 = 0xff;
+                for byte in data[..last].iter().rev() {
+                    crc ^= byte;
+                    for _ in 0..8 {
+                        crc = (crc << 1) ^ if crc & 0x80 != 0 { 0xd5 } else { 0 };
+                    }
+                }
+                u16::from(crc)
+            }
             Self::Honda => {
                 let mut sum = 0u32;
                 let mut addr = address;

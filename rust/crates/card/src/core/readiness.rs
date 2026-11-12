@@ -123,13 +123,54 @@ fn update(gate: &mut Gate, state: &State, car: car_state::Reader<'_>) -> Result<
     }))
 }
 
+/// carrot's card.py `native_cancelled`: while the cruise CANCEL latch is set a
+/// requested turn signal is not passed to the vehicle.
+#[cfg(test)]
+pub(super) fn cancelled_blinkers(
+    control: car_control::Reader<'_>,
+    car: car_state::Reader<'_>,
+) -> Result<Option<Message>, Error> {
+    cancelled_voice_blinkers(control, car, true)
+}
+
+/// carrot card.py: a cruise CANCEL latch, or a native voice id no longer
+/// backed by a fresh admitted model request, clears the lamps and the id.
+/// `voice_backed` is that freshness check (always true without an id).
+pub(super) fn cancelled_voice_blinkers(
+    control: car_control::Reader<'_>,
+    car: car_state::Reader<'_>,
+    voice_backed: bool,
+) -> Result<Option<Message>, Error> {
+    let id = !control.get_assistant_lane_signal_id()?.is_empty();
+    let native_cancelled = car.get_cruise_cancel_state()
+        && (control.get_left_blinker() || control.get_right_blinker() || id);
+    if !native_cancelled && !(id && !voice_backed) {
+        return Ok(None);
+    }
+    let mut message = Message::new_default();
+    message.set_root(control)?;
+    let mut control = message.get_root::<car_control::Builder>()?;
+    control.set_left_blinker(false);
+    control.set_right_blinker(false);
+    control.set_assistant_lane_signal_id("");
+    Ok(Some(message))
+}
+
 /// An independent final application check protects against queued pre-startup commands.
 pub(super) fn guard(
     gate: &mut Gate,
     state: &State,
     car: car_state::Reader<'_>,
-) -> Result<Option<Message>, Error> {
+) -> Result<(bool, Option<Message>), Error> {
     let ready = update(gate, state, car)?;
+    Ok((ready, guard_control(ready, state, car)?))
+}
+
+fn guard_control(
+    ready: bool,
+    state: &State,
+    car: car_state::Reader<'_>,
+) -> Result<Option<Message>, Error> {
     let control = input::control(state)?;
     if !control.get_lat_active() || ready {
         return Ok(None);
@@ -237,6 +278,7 @@ mod tests {
             car.get_root_as_reader::<car_state::Reader>().unwrap(),
         )
         .unwrap()
+        .1
         .unwrap();
         let cc = blocked.get_root_as_reader::<car_control::Reader>().unwrap();
         let a = cc.get_actuators().unwrap();
@@ -267,6 +309,7 @@ mod tests {
             car.get_root_as_reader::<car_state::Reader>().unwrap()
         )
         .unwrap()
+        .1
         .is_none());
         assert!(gate.ready);
         state.update(100., &[]).unwrap();
@@ -276,6 +319,44 @@ mod tests {
             car.get_root_as_reader::<car_state::Reader>().unwrap()
         )
         .unwrap()
+        .1
         .is_none());
+    }
+
+    #[test]
+    fn a_turn_signal_request_is_dropped_only_while_cruise_cancel_is_latched() {
+        let control = |left, right| {
+            let mut message = Message::new_default();
+            let mut cc = message.init_root::<car_control::Builder>();
+            cc.set_left_blinker(left);
+            cc.set_right_blinker(right);
+            cc.set_lat_active(true);
+            message
+        };
+        let car = |cancelled| {
+            let mut message = Message::new_default();
+            message
+                .init_root::<car_state::Builder>()
+                .set_cruise_cancel_state(cancelled);
+            message
+        };
+        let run = |cc: &Message, cs: &Message| {
+            cancelled_blinkers(
+                cc.get_root_as_reader().unwrap(),
+                cs.get_root_as_reader().unwrap(),
+            )
+            .unwrap()
+        };
+        for (left, right) in [(true, false), (false, true), (true, true)] {
+            let replaced = run(&control(left, right), &car(true)).expect("blinkers removed");
+            let cc = replaced
+                .get_root_as_reader::<car_control::Reader>()
+                .unwrap();
+            assert!(!cc.get_left_blinker() && !cc.get_right_blinker());
+            // Nothing else in the command changes.
+            assert!(cc.get_lat_active());
+            assert!(run(&control(left, right), &car(false)).is_none());
+        }
+        assert!(run(&control(false, false), &car(true)).is_none());
     }
 }

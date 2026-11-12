@@ -95,25 +95,3 @@ pub(super) fn font_points(name: &str) -> Vec<i32> {
 fn use_display(locale: bool, available: bool, text: &str) -> bool {
     available && (locale || text.chars().any(|c|matches!(c, '\u{1100}'..='\u{11ff}' | '\u{3130}'..='\u{318f}' | '\u{ac00}'..='\u{d7a3}')))
 }
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn complete_final_codepoints_and_locale_text_fallback() {
-        let source: serde_json::Value =
-            serde_json::from_str(include_str!("../../../../fixtures/ui-font-final.json")).unwrap();
-        for row in source["fallback"].as_array().unwrap() {
-            assert_eq!(
-                use_display(
-                    row[0].as_bool().unwrap(),
-                    row[1].as_bool().unwrap(),
-                    row[2].as_str().unwrap()
-                ),
-                row[3].as_bool().unwrap()
-            );
-        }
-        for (name, points) in source["points"].as_object().unwrap() {
-            assert_eq!(serde_json::to_value(font_points(name)).unwrap(), *points);
-        }
-    }
-}

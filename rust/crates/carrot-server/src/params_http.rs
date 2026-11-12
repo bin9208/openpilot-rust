@@ -3,7 +3,7 @@ use crate::{
     http_response::{json_response, text},
     json_fields::{fields, set},
     param_changes::{text::equal, Change},
-    param_coercion::{python_float, rounded},
+    param_coercion::{lift_to_nonzero_min, python_float, rounded},
     param_restore::read_setting_value,
     Error, Value,
 };
@@ -121,6 +121,7 @@ fn set_value(app: &Application, body: &Value) -> Result<(StatusCode, Value), Err
                     if number > maximum {
                         number = maximum;
                     }
+                    number = lift_to_nonzero_min(number, definition);
                     let clamped = Value::Float(number);
                     if [bounds[0], bounds[1], definition.get("default")]
                         .iter()

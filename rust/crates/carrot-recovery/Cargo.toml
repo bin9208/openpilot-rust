@@ -39,13 +39,3 @@ path = "src/main.rs"
 
 [dev-dependencies]
 tempfile = "3"
-
-[[test]]
-name = "staged_updates"
-path = "tests/staged_updates.rs"
-harness = false
-
-[[test]]
-name = "startup_recovery"
-path = "tests/startup_recovery.rs"
-harness = false

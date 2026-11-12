@@ -120,8 +120,23 @@ pub fn messages(
         }
         let cs = state.out.get_root_as_reader::<car_state::Reader<'_>>()?;
         let blink_hold = if c.frame.is_multiple_of(5) && captures.get("adrv_0x1ea").is_some() {
-            c.blink_hold
-                .update(model.desire, model.lane_pair, model.blinker_hold)
+            // The lane-change lamp hold is not started or kept while the
+            // cruise CANCEL latch is set; an explicit lever request still is.
+            let hold_desire = if cs.get_cruise_cancel_state() {
+                0
+            } else {
+                model.desire
+            };
+            let hold = c
+                .blink_hold
+                .update(hold_desire, model.lane_pair, model.blinker_hold);
+            // An external physical hold wins (hyundaicanfd.py `external_hold`).
+            match c.external_hold {
+                1 => 0,
+                2 => 3,
+                3 => 4,
+                _ => hold,
+            }
         } else {
             0
         };
@@ -139,6 +154,9 @@ pub fn messages(
             interlock: cs.get_brake_hold_active() || cs.get_parking_brake(),
             button_name: config.button_message(),
             lane_changing: blink_hold,
+            scc_main_ready: cs.get_can_valid()
+                && cs.get_gear_shifter()? == car_state::GearShifter::Drive
+                && !cs.get_brake_pressed(),
             corner_radar: c.settings.corner,
             debug: c.settings.debug,
             leads: &model.leads,
@@ -182,6 +200,7 @@ pub fn messages(
                 brake_hold: cs.get_brake_hold_active(),
                 parking_brake: cs.get_parking_brake(),
                 can_valid: cs.get_can_valid(),
+                can_timeout: cs.get_can_timeout(),
                 drive: cs.get_gear_shifter()? == car_state::GearShifter::Drive,
                 available: cruise.get_available(),
                 standstill: cs.get_standstill(),
@@ -204,6 +223,8 @@ pub fn messages(
                 carrot_cruise: c.jerk.carrot_cruise,
                 carrot_accel: c.jerk.carrot_accel,
                 lead: lead::scc_fields(&model.leads, (&model.x, &model.y), Some(lateral))?,
+                signal_stop_object: cc.get_hud_control()?.get_signal_stop_object(),
+                has_lead: model.leads.iter().any(|lead| lead.status),
             };
             if camera {
                 let (frame, value) =

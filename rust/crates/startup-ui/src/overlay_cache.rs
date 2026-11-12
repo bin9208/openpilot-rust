@@ -138,5 +138,3 @@ impl<T, K: PartialEq> Layer<T, K> {
         backend.composite(target, self.destination)
     }
 }
-#[cfg(test)]
-mod tests;

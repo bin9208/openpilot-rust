@@ -53,11 +53,3 @@ required-features = ["native-skip-miri"]
 [[bin]]
 name = "openpilot-usbgpu-model"
 path = "src/bin/model.rs"
-
-[[example]]
-name = "hcq_link_snapshot"
-required-features = ["fixture-inspection"]
-
-[[example]]
-name = "usb_boundary_fixture"
-required-features = ["native-skip-miri"]

@@ -135,6 +135,7 @@ fn availability(name: &str) -> RustAvailability {
         "radarcan" => ("openpilot-radarcan", "openpilot-radarcan"),
         "radard" => ("openpilot-radard", "openpilot-radard"),
         "selfdrived" => ("openpilot-selfdrived", "openpilot-selfdrived"),
+        "signalcolord" => ("openpilot-signal-observer", "openpilot-signalcolord"),
         "sensord" => ("openpilot-sensord", "openpilot-sensord"),
         "soundd" => ("openpilot-soundd", "openpilot-soundd"),
         "statsd" => ("openpilot-statsd", "statsd-rs"),
@@ -280,6 +281,15 @@ pub fn catalog(config: ImportConfig) -> Vec<Descriptor> {
                 module: "openpilot.selfdrive.modeld.modeld",
             },
             Onroad,
+            true,
+            false,
+        ),
+        Descriptor::new(
+            "signalcolord",
+            Python {
+                module: "openpilot.selfdrive.modeld.signal_color_shadow",
+            },
+            SignalObserver,
             true,
             false,
         ),
@@ -534,7 +544,7 @@ pub fn catalog(config: ImportConfig) -> Vec<Descriptor> {
             },
             Always,
             config.tici,
-            false,
+            true,
         ),
         Descriptor::new(
             "modem",
@@ -734,5 +744,73 @@ mod tests {
                 ..
             }
         ));
+    }
+
+    #[test]
+    fn signal_observer_is_registered_and_runs_only_onroad_with_a_selected_mode() {
+        use crate::{Error, GpsPaths, Parameters, Predicate, State};
+        struct Mode(Result<i32, ()>);
+        impl Parameters for Mode {
+            fn get_bool(&mut self, _key: &str) -> Result<bool, Error> {
+                Ok(false)
+            }
+            fn get_int(&mut self, key: &str) -> Result<i32, Error> {
+                assert_eq!(key, "SignalAssistMode");
+                self.0.map_err(|()| {
+                    Error::Parameter(openpilot_params::Error::Io(std::io::Error::other(
+                        "unreadable",
+                    )))
+                })
+            }
+            fn get_bool_default(&mut self, _key: &str) -> Result<bool, Error> {
+                Ok(false)
+            }
+            fn put_bool(&mut self, _key: &str, _value: bool) -> Result<(), Error> {
+                Ok(())
+            }
+        }
+        struct NoPaths;
+        impl GpsPaths for NoPaths {
+            fn exists(&mut self, _path: &str) -> bool {
+                false
+            }
+        }
+        let descriptor = catalog(ImportConfig {
+            pc: false,
+            tici: true,
+            webcam: false,
+            carrot_web_external: false,
+            darwin: false,
+            bodyteleop_available: false,
+        })
+        .into_iter()
+        .find(|descriptor| descriptor.name == "signalcolord")
+        .expect("registered signal observer");
+        assert!(descriptor.enabled && !descriptor.restart_if_crash);
+        assert_eq!(descriptor.predicate, Predicate::SignalObserver);
+        assert!(matches!(
+            descriptor.rust,
+            RustAvailability::Candidate {
+                package: "openpilot-signal-observer",
+                binary: "openpilot-signalcolord",
+                ..
+            }
+        ));
+        let run = |started, mode| {
+            descriptor
+                .predicate
+                .evaluate(
+                    State {
+                        started,
+                        not_car: false,
+                    },
+                    &mut Mode(mode),
+                    &mut NoPaths,
+                )
+                .unwrap()
+        };
+        assert!(run(true, Ok(1)) && run(true, Ok(2)));
+        assert!(!run(true, Ok(0)) && !run(true, Ok(3)) && !run(true, Err(())));
+        assert!(!run(false, Ok(1)));
     }
 }

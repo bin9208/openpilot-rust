@@ -17,17 +17,34 @@ pub struct VehicleModel {
     pub c_front: f64,
     pub c_rear: f64,
     pub steer_ratio: f64,
+    geometry: crate::geometry::LateralGeometry,
 }
 impl VehicleModel {
     pub fn new(physical: Physical) -> Self {
         let c_front = physical.stiffness_front;
         let c_rear = physical.stiffness_rear;
         let steer_ratio = physical.steer_ratio;
+        let geometry = crate::geometry::LateralGeometry::new(
+            physical.wheelbase,
+            physical.center_front,
+            physical.stiffness_front,
+            physical.stiffness_rear,
+        );
         Self {
+            geometry,
             physical,
             c_front,
             c_rear,
             steer_ratio,
+        }
+    }
+    pub fn update_geometry(&mut self, ratio: f64) {
+        if self.geometry.update(ratio) {
+            let stiffness = self.c_front / self.physical.stiffness_front;
+            self.physical.center_front = self.geometry.center_to_front;
+            self.physical.stiffness_front = self.geometry.stiffness_front;
+            self.physical.stiffness_rear = self.geometry.stiffness_rear;
+            self.update(stiffness, self.steer_ratio);
         }
     }
     pub fn update(&mut self, stiffness: f64, ratio: f64) {

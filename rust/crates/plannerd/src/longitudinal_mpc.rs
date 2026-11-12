@@ -39,6 +39,8 @@ pub struct Input<'a> {
     pub track_frames: [u64; 2],
     pub measured_acceleration: f64,
     pub cutout_enabled: bool,
+    /// carrot's Tesla stop-line endpoint (already less STOP_BUFFER).
+    pub tesla_stop_distance: Option<f64>,
 }
 
 pub struct LongitudinalMpc {

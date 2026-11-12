@@ -126,6 +126,7 @@ pub struct CarrotPlanner {
     pub prepare_decision: Option<crate::signal::prepare::Decision>,
     pub prepare_control_active: bool,
     start_guard: crate::signal::start::Guard,
+    signal_stop_owned: bool,
     stop_prepare: crate::signal::prepare::Prepare,
 }
 
@@ -192,8 +193,22 @@ impl CarrotPlanner {
             prepare_decision: None,
             prepare_control_active: false,
             start_guard: crate::signal::start::Guard::default(),
+            signal_stop_owned: false,
             stop_prepare: crate::signal::prepare::Prepare::default(),
         })
+    }
+
+    /// `teslaTrafficStopTakeover` / `teslaTrafficStopWarning`, added every
+    /// cycle as carrot's `events.add` does.
+    pub fn add_tesla_event(&mut self, takeover: bool, _clock: &mut impl FnMut() -> f64) {
+        let event = if takeover {
+            EventName::TeslaTrafficStopTakeover
+        } else {
+            EventName::TeslaTrafficStopWarning
+        };
+        if !self.events.contains(&event) {
+            self.insert_event(event);
+        }
     }
 
     fn add_event(&mut self, event: EventName, clock: &mut impl FnMut() -> f64) {

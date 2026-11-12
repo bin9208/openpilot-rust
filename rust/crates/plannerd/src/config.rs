@@ -17,16 +17,22 @@ impl Config {
         let cp = message.get_root::<car_params::Reader<'_>>()?;
         let brand = cp.get_brand()?.to_str()?.to_owned();
         let meb = brand == "volkswagen" && cp.get_flags() & 16 != 0;
+        let tesla_traffic_stop = brand == "tesla"
+            && cp.get_openpilot_longitudinal_control()
+            && !cp.get_dashcam_only()
+            && cp.get_flags() & crate::tesla_traffic_stop::CAN_TRAFFIC_STOP != 0;
         Ok(Self {
             brand,
             longitudinal: longitudinal_planner::Vehicle {
                 longitudinal_control: cp.get_openpilot_longitudinal_control(),
                 volkswagen_meb: meb,
+                tesla_traffic_stop,
             },
             lateral: lateral_planner::Vehicle {
                 wheelbase: f64::from(cp.get_wheelbase()),
                 center_to_front: f64::from(cp.get_center_to_front()),
                 mass: f64::from(cp.get_mass()),
+                tire_stiffness_front: f64::from(cp.get_tire_stiffness_front()),
                 tire_stiffness_rear: f64::from(cp.get_tire_stiffness_rear()),
             },
             radar_unavailable: cp.get_radar_unavailable(),

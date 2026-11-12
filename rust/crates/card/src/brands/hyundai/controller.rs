@@ -22,6 +22,8 @@ use std::collections::BTreeMap;
 pub struct Controller {
     pub frame: u32,
     pub writer: CanWriter,
+    /// carrot `hudControl.physicalBlinkerHold`: 0 none, 1 release, 2 left, 3 right.
+    pub external_hold: u8,
     pub settings: Settings,
     pub steering: Steering,
     pub buttons: Buttons,
@@ -34,13 +36,21 @@ pub struct Controller {
     pub lkas_active: bool,
     pub lane_check: i32,
     pub steering_template_ready: bool,
+    /// Comma Pedal command source on configured cars (carrot `PedalInterceptor`).
+    pub pedal: Option<super::pedal::Interceptor>,
 }
 
 impl Controller {
     pub fn new(state: &State) -> Result<Self, Error> {
         Ok(Self {
             frame: 0,
+            external_hold: 0,
             writer: CanWriter::from_dbc(std::sync::Arc::clone(&state.inputs.pt.dbc)),
+            pedal: super::pedal::configured(&state.config.candidate, state.config.flags)
+                .zip(state.inputs.pedal.as_ref())
+                .map(|(profile, parser)| {
+                    super::pedal::Interceptor::new(std::sync::Arc::clone(&parser.dbc), profile)
+                }),
             settings: Settings::new(
                 TorqueLimits::new(&state.config.candidate, state.config.flags),
                 &state.settings,
@@ -151,6 +161,7 @@ impl Controller {
         if self.frame.is_multiple_of(100)
             && state.config.flags & f::CAMERA_SCC == 0
             && state.config.longitudinal
+            && self.pedal.is_none()
         {
             let (address, bus) = if state.config.flags & f::HDA2 != 0 {
                 (0x730, state.config.bus.ecan)
@@ -200,6 +211,11 @@ impl Controller {
             command.torque
         })?);
         output.set_steering_angle_deg(float32(command.angle)?);
+        output.set_stop_object_active(
+            self.stopping
+                .as_ref()
+                .is_some_and(|stopping| stopping.stop_object_active),
+        );
         output.set_accel(float32(command.accel)?);
         self.frame += 1;
         Ok(ApplyOutput { actuators, can })

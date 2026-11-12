@@ -2188,6 +2188,49 @@
       "forbidden_lead_one_ids": [39, 0],
       "forbidden_lead_two_ids": [39, 0],
       "scene": "User-reported bridge-joint false braking at 35.60s. Vision and front 35 continuously track the moving vehicle around 17m. SCC jumps to a stationary near-road return also reported as front 39 and previously bypassed independent confirmation into L2 at 35.55-36.05s. The camera shows the road joint approaching without a vehicle at that near range. SCC and front are the same radar, not independent vehicle evidence."
+    },
+    {
+      "id": "sonata-3f2-27-braking-front-continuity-50",
+      "vehicle_folder": "HYUNDAI_SONATA 81685acfb327ceef",
+      "log": "000003f2--3246ccd0e1--27/rlog.zst",
+      "source": "front",
+      "window": [0.3, 6.0],
+      "expected": "detect",
+      "human_verified": false,
+      "validation_stage": "lead_one",
+      "target_track_ids": [50],
+      "required_lead_one_ids": [50],
+      "lead_one_continuous_window": [0.3, 6.0],
+      "forbidden_lead_one_ids": [42],
+      "scene": "User-reported close automatic stop. Log-derived regression: confirmed center front 50 remains measured while braking through 4m/s to rest. A similar-speed front 42 appears about 2.3m farther away and must not replace it solely when the moving-acquisition speed gate closes. The screenshot and kinematics support the nearer return; physical identity of the farther reflection is not established. Times use replay frame origin; video is about 0.10s later."
+    },
+    {
+      "id": "k8-35f-52-right-cutin-7480",
+      "vehicle_folder": "KIA_K8_HEV_1ST_GEN b34d1abb87cce93b",
+      "log": "0000035f--2d84b8a557--52/rlog.zst",
+      "source": "front+corner",
+      "window": [2.35, 4.05],
+      "expected": "detect",
+      "human_verified": false,
+      "validation_stage": "lead_two",
+      "target_track_ids": [7480],
+      "latest_detection_s": 3.35,
+      "scene": "Right sedan closing ahead on a bend. Corner 7480 and front 50 converge inward while front 61 is the original lead. Require control-facing L2 by the reported screenshot (3.38s video, nearest replay frame 3.35s). Baseline first selects C7480 at 3.95s; a late selection must fail."
+    },
+    {
+      "id": "id4-29e-46-night-vision-transition-281",
+      "vehicle_folder": "VOLKSWAGEN_ID4_MK1 0533127c99413d35",
+      "log": "0000029e--eeb1d0a58f--46/rlog.zst",
+      "source": "front",
+      "window": [38.0, 59.8],
+      "expected": "detect",
+      "human_verified": false,
+      "validation_stage": "lead_one",
+      "target_track_ids": [281],
+      "required_lead_one_ids": [281],
+      "lead_one_continuous_window": [38.0, 59.8],
+      "forbidden_lead_one_ids": [-1],
+      "scene": "User-reported repeated deceleration pulses during night driving. Front track 281 remains measured while brief visual distance/speed outliers replace it for 0.04-0.14s. Require continuous measured L1 through the complete late segment. A new visual target must remain kinematically consistent for 0.20s before replacing a healthy existing front track. Replay seconds use the first model exposure and video is about 0.05s later. This is a log-derived continuity regression, not a visual ground-truth speed annotation."
     }
   ]
 }

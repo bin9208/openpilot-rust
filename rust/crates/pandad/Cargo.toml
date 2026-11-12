@@ -44,19 +44,3 @@ required-features = ["native-skip-miri"]
 name = "openpilot-pandad-supervisor"
 path = "src/bin/supervisor.rs"
 required-features = ["native-skip-miri"]
-
-[[example]]
-name = "usb_policy"
-required-features = ["native-skip-miri"]
-
-[[example]]
-name = "spi_policy"
-required-features = ["native-skip-miri"]
-
-[[example]]
-name = "supervisor_native"
-required-features = ["native-skip-miri"]
-
-[[example]]
-name = "dfu_recovery"
-required-features = ["native-skip-miri"]

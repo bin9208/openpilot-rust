@@ -36,6 +36,11 @@ pub fn create_wheel_frame(template: &[u8], tick: i32) -> Result<[u8; 8], Error> 
 fn age(now: u64, then: u64) -> i128 {
     i128::from(now) - i128::from(then)
 }
+/// carrot's `stamp > 0 and 0 <= now - stamp <= limit`: a stamp that was never
+/// set, or one later than `now`, is not fresh.
+fn fresh(now: u64, then: u64, limit: i128) -> bool {
+    then > 0 && (0..=limit).contains(&age(now, then))
+}
 impl SpeedLimit {
     fn reset_pending(&mut self) {
         self.pending_since_nanos = 0;
@@ -77,7 +82,7 @@ impl SpeedLimit {
         self.resume_gesture_counter_seen = Some(e.tesla_speed_auto_resume_gesture_counter);
         let cs = state.out.get_root_as_reader::<car_state::Reader>()?;
         let cruise = cs.get_cruise_state()?;
-        let fresh = age(now, e.tesla_speed_limit_target_nanos) <= 500_000_000;
+        let target_fresh = fresh(now, e.tesla_speed_limit_target_nanos, 500_000_000);
         if !self.configured
             || !cc.get_enabled()
             || cc.get_cruise_control()?.get_cancel()
@@ -96,7 +101,12 @@ impl SpeedLimit {
             self.reset(false);
             return Ok(Vec::new());
         }
-        if cs.get_brake_pressed() || !e.tesla_speed_limit_target_valid || !fresh {
+        if cs.get_brake_pressed()
+            || !cs.get_can_valid()
+            || cs.get_vehicle_sensors_invalid()
+            || !e.tesla_speed_limit_target_valid
+            || !target_fresh
+        {
             self.reset(false);
             return Ok(Vec::new());
         }
@@ -146,7 +156,7 @@ impl SpeedLimit {
         let Some(template) = e.tesla_speed_button_template else {
             return Ok(Vec::new());
         };
-        if age(now, e.tesla_speed_button_template_nanos) > 1_500_000_000 {
+        if !fresh(now, e.tesla_speed_button_template_nanos, 1_500_000_000) {
             return Ok(Vec::new());
         }
         let direction = if remaining > 0 { 1 } else { -1 };
@@ -162,3 +172,6 @@ impl SpeedLimit {
         }])
     }
 }
+
+#[cfg(test)]
+mod tests;
