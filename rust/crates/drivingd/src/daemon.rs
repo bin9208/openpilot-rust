@@ -152,9 +152,16 @@ pub fn run(
         .to_str()?
         .to_owned();
     let supported = indicator::supported(&fingerprint);
-    let tesla_signals = {
+    let (tesla_signals, native_voice) = {
         let cp = car_params.get_root::<car_params::Reader>()?;
-        cp.get_brand()?.to_str()? == "tesla" && cp.get_flags() & 32 != 0 // TeslaFlags.AUTO_TURN_SIGNALS
+        let brand = cp.get_brand()?.to_str()?;
+        let flags = cp.get_flags();
+        // carrot voice_indicator.native_indicator: EA_02 or Hyundai SPAS2.
+        const HYUNDAI_NATIVE: u32 = (1 << 13) | 1 | (1 << 5); // CANFD | CANFD_HDA2 | ENABLE_BLINKERS
+        let native = !cp.get_passive()
+            && ((brand == "volkswagen" && flags & 16384 != 0)
+                || (brand == "hyundai" && flags & HYUNDAI_NATIVE == HYUNDAI_NATIVE));
+        (brand == "tesla" && flags & 32 != 0, native) // TeslaFlags.AUTO_TURN_SIGNALS
     };
     let mut publication = Publication::new(
         DesireHelper::new(
@@ -165,7 +172,8 @@ pub fn run(
                 None
             },
         )
-        .with_tesla(tesla_signals, (process::monotonic() * 1e9) as u64),
+        .with_tesla(tesla_signals, (process::monotonic() * 1e9) as u64)
+        .with_assistant(&fingerprint, native_voice),
     );
     let mut commands = CommandReader::new(
         Path::new("/dev/shm/carrot-bluetooth"),

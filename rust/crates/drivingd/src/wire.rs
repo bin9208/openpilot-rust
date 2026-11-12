@@ -166,6 +166,8 @@ pub fn apply_desire(
     meta.set_auto_turn_signal_lane_change(helper.auto_turn_signal_lane_change);
     meta.set_auto_turn_signal_direction(direction(helper.tesla.signal_direction)?);
     meta.set_auto_turn_signal_request_id(helper.tesla.signal_request_id);
+    meta.set_assistant_lane_signal_id(helper.assistant.signal_id());
+    meta.set_assistant_lane_signal_route(helper.assistant.signal_route());
     let boundary = &helper.boundary_indicator;
     meta.set_manual_lane_indicator(direction(boundary.request_direction)?);
     meta.set_manual_lane_indicator_mono_time(nanos(boundary.request_time));
