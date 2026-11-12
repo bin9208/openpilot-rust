@@ -198,6 +198,19 @@ impl CarrotPlanner {
         })
     }
 
+    /// `teslaTrafficStopTakeover` / `teslaTrafficStopWarning`, added every
+    /// cycle as carrot's `events.add` does.
+    pub fn add_tesla_event(&mut self, takeover: bool, _clock: &mut impl FnMut() -> f64) {
+        let event = if takeover {
+            EventName::TeslaTrafficStopTakeover
+        } else {
+            EventName::TeslaTrafficStopWarning
+        };
+        if !self.events.contains(&event) {
+            self.insert_event(event);
+        }
+    }
+
     fn add_event(&mut self, event: EventName, clock: &mut impl FnMut() -> f64) {
         let now = clock();
         if now - self.last_event_time > 5. {

@@ -48,8 +48,16 @@ impl LongitudinalMpc {
                     self.initial[1],
                     input.carrot.traffic_stop_model_lead_offset,
                 );
-                let traffic =
+                let mut traffic =
                     traffic_stop::obstacle_distance(stop_x, cruise_obstacles[0], adjustment)?;
+                // An ego stop endpoint, not a model endpoint or a measured lead:
+                // cancel the standstill gap; it shares the e2e source column.
+                if let Some(distance) = input
+                    .tesla_stop_distance
+                    .filter(|d| !input.reset && d.is_finite() && (0. ..255.).contains(d))
+                {
+                    traffic = traffic.min(distance + input.carrot.config.stop_distance);
+                }
                 let mut relief = [0.; 13];
                 if input.cutout_enabled && !input.reset {
                     if input.carrot.lane_change_gap.active {

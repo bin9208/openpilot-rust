@@ -65,6 +65,8 @@ pub struct State {
     pub prints: Vec<String>,
     pub logs: Vec<VehicleLog>,
     pub soft_hold: i16,
+    /// APP_trafficControl observer, only with TeslaCanTrafficStop.
+    pub traffic_control: Option<super::traffic_control::TrafficControl>,
 }
 const MPH_TO_MS: f64 = 1.609344 * (1. / 3.6);
 const TPMS_MAX_AGE_NS: i128 = 10_000_000_000;
@@ -145,6 +147,11 @@ impl State {
         } else {
             (None, None)
         };
+        let traffic_control = if flags & super::CAN_TRAFFIC_STOP != 0 {
+            Some(super::traffic_control::TrafficControl::new(root, now)?)
+        } else {
+            None
+        };
         let mut out = Message::new_default();
         out.init_root::<car_state::Builder>();
         Ok(Self {
@@ -166,6 +173,7 @@ impl State {
             steer_ratio,
             pcm,
             cluster_seen: false,
+            traffic_control,
             prints: Vec::new(),
             logs: Vec::new(),
             soft_hold: 0,
@@ -258,6 +266,10 @@ impl State {
             for f in &p.frames {
                 if f.address == 0x3c2 && f.bus == 1 {
                     self.observe_speed_wheel(&f.data, p.mono_time);
+                } else if f.address == super::traffic_control::ADDRESS {
+                    if let Some(traffic) = &mut self.traffic_control {
+                        traffic.observe(&f.data, f.bus, p.mono_time, now)?;
+                    }
                 }
             }
         }
@@ -767,6 +779,9 @@ impl State {
             self.pcm,
             ret.reborrow_as_reader().get_button_events()?,
         )?);
+        if let Some(traffic) = &self.traffic_control {
+            traffic.publish(ret.reborrow().init_tesla_traffic_control(), now);
+        }
         self.out.set_root(ret.into_reader())?;
         self.drain_parsers();
         Ok(message)
