@@ -180,6 +180,8 @@ Rust가 원본과 다른 부분(지연에 얼마나 기여하는지는 재지 �
    - [ ] 음성 점등 CAN 출력(`voice_indicator.py`)은 A12와 함께
    - [x] A05 레이 EV 콤마페달: `97210443c`. card 감지·센서·명령, controlsd 게인, 설정 화면·문서. 기기 확인 없음
    - [x] A07 테슬라 CAN 신호 정지: `5f547aa5c`. card APP_trafficControl, plannerd 정지선 제약. 기기 확인 없음
+   - [x] A06 테슬라 자동 방향지시등: 레버 해석 `886f2527f`, card 점등 세션 `c850cde1c`, desire 요청 `baeace242`. 기기 확인 없음
+   - [ ] A06 남은 것: card 쪽 `turn_signal_context`(정지 중 회전 램프 유지, 지금은 false), `tesla_lane_signals.py`(Xiaoge 차선 색 기반 점등 전용 관측, `lamp_intent`, 지금은 None), 진단 로그 `tesla_auto_turn_signal`
 
 #### 2026-11-12 주행 로그 (`0a33373fe`, 경로 `00000cab--44bdd51ec8`)
 
