@@ -625,6 +625,11 @@ pub async fn handle<T>(
                     "jetlink".chars().map(u32::from).collect(),
                     files.telemetry.jetlink()?,
                 ));
+                let library = crate::egpu_library::status(&app.config.repository);
+                fields.push((
+                    "library".chars().map(u32::from).collect(),
+                    Value::parse(&library.to_string())?,
+                ));
             }
             Ok((StatusCode::OK, value))
         }

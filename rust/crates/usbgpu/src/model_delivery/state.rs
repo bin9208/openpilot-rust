@@ -58,6 +58,9 @@ pub const LEGACY_MANIFEST_URL: &str =
     "https://upload.shind0.synology.me/models/comma4-big-cinque-v3/manifest.json";
 #[must_use]
 pub fn source_manifest(url: &str) -> Option<Manifest> {
+    if let Some(model) = crate::library::current().catalog_manifest(url) {
+        return Some(model);
+    }
     match url {
         DEFAULT_MANIFEST_URL => Some(pinned_manifest()),
         LEGACY_MANIFEST_URL => Some(legacy_manifest()),

@@ -40,6 +40,22 @@ fn run() -> Result<ExitCode, Box<dyn std::error::Error>> {
             ExitCode::FAILURE
         });
     }
+    if mode == "--freeze-boot" {
+        // Accept the pending external model once per real boot, before either backend.
+        let mut root = std::env::current_dir()?;
+        while let Some(flag) = args.pop_front() {
+            match flag.as_str() {
+                "--root" => root = argument(&mut args)?.into(),
+                "--devices" => {
+                    argument(&mut args)?;
+                }
+                _ => return Err(Error::Contract("unknown freeze argument").into()),
+            }
+        }
+        let selected = openpilot_usbgpu::library::Library::for_runtime(&root).freeze_boot()?;
+        emit(selected)?;
+        return Ok(ExitCode::SUCCESS);
+    }
     let mut root = std::env::current_dir()?;
     let mut assets = std::env::var_os("USBGPU_ASSETS_ROOT")
         .map(PathBuf::from)
@@ -93,7 +109,11 @@ fn run() -> Result<ExitCode, Box<dyn std::error::Error>> {
         None if matches!(mode.as_str(), "--ensure-if-egpu" | "--prepare-for-startup") => {
             match std::env::var("CARROT_BIG_MODEL_MANIFEST") {
                 Ok(value) => value,
-                Err(std::env::VarError::NotPresent) => model_delivery::DEFAULT_MANIFEST_URL.into(),
+                Err(std::env::VarError::NotPresent) => {
+                    openpilot_usbgpu::library::Library::for_runtime(&root)
+                        .selected_manifest_url()
+                        .unwrap_or_else(|| model_delivery::DEFAULT_MANIFEST_URL.into())
+                }
                 Err(_) => return Err(Error::Contract("invalid model manifest URL encoding").into()),
             }
         }

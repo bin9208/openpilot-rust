@@ -110,6 +110,7 @@ impl Application {
             Err(error) => (None, Some(error.to_string())),
         };
         let web_navi = crate::web_navi::Service::start(params.native_params().cloned()).ok();
+        crate::egpu_library::start_maintenance(&config.repository, params.native_params().cloned());
         let mut application = Self {
             terminal: crate::terminal::Config::original()
                 .and_then(crate::terminal::Service::start)

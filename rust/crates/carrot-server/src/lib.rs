@@ -9,6 +9,7 @@ pub mod cars;
 pub mod config;
 pub mod dashcam;
 mod diagnostic_metadata;
+pub mod egpu_library;
 pub mod egpu_model;
 pub mod git_config;
 pub mod git_state;
