@@ -117,15 +117,17 @@ pub struct SpasSignals {
     pub status: String,
     /// Driving lane-change indicator on a car with no stock SPAS sender.
     pub solo: spas::SoloDrive,
+    /// Keeps `solo` lit through a stop or the rest of a turn.
+    signal_hold: spas::SignalHold,
     worker: Option<crate::blink::source::SpasWorker>,
     feedback: crate::blink::source::Feedback,
     feedback_at: f64,
 }
 
-/// The lane change direction while one is under way (pre, starting or
-/// finishing), from a fresh modelV2.
-fn lane_change(subscribers: &Subscribers, now: f64) -> Option<Direction> {
-    use openpilot_cereal::log_capnp::{LaneChangeDirection, LaneChangeState};
+/// The direction the model is signalling, from a fresh modelV2: a lane
+/// change under way (pre, starting or finishing) or a turn desire.
+fn signal_direction(subscribers: &Subscribers, now: f64) -> Option<Direction> {
+    use openpilot_cereal::log_capnp::{Desire, LaneChangeDirection, LaneChangeState};
     if !fresh(subscribers, "modelV2", now, 0.35) {
         return None;
     }
@@ -134,6 +136,11 @@ fn lane_change(subscribers: &Subscribers, now: f64) -> Option<Direction> {
         return None;
     };
     let meta = model.get_meta().ok()?;
+    match meta.get_desire() {
+        Ok(Desire::TurnLeft) => return Some(Direction::Left),
+        Ok(Desire::TurnRight) => return Some(Direction::Right),
+        _ => {}
+    }
     match meta.get_lane_change_state().ok()? {
         LaneChangeState::PreLaneChange
         | LaneChangeState::LaneChangeStarting
@@ -144,6 +151,25 @@ fn lane_change(subscribers: &Subscribers, now: f64) -> Option<Direction> {
         LaneChangeDirection::Left => Some(Direction::Left),
         LaneChangeDirection::Right => Some(Direction::Right),
         _ => None,
+    }
+}
+
+/// Engaged with lateral control paused (a standstill), from a fresh carControl.
+fn lateral_paused(subscribers: &Subscribers, now: f64) -> bool {
+    if !fresh(subscribers, "carControl", now, 0.35) {
+        return false;
+    }
+    let Ok(topic) = subscribers.topic("carControl") else {
+        return false;
+    };
+    let Ok(event) = topic.event() else {
+        return false;
+    };
+    match event.which() {
+        Ok(event::Which::CarControl(Ok(control))) => {
+            control.get_enabled() && !control.get_lat_active()
+        }
+        _ => false,
     }
 }
 
@@ -243,6 +269,7 @@ impl SpasSignals {
             },
             worker: None,
             solo: spas::SoloDrive::default(),
+            signal_hold: spas::SignalHold::default(),
             feedback: crate::blink::source::Feedback::default(),
             feedback_at: 0.,
         }
@@ -474,8 +501,8 @@ impl SpasSignals {
                 }
             }
         }
-        // A car with no stock SPAS sender lights automatic lane changes
-        // directly, until the lane change completes (owner's car only).
+        // A car with no stock SPAS sender lights automatic lane changes and
+        // turns directly, until they complete (owner's car only).
         let solo_ready = self.hold_supported
             && self.test_request.is_none()
             && self.test_setting == 0
@@ -483,9 +510,21 @@ impl SpasSignals {
             && self.session.state == spas::State::Idle
             && self.session.stock_absent(now);
         if solo_ready || self.solo.busy() {
-            let want = lane_change(input.subscribers, now);
-            let allowed = solo_ready && healthy && continuous;
             let driver = override_now || self.driver_active;
+            let stopped = lateral_paused(input.subscribers, now)
+                && f64::from(cs.get_v_ego()) < spas::HOLD_STOP_SPEED;
+            let (want, waiting) = self.signal_hold.update(
+                now,
+                signal_direction(input.subscribers, now),
+                self.solo.side(),
+                stopped,
+                f64::from(cs.get_steering_angle_deg()),
+                driver,
+            );
+            if waiting {
+                self.solo.renew();
+            }
+            let allowed = solo_ready && healthy && continuous;
             let reason = if !solo_ready {
                 "conditions"
             } else if !healthy {

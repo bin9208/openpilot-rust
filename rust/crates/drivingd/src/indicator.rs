@@ -208,7 +208,13 @@ pub fn inputs(
             .active
             .is_some()
             .then(|| read("physical-hold.json")),
-        journal: if periodic { periodic_journal() } else { None },
+        // Every frame: the comma's own lamp (SPAS solo) lights ~40 ms after
+        // the card records it, well inside one 20-frame config period.
+        journal: if helper.indicator_supported {
+            periodic_journal()
+        } else {
+            None
+        },
         config: if periodic {
             // A Kick car is never passive, so `external` equals "any".
             Some(config(

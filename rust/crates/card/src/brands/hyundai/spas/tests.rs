@@ -506,3 +506,147 @@ fn solo_drive_rides_out_a_short_dropout() {
         .any(|(t, d)| (2.0..2.2).contains(t) && *d == 0x80));
     assert!(!sent.iter().any(|(t, d)| *t < 5. && *d == 0));
 }
+
+/// Drives `SignalHold` + `SoloDrive` at 50 Hz like the card does; returns the
+/// sent `(time, direction byte)` pairs and the lease start times.
+fn hold_run(
+    hold: &mut SignalHold,
+    solo: &mut SoloDrive,
+    from: f64,
+    to: f64,
+    model: impl Fn(f64) -> Option<Direction>,
+    stopped: impl Fn(f64) -> bool,
+    wheel: impl Fn(f64) -> f64,
+    driver: impl Fn(f64) -> bool,
+) -> (Vec<(f64, u8)>, Vec<f64>) {
+    let (mut sent, mut started) = (Vec::new(), Vec::new());
+    let mut t = from;
+    while t < to {
+        let (want, waiting) =
+            hold.update(t, model(t), solo.side(), stopped(t), wheel(t), driver(t));
+        if waiting {
+            solo.renew();
+        }
+        let (start, frames) = solo.update(t, want, true, driver(t), "lane_change_end", 0);
+        if start.is_some() {
+            started.push(t);
+        }
+        sent.extend(
+            frames
+                .iter()
+                .filter(|f| f.address == 0x16a)
+                .map(|f| (t, f.data[16])),
+        );
+        t += 0.02;
+    }
+    (sent, started)
+}
+
+#[test]
+fn a_turn_lamp_waits_through_a_red_light_and_the_rest_of_the_turn() {
+    // Route 00000ccf 363–397 s: lane change into the turn lane, turn desire,
+    // a stop at the light (lateral paused, desire gone) longer than one
+    // lease, the turn desire again, then the turn point passes with the wheel
+    // still at 155° until 52 s.
+    let model =
+        |t: f64| ((0.0..12.0).contains(&t) || (50.0..51.0).contains(&t)).then_some(Direction::Left);
+    let stopped = |t: f64| (12.0..50.0).contains(&t);
+    let wheel = |t: f64| if (51.0..52.0).contains(&t) { 155. } else { 5. };
+    let (mut hold, mut solo) = (SignalHold::default(), SoloDrive::default());
+    let (sent, started) = hold_run(&mut hold, &mut solo, 0., 56., model, stopped, wheel, |_| {
+        false
+    });
+    let lit = |a: f64, b: f64| {
+        sent.iter()
+            .filter(|(t, d)| (a..b).contains(t) && *d == 0x60)
+            .count()
+    };
+    assert!(lit(12.5, 29.0) > 700, "lit while stopped at the light");
+    assert_eq!(
+        started.len(),
+        2,
+        "one renewal after SOLO_DRIVE_MAX at the light"
+    );
+    assert!(
+        started[1] - SOLO_DRIVE_MAX < 2.5,
+        "renewed after the tail and cooldown"
+    );
+    assert!(lit(33.0, 50.0) > 800, "lit for the rest of the wait");
+    assert!(lit(51.0, 51.9) > 40, "lit while the wheel is still turned");
+    assert_eq!(lit(52.4, 56.0), 0, "off once the wheel comes back");
+    assert!(
+        sent.iter()
+            .any(|(t, d)| (52.0..52.4).contains(t) && *d == 0),
+        "ends with a zero tail"
+    );
+}
+
+#[test]
+fn a_signal_hold_never_starts_a_lamp_and_yields_to_the_driver() {
+    // Stopped with the wheel turned, but nothing was lit: no lamp.
+    let (mut hold, mut solo) = (SignalHold::default(), SoloDrive::default());
+    let (sent, _) = hold_run(
+        &mut hold,
+        &mut solo,
+        0.,
+        3.,
+        |_| None,
+        |_| true,
+        |_| 90.,
+        |_| false,
+    );
+    assert!(sent.is_empty());
+    // A stopped hold ends at once on the lever and is not restarted after it.
+    let (mut hold, mut solo) = (SignalHold::default(), SoloDrive::default());
+    let model = |t: f64| (t < 2.).then_some(Direction::Right);
+    let (sent, started) = hold_run(
+        &mut hold,
+        &mut solo,
+        0.,
+        10.,
+        model,
+        |t| t >= 2.,
+        |_| 0.,
+        |t| (4.0..4.2).contains(&t),
+    );
+    assert_eq!(started.len(), 1);
+    assert!(
+        sent.iter()
+            .any(|(t, d)| (3.0..4.0).contains(t) && *d == 0x80),
+        "held while stopped"
+    );
+    assert!(
+        !sent.iter().any(|(t, d)| *t >= 4.0 && *d != 0),
+        "the lever ends it"
+    );
+    // A hold in the wrong direction for the wheel, moving: ends after the grace.
+    let (mut hold, mut solo) = (SignalHold::default(), SoloDrive::default());
+    let model = |t: f64| (t < 2.).then_some(Direction::Right);
+    let (sent, _) = hold_run(
+        &mut hold,
+        &mut solo,
+        0.,
+        5.,
+        model,
+        |_| false,
+        |_| 120.,
+        |_| false,
+    );
+    assert!(!sent.iter().any(|(t, d)| *t >= 2.4 && *d != 0));
+    // The stop hold gives up after HOLD_STOP_MAX.
+    let (mut hold, mut solo) = (SignalHold::default(), SoloDrive::default());
+    let model = |t: f64| (t < 2.).then_some(Direction::Left);
+    let (sent, _) = hold_run(
+        &mut hold,
+        &mut solo,
+        0.,
+        HOLD_STOP_MAX + 10.,
+        model,
+        |t| t >= 2.,
+        |_| 0.,
+        |_| false,
+    );
+    assert!(!sent
+        .iter()
+        .any(|(t, d)| *t >= HOLD_STOP_MAX + 2.5 && *d != 0));
+}

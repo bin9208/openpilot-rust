@@ -437,7 +437,13 @@ impl DesireHelper {
             if let Some(config) = indicator.config {
                 self.indicator_config = config;
             }
-            // Restores masks after a restart and acknowledges low-speed TBT ownership.
+        }
+        if self.indicator_supported {
+            // Restores masks after a restart and acknowledges low-speed TBT
+            // ownership. Read every frame: a lamp the comma lights itself shows
+            // up ~40 ms after it is journalled, and read once a second it was
+            // taken as the driver's lever (route 00000ccf, 202 s: the turn-lane
+            // request below 30 km/h was cancelled 0.1 s after it began).
             if let Some((stamp, direction)) = indicator.journal {
                 let now = indicator.now;
                 if stamp.is_finite()
@@ -1392,6 +1398,43 @@ mod pocket_tests {
         );
         run(&mut helper, &input(29., atc, false), 40);
         helper
+    }
+
+    /// Route 00000ccf, 202 s: at 25 km/h the card's SPAS lamp lit 40 ms
+    /// after it journalled ownership; read once a second, the lamp passed as
+    /// the driver's lever, the request stopped being a turn pocket and the
+    /// below-30 km/h rule cancelled it 0.1 s after it began.
+    #[test]
+    fn the_commas_own_lamp_does_not_cancel_a_slow_turn_lane_request() {
+        let mut helper = DesireHelper::new(true, None);
+        let mut now = 100.;
+        let mut frame = |helper: &mut DesireHelper, lamp: bool, journal: Option<(f64, i64)>| {
+            now += 0.05;
+            let mut input = input(25., "atc left", false);
+            input.indicator.now = now;
+            input.indicator.valid = true;
+            input.indicator.journal = journal;
+            input.car.left_blinker = lamp;
+            step(helper, &input);
+            now
+        };
+        let mut last = 0.;
+        for _ in 0..3 {
+            last = frame(&mut helper, false, None);
+        }
+        assert_eq!(helper.lane_change_state, State::PreLaneChange);
+        assert_ne!(helper.frame % 20, 0, "not on a config frame");
+        // The card starts SPAS and journals ownership; the lamp follows.
+        let stamp = last + 0.01;
+        frame(&mut helper, false, Some((stamp, 1)));
+        for _ in 0..40 {
+            frame(&mut helper, true, Some((stamp, 1)));
+        }
+        assert_eq!(
+            helper.lane_change_state,
+            State::PreLaneChange,
+            "still waiting for the pocket"
+        );
     }
 
     #[test]

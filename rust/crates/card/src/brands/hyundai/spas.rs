@@ -85,6 +85,85 @@ const SOLO_COOLDOWN: f64 = 1.5;
 /// lease; a driver's lever, a side change or the limit end it at once.
 const SOLO_GRACE: f64 = 0.3;
 
+/// A turn lamp outlives the turn desire while the wheel is still turned this
+/// far toward it, as a lever self-cancels only once the wheel comes back.
+pub const HOLD_WHEEL_DEG: f64 = 45.;
+/// Below this, with lateral control paused, the car is waiting (red light).
+pub const HOLD_STOP_SPEED: f64 = 1.5;
+/// Longest wait a stopped car keeps signalling for.
+pub const HOLD_STOP_MAX: f64 = 120.;
+
+/// Keeps the solo lamp lit after the model's lane change or turn desire
+/// drops while the maneuver is not over (route 00000ccf): the car stopped at
+/// a light in the turn lane (lateral control, and with it the desire, pauses
+/// at a standstill), or the wheel still turned into the turn after the
+/// navigation's turn point has passed. Never starts a lamp on its own.
+#[derive(Debug)]
+pub struct SignalHold {
+    held: Option<(Direction, f64)>,
+    /// A hold may begin only this soon after the model's desire was last
+    /// seen (the desire and the lateral pause need not land on one frame).
+    seed_until: f64,
+}
+
+impl Default for SignalHold {
+    fn default() -> Self {
+        Self {
+            held: None,
+            seed_until: f64::NEG_INFINITY,
+        }
+    }
+}
+
+impl SignalHold {
+    /// `model`: the desire's direction. `lit`: the side being lit now.
+    /// `stopped`: engaged, lateral paused, below `HOLD_STOP_SPEED`. `wheel`:
+    /// steering angle, degrees, left positive. `driver`: lever or hazard.
+    /// Returns the direction to light and whether it is a stopped hold.
+    pub fn update(
+        &mut self,
+        now: f64,
+        model: Option<Direction>,
+        lit: Option<Direction>,
+        stopped: bool,
+        wheel: f64,
+        driver: bool,
+    ) -> (Option<Direction>, bool) {
+        if driver {
+            self.held = None;
+            self.seed_until = f64::NEG_INFINITY;
+            return (model, false);
+        }
+        if model.is_some() {
+            self.held = None;
+            self.seed_until = now + SOLO_GRACE;
+            return (model, false);
+        }
+        let seed = lit
+            .filter(|_| now < self.seed_until)
+            .map(|side| (side, now));
+        let Some((side, since)) = self.held.or(seed) else {
+            return (None, false);
+        };
+        if now - since >= HOLD_STOP_MAX {
+            self.held = None;
+            self.seed_until = f64::NEG_INFINITY;
+            return (None, false);
+        }
+        let turned = match side {
+            Direction::Left => wheel > HOLD_WHEEL_DEG,
+            Direction::Right => wheel < -HOLD_WHEEL_DEG,
+        };
+        if stopped || turned {
+            self.held = Some((side, since));
+            (Some(side), stopped)
+        } else {
+            self.held = None;
+            (None, false)
+        }
+    }
+}
+
 /// Driving SPAS indicator for a car with no stock SPAS sender: the lamp
 /// follows an automatic lane change until it completes, then ends with
 /// zero-direction frames (see `solo_direction`).
@@ -178,6 +257,17 @@ impl SoloDrive {
             })
             .collect();
         (started, frames)
+    }
+
+    /// The side of the open lease.
+    pub fn side(&self) -> Option<Direction> {
+        self.side
+    }
+
+    /// Let a lease that reached `SOLO_DRIVE_MAX` start again after its
+    /// cooldown (a long wait at a light), instead of waiting for `want` to end.
+    pub fn renew(&mut self) {
+        self.expired = false;
     }
 
     /// Sending: a lease or its tail.

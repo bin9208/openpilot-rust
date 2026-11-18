@@ -228,7 +228,7 @@ pub struct Indicator {
     /// `physical-hold.json`, read only while an observation is active.
     #[serde(skip)]
     pub feedback: Option<serde_json::Value>,
-    /// `boundary-indicator.json` `(time, mask)`, read every 20 frames.
+    /// `boundary-indicator.json` `(time, mask)`, read every frame.
     pub journal: Option<(f64, i64)>,
     /// Observer switches, read every 20 frames.
     pub config: Option<IndicatorConfig>,
