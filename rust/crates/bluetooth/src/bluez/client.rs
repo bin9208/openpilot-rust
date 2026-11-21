@@ -112,6 +112,10 @@ impl Bluez {
             .ok_or(Error::Closed)
     }
 
+    pub(super) async fn objects_public(&mut self) -> Result<Vec<objects::Object>, Error> {
+        self.objects().await
+    }
+
     async fn objects(&mut self) -> Result<Vec<objects::Object>, Error> {
         let peer = self.ensure().await?;
         read_objects(&peer).await

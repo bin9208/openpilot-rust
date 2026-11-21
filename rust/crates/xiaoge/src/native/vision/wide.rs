@@ -59,7 +59,11 @@ pub fn run(
         let state = shared.state()?;
         (state.models[0].path.clone(), state.config.clone())
     };
-    let mut model = BlindspotModel::load(Path::new(&path), config);
+    // The network is loaded when `OnnxBsdEnabled` turns on and dropped when
+    // it turns off (carrot starts unloaded and loads on the first refresh).
+    let mut model = BlindspotModel::unloaded(config);
+    let mut loaded_bsd_generation = u64::MAX;
+    let mut seen_bsd_generation = u64::MAX;
     let mut generation = 0;
     let mut subscriber = SubMaster::for_runtime(&["carState", "modelV2"], Options::default())?;
     {
@@ -79,10 +83,37 @@ pub fn run(
     while shared.running.load(Ordering::Acquire) {
         let result = (|| {
             shared.refresh(false)?;
-            let (compute_mode, compute_generation) = {
+            let (compute_mode, compute_generation, bsd_enabled, bsd_generation) = {
                 let state = shared.state()?;
-                (state.compute_mode, state.compute_generation)
+                (
+                    state.compute_mode,
+                    state.compute_generation,
+                    state.bsd_enabled,
+                    state.bsd_generation,
+                )
             };
+            if loaded_bsd_generation != bsd_generation {
+                let _operation = shared
+                    .vasm_operation
+                    .lock()
+                    .map_err(|_| Error::Contract("blindspot operation poisoned"))?;
+                let config = {
+                    let state = shared.state()?;
+                    generation = state.config_generation;
+                    state.config.clone()
+                };
+                if !bsd_enabled {
+                    model = BlindspotModel::unloaded(config);
+                } else if !model.loaded() {
+                    model = BlindspotModel::load(Path::new(&path), config);
+                    // The new session has not been given the compute mode yet.
+                    applied_generation = u64::MAX;
+                }
+                let mut state = shared.state()?;
+                state.models[0].loaded = model.loaded();
+                state.models[0].error = model.error().to_owned();
+                loaded_bsd_generation = bsd_generation;
+            }
             if applied_generation != compute_generation {
                 model.set_compute_mode(compute_mode, compute_generation);
                 let status = model.compute_status();
@@ -123,7 +154,10 @@ pub fn run(
                 });
                 let status = &state.cameras[0];
                 (
-                    side.is_some() && model.loaded() && state.metrics[0].ready(now, interval),
+                    bsd_enabled
+                        && side.is_some()
+                        && model.loaded()
+                        && state.metrics[0].ready(now, interval),
                     interval,
                     state.settings,
                     (status.snapshot_response < status.snapshot_request)
@@ -132,9 +166,13 @@ pub fn run(
             };
             camera.receive(&shared, infer || snapshot.is_some(), |camera| {
                 let now = platform::monotonic()?;
+                let bsd_changed = seen_bsd_generation != bsd_generation;
+                seen_bsd_generation = bsd_generation;
+                if bsd_changed {
+                    model.reset();
+                }
                 let clear = {
                     let mut state = shared.state()?;
-                    state.gate = gate;
                     let camera_state = &mut state.cameras[0];
                     camera_state.last_frame = now;
                     camera_state.error.clear();
@@ -143,7 +181,21 @@ pub fn run(
                         camera_state.snapshot_response = request;
                         shared.snapshot.notify_all();
                     }
-                    let mut clear = false;
+                    if !bsd_enabled || bsd_changed {
+                        // Off, or just switched: nothing from before the
+                        // switch stays published.
+                        let publish = bsd_changed || state.blindspot_active != [false; 2];
+                        state.clear_blindspot(0);
+                        if !bsd_enabled {
+                            drop(state);
+                            if publish {
+                                publisher.publish(&shared)?;
+                            }
+                            return Ok(());
+                        }
+                    }
+                    state.gate = gate;
+                    let mut clear = bsd_changed;
                     for candidate in [Side::Left, Side::Right] {
                         if !state.gate.eligible_sides.contains(&candidate) {
                             clear |= state.blindspot_active[candidate.index()];
@@ -173,6 +225,9 @@ pub fn run(
                     .map_err(|_| Error::Contract("blindspot operation poisoned"))?;
                 let previous = {
                     let state = shared.state()?;
+                    if !state.bsd_enabled || state.bsd_generation != bsd_generation {
+                        return Ok(());
+                    }
                     if generation != state.config_generation {
                         model.load_config(state.config.clone());
                         generation = state.config_generation;
@@ -206,6 +261,10 @@ pub fn run(
                 {
                     let mut state = shared.state()?;
                     if state.compute_generation != compute_generation {
+                        return Ok(());
+                    }
+                    // Disabling or re-enabling may have raced the finished inference.
+                    if !state.bsd_enabled || state.bsd_generation != bsd_generation {
                         return Ok(());
                     }
                     state.compute_status[0] = diagnostics::log_fields(status.clone());

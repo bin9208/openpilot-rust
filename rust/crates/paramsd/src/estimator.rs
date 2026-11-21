@@ -21,6 +21,8 @@ pub struct Estimator {
     average_valid: bool,
     offset_valid: bool,
     roll_valid: bool,
+    geometry: openpilot_control_policy::geometry::LateralGeometry,
+    mass_inertia: [f64; 2],
     pub logs: Vec<(String, String)>,
 }
 impl Estimator {
@@ -30,13 +32,32 @@ impl Estimator {
         stiffness: f64,
         offset: f64,
         covariance: Option<Vec<f64>>,
+        geometry_ratio: f64,
     ) -> Result<Self, Error> {
+        let [mass, inertia, front_distance, rear_distance, front, rear] = car.globals;
+        let mut geometry = openpilot_control_policy::geometry::LateralGeometry::new(
+            front_distance + rear_distance,
+            front_distance,
+            front,
+            rear,
+        );
+        geometry.update(geometry_ratio);
+        let globals = [
+            mass,
+            inertia,
+            geometry.center_to_front,
+            geometry.wheelbase - geometry.center_to_front,
+            geometry.stiffness_front,
+            geometry.stiffness_rear,
+        ];
         let mut initial = model::INITIAL_X;
         initial[0] = stiffness;
         initial[1] = ratio;
         initial[2] = offset;
         let mut out = Self {
-            kf: CarKalman::new(&car.globals)?,
+            kf: CarKalman::new(&globals)?,
+            geometry,
+            mass_inertia: [mass, inertia],
             initial,
             covariance: covariance.unwrap_or_else(|| diagonal(&model::INITIAL_P)),
             min_ratio: 0.5 * car.ratio,
@@ -54,6 +75,20 @@ impl Estimator {
         };
         out.reset(None)?;
         Ok(out)
+    }
+    pub fn update_geometry(&mut self, target: f64, dt: f64) -> Result<(), Error> {
+        if self.geometry.step(target, dt) {
+            let g = &self.geometry;
+            self.kf.set_globals(&[
+                self.mass_inertia[0],
+                self.mass_inertia[1],
+                g.center_to_front,
+                g.wheelbase - g.center_to_front,
+                g.stiffness_front,
+                g.stiffness_rear,
+            ])?;
+        }
+        Ok(())
     }
     pub fn reset(&mut self, time: Option<f64>) -> Result<(), Error> {
         self.kf.reset(time, &self.initial, &self.covariance)?;
@@ -163,6 +198,7 @@ impl Estimator {
         let ratio_valid = self.min_ratio <= ratio && ratio <= self.max_ratio;
         let stiffness_valid = (0.2..=5.).contains(&stiffness);
         Ok(Parameters {
+            center_to_front_ratio: self.geometry.ratio,
             valid,
             sensor_valid,
             ratio_valid,

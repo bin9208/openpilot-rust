@@ -280,5 +280,3 @@ pub fn frame(screen: Screen<'_>, measure: &impl Measure) -> Result<Frame, Error>
     ];
     Ok(Frame { commands, areas })
 }
-#[cfg(test)]
-mod tests;

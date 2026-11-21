@@ -7,6 +7,10 @@ pub struct CarState {
     pub steer_torque: f64,
     pub steering_pressed: bool,
     pub can_valid: bool,
+    pub can_timeout: bool,
+    pub drive: bool,
+    pub parking_brake: bool,
+    pub brake_hold: bool,
     pub driving_gear: bool,
     pub lat_enabled: bool,
     pub fault_temporary: bool,
@@ -33,11 +37,14 @@ pub struct TorqueParameters {
 }
 #[derive(Default)]
 pub struct Selfdrive {
+    pub current: bool,
     pub enabled: bool,
     pub active: bool,
     pub soft_disabling: bool,
     pub personality: u16,
     pub visual_alert: u16,
+    /// `alertType` ("eventName/eventType"), for the CCNC cluster texts.
+    pub alert_type: String,
 }
 #[derive(Default)]
 pub struct Model {
@@ -47,10 +54,22 @@ pub struct Model {
     pub lane_change: bool,
     pub lane_left: bool,
     pub lane_right: bool,
+    /// meta.assistantLaneSignalId / Route (carrot voice_indicator).
+    pub assistant_id: String,
+    pub assistant_route: String,
     pub desire: Vec<f64>,
     pub orientation_x: Vec<f64>,
     pub orientation_y: Vec<f64>,
     pub acceleration_y: Vec<f64>,
+    /// Ego lane lines (laneLines[1] left, [2] right) and the plan, for
+    /// laneless centring.
+    pub lane_x: Vec<f64>,
+    pub left_y: Vec<f64>,
+    pub right_y: Vec<f64>,
+    pub left_prob: f64,
+    pub right_prob: f64,
+    pub path_x: Vec<f64>,
+    pub path_y: Vec<f64>,
 }
 #[derive(Default)]
 pub struct LongPlan {
@@ -66,6 +85,9 @@ pub struct LongPlan {
     pub cruise_source: bool,
     pub fcw: bool,
     pub cruise_target: f64,
+    /// `trafficState` (0 off, 1 red, 2 green) and `desiredDistance` (m).
+    pub traffic_state: i32,
+    pub desired_distance: f64,
 }
 #[derive(Default)]
 pub struct LateralPlan {
@@ -125,6 +147,7 @@ pub struct Inputs {
     pub output_curvature: f64,
     pub delay: f64,
     pub override_long: bool,
+    pub vehicle_fault: bool,
     pub distracted: bool,
     pub monitoring_disabled: bool,
     pub assistance_valid: bool,
@@ -133,6 +156,9 @@ pub struct Inputs {
     pub torque_checks: bool,
     pub model_checks: bool,
     pub carrot_fresh: bool,
+    pub stop_object_inputs: bool,
+    pub driver_monitoring_alert: u8,
+    pub center_to_front_ratio: f64,
     pub plan_age: f64,
     pub frame: i64,
     pub long_time: u64,

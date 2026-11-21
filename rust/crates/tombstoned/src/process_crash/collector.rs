@@ -27,6 +27,10 @@ pub trait Provider: Send + Sync + 'static {
         path: &Path,
         stop: &AtomicBool,
     ) -> io::Result<bool>;
+    /// Carrot Logs is optional; an unset destination is skipped, not retried.
+    fn carrot_logs_configured(&self) -> bool {
+        true
+    }
 }
 pub struct Collector {
     stop: Arc<AtomicBool>,
@@ -169,6 +173,9 @@ fn upload_pending(
             for target in ["dsm", "carrot_logs"] {
                 if stop.load(Ordering::Relaxed) {
                     break;
+                }
+                if target == "carrot_logs" && !provider.carrot_logs_configured() {
+                    continue;
                 }
                 if mutex(store)?.acknowledged(&path, target)? {
                     continue;

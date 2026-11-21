@@ -39,10 +39,6 @@ httpdate = "1"
 url = "=2.5.8"
 zstd = "=0.13.3"
 
-[[example]]
-name = "xiaoge_inference_trace"
-required-features = ["native-skip-miri"]
-
 [[bin]]
 name = "openpilot-xiaoge"
 path = "src/main.rs"

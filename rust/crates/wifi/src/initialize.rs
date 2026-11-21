@@ -52,6 +52,7 @@ impl Engine {
                 (),
             )
             .await?;
+        let mut fallback = None;
         for path in paths {
             let value = self
                 .main
@@ -64,10 +65,26 @@ impl Engine {
                 )
                 .await?;
             if bus::unsigned(&value, "DeviceType")? == 2 {
-                return Ok(Some(path.to_string()));
+                // Keep the UI on the Internet station when a private Jetson AP
+                // is also present; choosing the AP could let an ordinary
+                // connect replace it.
+                fallback.get_or_insert_with(|| path.to_string());
+                let interface = self
+                    .main
+                    .get(
+                        Address {
+                            path: &path,
+                            interface: bus::DEVICE,
+                        },
+                        "Interface",
+                    )
+                    .await?;
+                if bus::text(&interface, "Interface")? == "wlan0" {
+                    return Ok(Some(path.to_string()));
+                }
             }
         }
-        Ok(None)
+        Ok(fallback)
     }
     pub async fn initialize(
         &self,

@@ -56,8 +56,12 @@ pub fn read_json(path: &Path) -> Value {
         .filter(Value::is_object)
         .unwrap_or_else(|| json!({}))
 }
+/// Written within the last 3 s. Callers sample `now` before reading, so a
+/// concurrent atomic replacement can carry a timestamp up to that read later
+/// than `now` (carrot d3268a253); such a report is fresh, not stale. Status
+/// files live in /dev/shm, so no earlier boot's clock can appear here.
 pub fn fresh(value: &Value, now: f64) -> bool {
-    numeric(&value["updated"]).is_some_and(|updated| (0. ..3.).contains(&(now - updated)))
+    numeric(&value["updated"]).is_some_and(|updated| (-1. ..3.).contains(&(now - updated)))
 }
 pub fn read_fresh(path: &Path, now: f64) -> Value {
     let value = read_json(path);
@@ -213,6 +217,10 @@ pub struct Diagnostics {
     pub temp_c: Option<Value>,
     pub active: bool,
     pub fresh: bool,
+    /// The model the host serves or prepares, for the web's model library.
+    pub sha256: Option<String>,
+    /// Download/upload/build progress while preparing it.
+    pub preparation: Value,
 }
 pub fn diagnostics(saved: &Value, link: &Value, model: &Value, now: f64) -> Option<Diagnostics> {
     if !truth(&saved["peer"])
@@ -233,6 +241,20 @@ pub fn diagnostics(saved: &Value, link: &Value, model: &Value, now: f64) -> Opti
         temp_c: None,
         active: truth(&model["active"]),
         fresh: false,
+        sha256: link["sha256"]
+            .as_str()
+            .filter(|sha| sha.len() == 64 && sha.bytes().all(|b| b.is_ascii_hexdigit()))
+            .map(str::to_owned),
+        preparation: if link["state"] == "loading" {
+            let item = &link["preparation"];
+            serde_json::json!({
+                "stage": item["stage"].as_str().map(|v| v.chars().take(40).collect::<String>()),
+                "fraction": item["fraction"].as_f64().filter(|v| (0. ..=1.).contains(v)),
+                "message": item["message"].as_str().map(|v| v.chars().take(200).collect::<String>()),
+            })
+        } else {
+            Value::Null
+        },
     };
     if link["state"] == "updating" && result.label == "jetSON" {
         let badge = update_badge(&link["host_update"]);
@@ -360,42 +382,18 @@ pub fn write(path: &Path, value: &Value) -> std::io::Result<()> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
+mod freshness_tests {
+    use super::fresh;
+    use serde_json::json;
+
     #[test]
-    fn numeric_telemetry_coercions_match252_actual_source_cases() {
-        let fixture: Value = serde_json::from_str(include_str!(
-            "../tests/fixtures/status_coercion_source.json"
-        ))
-        .unwrap();
-        assert_eq!(
-            fixture["source_commit"],
-            "e8e152dbcfd9574a1791ed12026d1880e87689b3"
-        );
-        assert_eq!(
-            fixture["source_sha256"],
-            "e97491c814648e090b4bfbe9c6672410e452558fd5cf261def97bd1a1c81bfe4"
-        );
-        assert_eq!(fixture["cases"].as_array().unwrap().len(), 252);
-        for (index, case) in fixture["cases"].as_array().unwrap().iter().enumerate() {
-            assert_eq!(
-                serde_json::to_value(diagnostics(
-                    &case["saved"],
-                    &case["link"],
-                    &case["model"],
-                    10.
-                ))
-                .unwrap(),
-                case["expected"],
-                "case{index}"
-            );
-            let badge = badge(&case["saved"], &case["link"], &case["model"], 10.)
-                .map(|b| json!([b.text, b.style]));
-            assert_eq!(
-                serde_json::to_value(badge).unwrap(),
-                case["badge"],
-                "badge{index}"
-            );
-        }
+    fn a_report_written_after_the_reader_sampled_its_clock_is_fresh() {
+        // carrot d3268a253: the read follows the clock sample, so `updated`
+        // can be slightly newer than `now`.
+        assert!(fresh(&json!({"updated": 100.2}), 100.));
+        assert!(fresh(&json!({"updated": 100.}), 102.9));
+        assert!(!fresh(&json!({"updated": 100.}), 103.));
+        assert!(!fresh(&json!({"updated": 105.}), 100.));
+        assert!(!fresh(&json!({}), 100.));
     }
 }

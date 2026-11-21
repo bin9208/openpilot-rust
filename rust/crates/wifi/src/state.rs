@@ -106,7 +106,33 @@ impl State {
         result
     }
     pub fn scan_due(&self, now: f64) -> bool {
-        (self.active || self.snapshot.wifi_state.status != ConnectStatus::Connected)
+        // Explicit network-page scans stay available. A disconnected optional
+        // uplink must not scan the band every five seconds on the radio that
+        // is serving the Jetson HUD access point.
+        (self.active
+            || (self.snapshot.wifi_state.status != ConnectStatus::Connected && !direct_ap_active()))
             && now - self.last_scan > 5.
     }
+}
+
+/// Secret-free hint written by jetlinkd while it serves a Jetson HUD from a
+/// private access point (carrot's `common/wifi_coexistence.py`).
+const DIRECT_AP_STATUS: &str = "/dev/shm/carrot-jetlink-direct-wifi.json";
+
+/// True while that access point is fresh: background discovery must then
+/// stay off the radio the HUD uses.
+pub fn direct_ap_active() -> bool {
+    let Ok(text) = std::fs::read_to_string(DIRECT_AP_STATUS) else {
+        return false;
+    };
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(&text) else {
+        return false;
+    };
+    let now = rustix::time::clock_gettime(rustix::time::ClockId::Monotonic);
+    let now = now.tv_sec as f64 + now.tv_nsec as f64 * 1e-9;
+    value["state"] == "active"
+        && value["interface"] == "wljetson0"
+        && value["updated"]
+            .as_f64()
+            .is_some_and(|updated| (0. ..8.).contains(&(now - updated)))
 }

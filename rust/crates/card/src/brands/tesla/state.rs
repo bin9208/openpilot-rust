@@ -43,11 +43,16 @@ pub struct Extras {
     pub _tesla_speed_resume_up_nanos: u64,
     pub _tesla_speed_resume_down_nanos: u64,
     pub _tesla_speed_resume_wait_idle: bool,
+    pub _tpms_available: bool,
+    pub _invalid_measurements: Vec<String>,
 }
 pub struct State {
     pub party: Parser,
     pub autopilot: Parser,
     pub vehicle: Option<Parser>,
+    /// carrot's `Bus.body`: the tyre-pressure display frame on the vehicle bus,
+    /// read from its own DBC and never part of the alive check.
+    pub body: Option<Parser>,
     defs: Definitions,
     pub extras: Extras,
     pub out: Message,
@@ -60,8 +65,14 @@ pub struct State {
     pub prints: Vec<String>,
     pub logs: Vec<VehicleLog>,
     pub soft_hold: i16,
+    /// APP_trafficControl observer, only with TeslaCanTrafficStop.
+    pub traffic_control: Option<super::traffic_control::TrafficControl>,
+    /// Driver turn stalk, only with TeslaAutoTurnSignals.
+    pub stalk: Option<super::stalk::Stalk>,
 }
 const MPH_TO_MS: f64 = 1.609344 * (1. / 3.6);
+const TPMS_MAX_AGE_NS: i128 = 10_000_000_000;
+const DIGITAL_PEDAL_MAX_AGE_NS: i128 = 500_000_000;
 
 fn f32_value(value: f64) -> Result<f32, Error> {
     value.to_f32().ok_or(Error::Numeric)
@@ -99,6 +110,7 @@ impl State {
         for p in [&mut self.party, &mut self.autopilot]
             .into_iter()
             .chain(self.vehicle.iter_mut())
+            .chain(self.body.iter_mut())
         {
             self.logs.extend(
                 std::mem::take(&mut p.diagnostics)
@@ -119,15 +131,26 @@ impl State {
     ) -> Result<Self, Error> {
         let dbc = Arc::new(Dbc::load(&root.join("tesla_model3_party.dbc"))?);
         let defs = dbc.definitions()?;
-        let vehicle = if flags & HAS_VEHICLE_BUS != 0 {
+        let (vehicle, body) = if flags & HAS_VEHICLE_BUS != 0 {
             let mut p = Parser::new(
                 Arc::new(Dbc::load(&root.join("tesla_model3_vehicle.dbc"))?),
                 1,
                 now,
             );
             p.add("UI_status2", Some(2.), false, now)?;
-            p.add("VCSEC_TPMSDisplay", Some(1.), false, now)?;
-            Some(p)
+            // Low-rate display telemetry must not create a second bus-off watchdog.
+            let mut body = Parser::new(
+                Arc::new(Dbc::load(&root.join("tesla_modely_hw4_perception.dbc"))?),
+                1,
+                now,
+            );
+            body.add("VCSEC_TPMSDisplay", Some(f64::NAN), false, now)?;
+            (Some(p), Some(body))
+        } else {
+            (None, None)
+        };
+        let traffic_control = if flags & super::CAN_TRAFFIC_STOP != 0 {
+            Some(super::traffic_control::TrafficControl::new(root, now)?)
         } else {
             None
         };
@@ -137,6 +160,7 @@ impl State {
             party: Parser::new(Arc::clone(&dbc), 0, now),
             autopilot: Parser::new(dbc, 2, now),
             vehicle,
+            body,
             defs,
             extras: Extras {
                 steering_disengage: true,
@@ -151,10 +175,57 @@ impl State {
             steer_ratio,
             pcm,
             cluster_seen: false,
+            traffic_control,
+            stalk: (flags & super::AUTO_TURN_SIGNALS != 0).then(super::stalk::Stalk::default),
             prints: Vec::new(),
             logs: Vec::new(),
             soft_hold: 0,
         })
+    }
+    /// carrot's `_measurement_valid`: the last accepted frame has the DBC length
+    /// and the signal's raw value is in range and not labelled `...SNA`.
+    fn measurement_valid(&mut self, message: &str, signal: &str, now: u64) -> Result<bool, Error> {
+        let value = self.party.signal_lazy(message, signal, now)?;
+        let msg = self.party.dbc.message(message)?;
+        if !value.is_finite()
+            || self
+                .party
+                .raw
+                .get(&msg.address)
+                .is_some_and(|data| data.len() != msg.size)
+        {
+            return Ok(false);
+        }
+        let definition = msg
+            .signals
+            .iter()
+            .find(|s| s.name == signal)
+            .ok_or_else(|| openpilot_can::Error::Signal(signal.into()))?;
+        let raw = ((value - definition.offset) / definition.factor)
+            .round_ties_even()
+            .to_i64()
+            .ok_or(Error::Numeric)?;
+        let signed = usize::from(definition.signed);
+        let bits = u32::try_from(definition.size - signed).map_err(|_| Error::Numeric)?;
+        let maximum = 1_i64.checked_shl(bits).ok_or(Error::Numeric)? - 1;
+        let minimum = if definition.signed { -maximum - 1 } else { 0 };
+        let sna = self
+            .defs
+            .get(&msg.address)
+            .and_then(|d| d.get(signal))
+            .and_then(|d| d.get(&raw))
+            .is_some_and(|label| label.ends_with("SNA"));
+        Ok((minimum..=maximum).contains(&raw) && !sna)
+    }
+    /// Time of the last accepted frame of `message`, 0 when none arrived.
+    fn stamp(parser: &Parser, message: &str) -> Result<u64, Error> {
+        let address = parser.dbc.message(message)?.address;
+        Ok(parser
+            .states
+            .get(&address)
+            .and_then(|s| s.timestamps.back())
+            .copied()
+            .unwrap_or(0))
     }
     pub fn observe_speed_wheel(&mut self, data: &[u8], now: u64) {
         let Ok(data) = <[u8; 8]>::try_from(data) else {
@@ -198,6 +269,14 @@ impl State {
             for f in &p.frames {
                 if f.address == 0x3c2 && f.bus == 1 {
                     self.observe_speed_wheel(&f.data, p.mono_time);
+                } else if f.address == super::stalk::ADDRESS {
+                    if let Some(stalk) = &mut self.stalk {
+                        stalk.observe(&f.data, f.bus, p.mono_time);
+                    }
+                } else if f.address == super::traffic_control::ADDRESS {
+                    if let Some(traffic) = &mut self.traffic_control {
+                        traffic.observe(&f.data, f.bus, p.mono_time, now)?;
+                    }
                 }
             }
         }
@@ -206,61 +285,99 @@ impl State {
         if let Some(v) = &mut self.vehicle {
             v.update(packets)?;
         }
+        if let Some(body) = &mut self.body {
+            body.update(packets)?;
+        }
         self.drain_parsers();
+        // A measurement that fails `measurement_valid` keeps its last published
+        // value and is named here; any entry sets `vehicleSensorsInvalid`.
+        let mut invalid = Vec::new();
+        let (last_raw, last_ego, last_cluster, last_gas, last_cruise_cluster, last_wheels) = {
+            let last = self.out.get_root_as_reader::<car_state::Reader>()?;
+            let wheels = last.get_wheel_speeds()?;
+            (
+                last.get_v_ego_raw(),
+                last.get_v_ego(),
+                last.get_v_ego_cluster(),
+                last.get_gas(),
+                last.get_cruise_state()?.get_speed_cluster(),
+                [
+                    wheels.get_fl(),
+                    wheels.get_fr(),
+                    wheels.get_rl(),
+                    wheels.get_rr(),
+                ],
+            )
+        };
         let mut message = Message::new_default();
         let mut ret = message.init_root::<car_state::Builder>();
-        let raw =
-            f32_value(self.party.signal_lazy("DI_speed", "DI_vehicleSpeed", now)? * (1. / 3.6))?;
-        ret.set_v_ego_raw(raw);
-        let [v, a] = self.speed.update(f64::from(raw));
-        ret.set_v_ego(f32_value(v)?);
-        ret.set_a_ego(f32_value(a)?);
-        let mut ws = ret.reborrow().init_wheel_speeds();
-        ws.set_fl(f32_value(
-            self.party
-                .signal_lazy("ESP_wheelSpeeds", "ESP_wheelSpeedFrL", now)?
-                * (1. / 3.6),
-        )?);
-        ws.set_fr(f32_value(
-            self.party
-                .signal_lazy("ESP_wheelSpeeds", "ESP_wheelSpeedFrR", now)?
-                * (1. / 3.6),
-        )?);
-        ws.set_rl(f32_value(
-            self.party
-                .signal_lazy("ESP_wheelSpeeds", "ESP_wheelSpeedReL", now)?
-                * (1. / 3.6),
-        )?);
-        ws.set_rr(f32_value(
-            self.party
-                .signal_lazy("ESP_wheelSpeeds", "ESP_wheelSpeedReR", now)?
-                * (1. / 3.6),
-        )?);
-        let unit_raw = self.party.signal_lazy("DI_speed", "DI_uiSpeedUnits", now)?;
-        let units = enum_value(
-            &self.defs,
-            &mut self.party,
-            "DI_speed",
-            "DI_uiSpeedUnits",
-            now,
-        )?;
-        let ui = self.party.signal_lazy("DI_speed", "DI_uiSpeed", now)?;
-        let ui_kph = if raw > 2. && ui > 2. {
-            (ui * (1. / 3.6) - f64::from(raw)).abs() <= (ui * MPH_TO_MS - f64::from(raw)).abs()
+        if self.measurement_valid("DI_speed", "DI_vehicleSpeed", now)? {
+            let raw = f32_value(
+                self.party.signal_lazy("DI_speed", "DI_vehicleSpeed", now)? * (1. / 3.6),
+            )?;
+            ret.set_v_ego_raw(raw);
+            let [v, a] = self.speed.update(f64::from(raw));
+            ret.set_v_ego(f32_value(v)?);
+            ret.set_a_ego(f32_value(a)?);
         } else {
-            match units.as_deref() {
-                Some("DI_SPEED_KPH" | "KPH") => true,
-                Some("DI_SPEED_MPH" | "MPH") => false,
-                _ => unit_raw == 1.,
+            invalid.push("DI_speed.DI_vehicleSpeed".to_owned());
+            ret.set_v_ego_raw(last_raw);
+            ret.set_v_ego(last_ego);
+        }
+        let mut wheels = last_wheels;
+        for (wheel, signal) in wheels.iter_mut().zip([
+            "ESP_wheelSpeedFrL",
+            "ESP_wheelSpeedFrR",
+            "ESP_wheelSpeedReL",
+            "ESP_wheelSpeedReR",
+        ]) {
+            if self.measurement_valid("ESP_wheelSpeeds", signal, now)? {
+                *wheel = f32_value(
+                    self.party.signal_lazy("ESP_wheelSpeeds", signal, now)? * (1. / 3.6),
+                )?;
+            } else {
+                invalid.push(format!("ESP_wheelSpeeds.{signal}"));
             }
-        };
-        ret.set_v_ego_cluster(f32_value(ui * if ui_kph { 1. / 3.6 } else { MPH_TO_MS })?);
+        }
+        let mut ws = ret.reborrow().init_wheel_speeds();
+        ws.set_fl(wheels[0]);
+        ws.set_fr(wheels[1]);
+        ws.set_rl(wheels[2]);
+        ws.set_rr(wheels[3]);
+        // The display unit is the CAN bit alone: 1 is km/h, 0 is mph.
+        let ui_units = self.party.signal_lazy("DI_speed", "DI_uiSpeedUnits", now)?;
+        let ui_units_known = ui_units == 0. || ui_units == 1.;
+        if !ui_units_known {
+            invalid.push("DI_speed.DI_uiSpeedUnits".to_owned());
+        }
+        if self.measurement_valid("DI_speed", "DI_uiSpeed", now)? && ui_units_known {
+            let ui = self.party.signal_lazy("DI_speed", "DI_uiSpeed", now)?;
+            ret.set_v_ego_cluster(f32_value(
+                ui * if ui_units == 1. { 1. / 3.6 } else { MPH_TO_MS },
+            )?);
+        } else {
+            invalid.push("DI_speed.DI_uiSpeed".to_owned());
+            ret.set_v_ego_cluster(last_cluster);
+        }
         let pedal = self
             .party
             .signal_lazy("DI_systemStatus", "DI_accelPedalPos", now)?;
-        ret.set_gas(f32_value(pedal / 100.)?);
-        self.extras.gas_pressed = pedal > if self.extras.gas_pressed { 0.4 } else { 0.8 };
-        ret.set_gas_pressed(self.extras.gas_pressed);
+        if self.measurement_valid("DI_systemStatus", "DI_accelPedalPos", now)? {
+            ret.set_gas(f32_value(pedal / 100.)?);
+            self.extras.gas_pressed = pedal > if self.extras.gas_pressed { 0.4 } else { 0.8 };
+        } else {
+            invalid.push("DI_systemStatus.DI_accelPedalPos".to_owned());
+            ret.set_gas(last_gas);
+            self.extras.gas_pressed = true;
+        }
+        let digital_pedal = self
+            .party
+            .signal_lazy("DI_speed", "DI_accelPedalPressed", now)?;
+        let pedal_time = Self::stamp(&self.party, "DI_speed")?;
+        let digital_pedal_pressed = pedal_time > 0
+            && (0..=DIGITAL_PEDAL_MAX_AGE_NS).contains(&(i128::from(now) - i128::from(pedal_time)))
+            && digital_pedal == 1.;
+        ret.set_gas_pressed(self.extras.gas_pressed || digital_pedal_pressed);
         ret.set_engine_rpm(f32_value(self.party.signal_lazy(
             "DI_torque",
             "DI_axleSpeed",
@@ -346,13 +463,7 @@ impl State {
             "DI_cruiseState",
             now,
         )?;
-        let cruise_units = enum_value(
-            &self.defs,
-            &mut self.party,
-            "DI_state",
-            "DI_speedUnits",
-            now,
-        )?;
+        let cruise_units = self.party.signal_lazy("DI_state", "DI_speedUnits", now)?;
         let acc = self
             .autopilot
             .signal_lazy("DAS_control", "DAS_accState", now)?;
@@ -399,16 +510,22 @@ impl State {
         self.extras.summon_prev = summon_now;
         self.extras.cruise_enabled_prev = enabled;
         let enabled = enabled && !self.extras.summon;
-        let cruise_kph = match cruise_units.as_deref() {
-            Some("KPH" | "DI_SPEED_KPH") => true,
-            Some("MPH" | "DI_SPEED_MPH") => false,
-            _ => ui_kph,
-        };
+        let cruise_kph = cruise_units == 1.;
+        let cruise_units_known = cruise_units == 0. || cruise_units == 1.;
+        if !cruise_units_known {
+            invalid.push("DI_state.DI_speedUnits".to_owned());
+        }
         self.extras.tesla_speed_units = if cruise_kph { "KPH" } else { "MPH" }.into();
-        let cluster = f32_value(
-            self.party.signal_lazy("DI_state", "DI_digitalSpeed", now)?
-                * if cruise_kph { 1. / 3.6 } else { MPH_TO_MS },
-        )?;
+        let cluster =
+            if self.measurement_valid("DI_state", "DI_digitalSpeed", now)? && cruise_units_known {
+                f32_value(
+                    self.party.signal_lazy("DI_state", "DI_digitalSpeed", now)?
+                        * if cruise_kph { 1. / 3.6 } else { MPH_TO_MS },
+                )?
+            } else {
+                invalid.push("DI_state.DI_digitalSpeed".to_owned());
+                last_cruise_cluster
+            };
         let mut cr = ret.reborrow().init_cruise_state();
         cr.set_enabled(enabled);
         cr.set_speed_cluster(cluster);
@@ -426,17 +543,10 @@ impl State {
         let limit = self
             .autopilot
             .signal_lazy("DAS_status", "DAS_fusedSpeedLimit", now)?;
-        let address = self.autopilot.dbc.message("DAS_status")?.address;
-        let time = self
-            .autopilot
-            .states
-            .get(&address)
-            .and_then(|s| s.timestamps.back())
-            .copied()
-            .unwrap_or(0);
+        let time = Self::stamp(&self.autopilot, "DAS_status")?;
         if limit > 0. && limit <= 150. && time > 0 {
-            self.extras.tesla_speed_limit_target =
-                limit * if cruise_kph { 1. / 3.6 } else { MPH_TO_MS };
+            // The HW4 fused limit is km/h, independent of the selected cruise display unit.
+            self.extras.tesla_speed_limit_target = limit * (1. / 3.6);
             ret.set_speed_limit(f32_value(self.extras.tesla_speed_limit_target * 3.6)?);
             self.extras.tesla_speed_limit_target_nanos = time;
             self.extras.tesla_speed_limit_target_valid = true;
@@ -495,6 +605,13 @@ impl State {
             "rightBlinkerBlinking",
             now,
         )?));
+        if let Some(stalk) = &mut self.stalk {
+            let out = stalk.update(now);
+            ret.set_turn_signal_driver_valid(out.valid);
+            ret.set_turn_signal_driver_direction(out.direction);
+            ret.set_left_blinker_stalk_count(out.counts[0]);
+            ret.set_right_blinker_stalk_count(out.counts[1]);
+        }
         ret.set_generic_toggle(self.party.signal_lazy("UI_warning", "highBeam", now)? == 1.);
         ret.set_seatbelt_unlatched(
             self.party.signal_lazy("UI_warning", "buckleStatus", now)? != 1.,
@@ -562,19 +679,41 @@ impl State {
             // The pinned Python ret.buttonEvents self-copy clears its existing Cap'n Proto readers.
             // Preserve that source behavior when the vehicle-bus infotainment list is rebuilt.
             buttons.fill((Button::Unknown, false));
-            let mut tpms = ret.reborrow().init_tpms();
-            let pressure = |p: &mut Parser, s: &str| -> Result<f32, Error> {
-                let value = p.signal_lazy("VCSEC_TPMSDisplay", s, now)?;
-                f32_value(if value < 255. * 0.025 {
-                    (value * 14.5037738 * 10.).round_ties_even() / 10.
-                } else {
-                    0.
-                })
-            };
-            tpms.set_fl(pressure(vehicle, "VCSEC_TPMSDisplayPressureFL")?);
-            tpms.set_fr(pressure(vehicle, "VCSEC_TPMSDisplayPressureFR")?);
-            tpms.set_rl(pressure(vehicle, "VCSEC_TPMSDisplayPressureRL")?);
-            tpms.set_rr(pressure(vehicle, "VCSEC_TPMSDisplayPressureRR")?);
+            if let Some(body) = &mut self.body {
+                let pressure = |p: &mut Parser, s: &str| -> Result<f32, Error> {
+                    let value = p.signal_lazy("VCSEC_TPMSDisplay", s, now)?;
+                    f32_value(if value < 255. * 0.025 {
+                        (value * 14.5037738 * 10.).round_ties_even() / 10.
+                    } else {
+                        0.
+                    })
+                };
+                let time = Self::stamp(body, "VCSEC_TPMSDisplay")?;
+                let available = body.raw.get(&0x25a).is_some_and(|data| data.len() == 8)
+                    && time > 0
+                    && (0..=TPMS_MAX_AGE_NS).contains(&(i128::from(now) - i128::from(time)));
+                if available {
+                    let mut tpms = ret.reborrow().init_tpms();
+                    tpms.set_fl(pressure(body, "VCSEC_TPMSDisplayPressureFL")?);
+                    tpms.set_fr(pressure(body, "VCSEC_TPMSDisplayPressureFR")?);
+                    tpms.set_rl(pressure(body, "VCSEC_TPMSDisplayPressureRL")?);
+                    tpms.set_rr(pressure(body, "VCSEC_TPMSDisplayPressureRR")?);
+                }
+                if available != self.extras._tpms_available {
+                    self.logs.push(if available {
+                        VehicleLog {
+                            level: crate::query::DiagnosticLevel::Info,
+                            message: "Tesla TPMS data available".into(),
+                        }
+                    } else {
+                        VehicleLog {
+                            level: crate::query::DiagnosticLevel::Warning,
+                            message: "Tesla TPMS data unavailable (stale or invalid frame)".into(),
+                        }
+                    });
+                    self.extras._tpms_available = available;
+                }
+            }
             let prev = self.extras.infotainment_3_finger_press;
             self.extras.infotainment_3_finger_press = vehicle
                 .signal("UI_status2", "UI_activeTouchPoints")?
@@ -597,14 +736,34 @@ impl State {
             event.set_type(*b);
             event.set_pressed(*p);
         }
+        ret.set_vehicle_sensors_invalid(!invalid.is_empty());
+        if invalid != self.extras._invalid_measurements {
+            self.logs.push(if invalid.is_empty() {
+                VehicleLog {
+                    level: crate::query::DiagnosticLevel::Info,
+                    message: "Tesla measurements recovered".into(),
+                }
+            } else {
+                VehicleLog {
+                    level: crate::query::DiagnosticLevel::Error,
+                    message: format!(
+                        "Tesla invalid measurements (holding last valid values): {}",
+                        invalid.join(", ")
+                    ),
+                }
+            });
+            self.extras._invalid_measurements = invalid;
+        }
         let valid = self.party.can_valid()
             && self.autopilot.can_valid()
-            && self.vehicle.as_mut().is_none_or(|v| v.can_valid());
+            && self.vehicle.as_mut().is_none_or(|v| v.can_valid())
+            && self.body.as_mut().is_none_or(|b| b.can_valid());
         ret.set_can_valid(valid);
         ret.set_can_timeout(
             self.party.bus_timeout()
                 || self.autopilot.bus_timeout()
-                || self.vehicle.as_ref().is_some_and(|v| v.bus_timeout()),
+                || self.vehicle.as_ref().is_some_and(|v| v.bus_timeout())
+                || self.body.as_ref().is_some_and(|b| b.bus_timeout()),
         );
         let reader = ret.reborrow_as_reader();
         let cluster = reader.get_v_ego_cluster();
@@ -634,8 +793,14 @@ impl State {
             self.pcm,
             ret.reborrow_as_reader().get_button_events()?,
         )?);
+        if let Some(traffic) = &self.traffic_control {
+            traffic.publish(ret.reborrow().init_tesla_traffic_control(), now);
+        }
         self.out.set_root(ret.into_reader())?;
         self.drain_parsers();
         Ok(message)
     }
 }
+
+#[cfg(test)]
+mod tests;

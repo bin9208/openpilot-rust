@@ -3,6 +3,14 @@ pub struct Car {
     pub ratio: f64,
     pub globals: [f64; 6],
 }
+impl Car {
+    pub fn wheelbase(&self) -> f64 {
+        self.globals[2] + self.globals[3]
+    }
+    pub fn center_to_front_ratio(&self) -> f64 {
+        self.globals[2] / self.wheelbase()
+    }
+}
 pub struct Pose {
     pub time: f64,
     pub angular: [f64; 3],
@@ -32,6 +40,7 @@ pub struct Event {
     pub input: Input,
 }
 pub struct Parameters {
+    pub center_to_front_ratio: f64,
     pub valid: bool,
     pub sensor_valid: bool,
     pub ratio_valid: bool,

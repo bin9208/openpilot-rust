@@ -1,14 +1,7 @@
 use super::{env, multipart, network};
 use crate::{config::Config, cwp::read_param, Error, Value};
-use base64::Engine;
 use chrono::Local;
 use std::time::Duration;
-
-const KEY: &[u8] = b"carrot-exception-v1";
-const DEFAULT: &str = concat!(
-    "CxUGAhxOAkocChYTGxsLQE4ZXEwAAhtAA0gHEAwKGwdGXlsfQgdTUEVKXkEcUkpaVEdEWkAkRwMCFzEL",
-    "MF8zS1YzWh8YJlkpVk4EUwQ0ED02IkgXKjMkQzIYIRt/HgUWUTUQWCcaAS1XKhpFUT4cGDBnLiACOx1DXQ=="
-);
 
 fn url(config: &Config) -> String {
     if matches!(
@@ -41,22 +34,8 @@ fn url(config: &Config) -> String {
             return value;
         }
     }
-    base64::engine::general_purpose::STANDARD
-        .decode(DEFAULT)
-        .ok()
-        .and_then(|bytes| {
-            String::from_utf8(
-                bytes
-                    .into_iter()
-                    .enumerate()
-                    .map(|(index, byte)| byte ^ KEY[index % KEY.len()])
-                    .collect(),
-            )
-            .ok()
-        })
-        .unwrap_or_default()
-        .trim()
-        .into()
+    // No built-in destination: reports go to Discord only when configured.
+    String::new()
 }
 
 fn repository(config: &Config) -> String {

@@ -29,8 +29,12 @@ pub fn logs(diag: &mut Diagnostic, types: &[u16], stop: &AtomicBool) -> Result<(
             .get(3..)
             .ok_or(Error::Protocol("log config header"))?,
     );
-    if opcode != framing::LOG_CONFIG || reader.u32()? != 1 || reader.u32()? != 0 {
-        return Err(Error::Protocol("log range response"));
+    let (operation, status) = (reader.u32()?, reader.u32()?);
+    if opcode != framing::LOG_CONFIG || operation != 1 || status != 0 {
+        return Err(Error::Response(format!(
+            "log range response: opcode {opcode} operation {operation} status {status}, expected {} 1 0",
+            framing::LOG_CONFIG
+        )));
     }
     let mut ranges = [0; 16];
     for range in &mut ranges {
@@ -64,8 +68,15 @@ pub fn logs(diag: &mut Diagnostic, types: &[u16], stop: &AtomicBool) -> Result<(
         request.extend(mask);
         let (opcode, payload) = diag.exchange(framing::LOG_CONFIG, &request, stop)?;
         let mut reader = Reader::new(payload.get(3..).ok_or(Error::Protocol("log mask header"))?);
-        if opcode != framing::LOG_CONFIG || reader.u32()? != 3 || reader.u32()? != 0 {
-            return Err(Error::Protocol("log mask response"));
+        let (operation, status) = (reader.u32()?, reader.u32()?);
+        if opcode != framing::LOG_CONFIG || operation != 3 || status != 0 {
+            // Every attempt of every boot after a restart failed here on the
+            // test device (2026-11-10/11) with nothing but the name of the
+            // check; the values say which of the three it was.
+            return Err(Error::Response(format!(
+                "log mask response for log type {kind} ({count} items): opcode {opcode} operation {operation} status {status}, expected {} 3 0",
+                framing::LOG_CONFIG
+            )));
         }
     }
     Ok(())

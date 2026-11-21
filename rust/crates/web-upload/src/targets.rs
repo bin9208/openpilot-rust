@@ -4,8 +4,18 @@ use crate::{
 };
 use std::collections::BTreeMap;
 
-pub const DEFAULT_WEB_UPLOAD_URL: &str = "https://upload.shind0.synology.me";
-pub const DEFAULT_TMUX_WEB_UPLOAD_URL: &str = "https://tmux.carrotpilot.app/upload";
+/// This port's own receiver (tools/carrot_upload_server). Logs from devices
+/// running this port must not land on the original project's servers.
+pub const DEFAULT_WEB_UPLOAD_URL: &str = "https://lunabox.myqnapcloud.com:18443";
+/// Carrot Logs is the original project's forum; it is only used when
+/// CARROT_TMUX_WEB_UPLOAD_URL names a destination.
+pub const DEFAULT_TMUX_WEB_UPLOAD_URL: &str = "";
+/// Saved settings holding one of these are moved to the current default.
+pub const LEGACY_WEB_UPLOAD_URLS: [&str; 3] = [
+    "https://op.wjcloud.kr",
+    "https://shind0.synology.me",
+    "https://upload.shind0.synology.me",
+];
 
 #[derive(Debug, Default, serde::Deserialize)]
 pub struct Environment {
@@ -109,9 +119,16 @@ pub fn tmux_target(
         })
     }
 }
+pub fn carrot_logs_configured(environment: &Environment) -> bool {
+    !strip(&environment.tmux_url).is_empty() || !DEFAULT_TMUX_WEB_UPLOAD_URL.is_empty()
+}
 pub fn carrot_logs_target(environment: &Environment) -> Result<Target, Error> {
+    let url = normalize_base_url(&environment.tmux_url, DEFAULT_TMUX_WEB_UPLOAD_URL)?;
+    if url.is_empty() {
+        return Err(Error::MissingBaseUrl);
+    }
     Ok(Target {
-        url: normalize_base_url(&environment.tmux_url, DEFAULT_TMUX_WEB_UPLOAD_URL)?,
+        url,
         headers: BTreeMap::new(),
     })
 }

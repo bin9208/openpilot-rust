@@ -69,19 +69,22 @@ impl Network {
     }
 
     pub fn probe(&self) -> Probe {
-        let wifi = self.output(
-            &[
-                "-t",
-                "-f",
-                "ACTIVE,SSID,SECURITY,SIGNAL",
-                "dev",
-                "wifi",
-                "list",
-                "--rescan",
-                "auto",
-            ],
-            3,
-        );
+        // A read-only background viewer, not a request to scan: while the
+        // other interface serves a Jetson, read only the station's cache.
+        let mut arguments = vec![
+            "-t",
+            "-f",
+            "ACTIVE,SSID,SECURITY,SIGNAL",
+            "dev",
+            "wifi",
+            "list",
+        ];
+        if direct_ap_active() {
+            arguments.extend(["ifname", "wlan0", "--rescan", "no"]);
+        } else {
+            arguments.extend(["--rescan", "auto"]);
+        }
+        let wifi = self.output(&arguments, 3);
         let address = self.output(&["-t", "-f", "IP4.ADDRESS", "dev", "show", "wlan0"], 2);
         Probe {
             wifi: wifi::networks(&wifi),
@@ -121,4 +124,22 @@ impl Network {
             }
         }
     }
+}
+
+/// carrot's `common/wifi_coexistence.py`: jetlinkd's Wi-Fi direct helper is
+/// serving a Jetson HUD from a private access point right now.
+fn direct_ap_active() -> bool {
+    let Some(value) = std::fs::read_to_string("/dev/shm/carrot-jetlink-direct-wifi.json")
+        .ok()
+        .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
+    else {
+        return false;
+    };
+    let now = rustix::time::clock_gettime(rustix::time::ClockId::Monotonic);
+    let now = now.tv_sec as f64 + now.tv_nsec as f64 * 1e-9;
+    value["state"] == "active"
+        && value["interface"] == "wljetson0"
+        && value["updated"]
+            .as_f64()
+            .is_some_and(|updated| (0. ..8.).contains(&(now - updated)))
 }

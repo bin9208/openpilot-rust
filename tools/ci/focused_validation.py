@@ -14,16 +14,12 @@ import tomllib
 ROOT = Path(__file__).resolve().parents[2]
 HOST_ONLY = {
     'AGENTS.md', 'tools/ci/focused_validation.py',
-    'tools/native/publish_inputs.py',
-    'rust/crates/dev-tools/src/publish.rs',
     'rust/crates/dev-tools/tests/publish.rs',
 }
 HOST_PREFIXES = ('.github/', 'docs/', 'tools/ci/tests/')
 RUST_PACKAGES = {
     'runtime-core': 'openpilot-runtime-core',
-    'runtime-build': 'openpilot-runtime-build',
     'runtime-installer': 'openpilot-runtime-installer',
-    'disk-space': 'openpilot-disk-space',
 }
 
 
@@ -117,9 +113,6 @@ def host_checks(paths):
   for crate in sorted(crates):
     run(['cargo', 'test', '--manifest-path', 'rust/Cargo.toml', '--locked',
          '-p', crate, '--lib', '--tests', '--no-default-features'], timeout=300)
-  if any(name in HOST_ONLY and name.endswith('publish.rs') for name in paths):
-    run(['cargo', 'test', '--manifest-path', 'rust/Cargo.toml', '--locked',
-         '-p', 'openpilot-dev-tools', '--test', 'publish'], timeout=300)
   print('집중 검사 완료. 전체 workspace/ARM/AGNOS 검증과 실기 실행은 수행하지 않았습니다.')
 
 

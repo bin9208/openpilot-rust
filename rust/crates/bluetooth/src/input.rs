@@ -90,6 +90,10 @@ impl Input {
         Self::claim(file, stop)
     }
 
+    pub fn pressed(&self) -> Result<std::collections::BTreeSet<u16>, InputError> {
+        Ok(crate::input_kernel::pressed(&self.0)?)
+    }
+
     fn claim(file: File, stop: &AtomicBool) -> Result<Self, InputError> {
         crate::input_kernel::claim(&file)?;
         let mut owned = Self(file);

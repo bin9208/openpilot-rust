@@ -25,11 +25,21 @@ impl LongitudinalMpc {
         self.base_desired_distances = [speed0, speed1].map(|lead_speed| {
             trajectory::scalar_desired_distance(speed, lead_speed, following, brake, stop)
         });
+        let tesla_stop = input
+            .tesla_stop_distance
+            .is_some_and(|d| !input.reset && d.is_finite() && (0. ..255.).contains(&d));
+        if tesla_stop {
+            self.mode = PlannerMode::Acc;
+        }
         let (mode, cruise, stop_x) = if self.mode == PlannerMode::Blended {
             (self.mode, input.cruise, 1000.)
         } else {
             (
-                input.carrot.mode,
+                if tesla_stop {
+                    PlannerMode::Acc
+                } else {
+                    input.carrot.mode
+                },
                 input.carrot.cruise_speed,
                 input.carrot.stop_distance,
             )

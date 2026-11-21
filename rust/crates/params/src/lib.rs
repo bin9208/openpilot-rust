@@ -1,9 +1,35 @@
 use std::{
+    collections::HashMap,
     fs::{self, File, OpenOptions},
     io::{self, Write},
-    os::unix::fs::{symlink, OpenOptionsExt},
+    os::unix::fs::{symlink, MetadataExt, OpenOptionsExt},
     path::{Path, PathBuf},
+    sync::{Arc, Mutex, OnceLock},
+    time::{Duration, Instant},
 };
+
+/// How often the namespace directory is re-checked for renamed-in values.
+const DIRECTORY_CHECK: Duration = Duration::from_millis(10);
+/// Values written in place do not touch the directory; re-read them this often.
+const VALUE_LIFETIME: Duration = Duration::from_secs(1);
+
+/// Handles on the same namespace share one cache, so a process opening several
+/// Params handles checks the directory once per DIRECTORY_CHECK, not once per handle.
+fn shared_cache(directory: &Path) -> Arc<Mutex<Cache>> {
+    static CACHES: OnceLock<Mutex<HashMap<PathBuf, Arc<Mutex<Cache>>>>> = OnceLock::new();
+    let mut caches = CACHES
+        .get_or_init(Mutex::default)
+        .lock()
+        .unwrap_or_else(|poison| poison.into_inner());
+    Arc::clone(caches.entry(directory.to_owned()).or_default())
+}
+
+#[derive(Default)]
+struct Cache {
+    directory: Option<(i64, i64)>,
+    checked: Option<Instant>,
+    values: HashMap<String, (Instant, Option<Vec<u8>>)>,
+}
 
 mod read;
 
@@ -37,6 +63,7 @@ pub enum Error {
 pub struct Params {
     root: PathBuf,
     directory: PathBuf,
+    cache: Arc<Mutex<Cache>>,
 }
 
 impl Params {
@@ -89,7 +116,11 @@ impl Params {
         fs::create_dir_all(root)?;
         let root = fs::canonicalize(root)?;
         let directory = root.join(prefix);
-        let params = Self { root, directory };
+        let params = Self {
+            root,
+            cache: shared_cache(&directory),
+            directory,
+        };
         let _lock = params.lock()?;
         if !params.directory.exists() {
             let temporary = tempfile::Builder::new()
@@ -137,11 +168,52 @@ impl Params {
         Ok(self.directory.join(key))
     }
 
+    /// Values are re-read when the namespace changes. Every write renames into the
+    /// directory, so a cached value is at most DIRECTORY_CHECK old after a write.
     pub fn get(&self, key: &str) -> Result<Option<Vec<u8>>, Error> {
-        match File::open(self.path(key)?).and_then(|mut file| read::value(&mut file)) {
-            Ok(bytes) => Ok(Some(bytes)),
-            Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
-            Err(error) => Err(error.into()),
+        let path = self.path(key)?;
+        let now = Instant::now();
+        let mut cache = self
+            .cache
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner());
+        if cache
+            .checked
+            .is_none_or(|checked| now.duration_since(checked) >= DIRECTORY_CHECK)
+        {
+            let stamp = fs::metadata(&self.directory)
+                .map(|meta| (meta.mtime(), meta.mtime_nsec()))
+                .ok();
+            if stamp.is_none() || stamp != cache.directory {
+                cache.values.clear();
+            }
+            cache.directory = stamp;
+            cache.checked = Some(now);
+        }
+        if let Some((read, value)) = cache.values.get(key) {
+            if now.duration_since(*read) < VALUE_LIFETIME {
+                return Ok(value.clone());
+            }
+        }
+        let value = match File::open(path).and_then(|mut file| read::value(&mut file)) {
+            Ok(bytes) => Some(bytes),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => None,
+            Err(error) => return Err(error.into()),
+        };
+        cache.values.insert(key.to_owned(), (now, value.clone()));
+        Ok(value)
+    }
+
+    fn forget(&self, key: Option<&str>) {
+        let mut cache = self
+            .cache
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner());
+        match key {
+            Some(key) => {
+                cache.values.remove(key);
+            }
+            None => cache.values.clear(),
         }
     }
 
@@ -162,6 +234,7 @@ impl Params {
         temporary.as_file().sync_all()?;
         let _lock = self.lock()?;
         temporary.persist(path).map_err(|error| error.error)?;
+        self.forget(Some(key));
         File::open(&self.directory)?.sync_all()?;
         Ok(())
     }
@@ -181,10 +254,12 @@ impl Params {
         temporary.write_all(value)?;
         temporary.as_file().sync_all()?;
         let _lock = self.lock()?;
+        self.forget(Some(key));
         if self.get(key)?.as_deref() != expected {
             return Ok(false);
         }
         temporary.persist(path).map_err(|error| error.error)?;
+        self.forget(Some(key));
         File::open(&self.directory)?.sync_all()?;
         Ok(true)
     }
@@ -193,6 +268,7 @@ impl Params {
         let path = self.path(key)?;
         let _lock = self.lock()?;
         fs::remove_file(path)?;
+        self.forget(Some(key));
         File::open(&self.directory)?.sync_all()?;
         Ok(())
     }
@@ -210,7 +286,48 @@ impl Params {
                 fs::remove_file(entry.path())?;
             }
         }
+        self.forget(None);
         File::open(&self.directory)?.sync_all()?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod cache_tests {
+    use super::*;
+
+    #[test]
+    fn sees_writes_from_other_handles() {
+        let root = tempfile::tempdir().unwrap();
+        let first = Params::open(root.path(), "d").unwrap();
+        let second = Params::open(root.path(), "d").unwrap();
+        assert_eq!(first.get("IsOnroad").unwrap(), None);
+        second.put("IsOnroad", b"1").unwrap();
+        std::thread::sleep(DIRECTORY_CHECK * 2);
+        assert_eq!(first.get("IsOnroad").unwrap().as_deref(), Some(&b"1"[..]));
+        second.remove("IsOnroad").unwrap();
+        std::thread::sleep(DIRECTORY_CHECK * 2);
+        assert_eq!(first.get("IsOnroad").unwrap(), None);
+    }
+
+    #[test]
+    fn own_writes_are_immediate() {
+        let root = tempfile::tempdir().unwrap();
+        let params = Params::open(root.path(), "d").unwrap();
+        params.put("IsOnroad", b"1").unwrap();
+        assert_eq!(params.get("IsOnroad").unwrap().as_deref(), Some(&b"1"[..]));
+        params.put("IsOnroad", b"0").unwrap();
+        assert_eq!(params.get("IsOnroad").unwrap().as_deref(), Some(&b"0"[..]));
+    }
+
+    #[test]
+    fn in_place_writes_expire() {
+        let root = tempfile::tempdir().unwrap();
+        let params = Params::open(root.path(), "d").unwrap();
+        params.put("IsOnroad", b"1").unwrap();
+        assert_eq!(params.get("IsOnroad").unwrap().as_deref(), Some(&b"1"[..]));
+        fs::write(params.directory().join("IsOnroad"), b"0").unwrap();
+        std::thread::sleep(VALUE_LIFETIME + DIRECTORY_CHECK);
+        assert_eq!(params.get("IsOnroad").unwrap().as_deref(), Some(&b"0"[..]));
     }
 }

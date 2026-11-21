@@ -123,6 +123,13 @@ pub fn update(state: &mut State, mut ret: car_state::Builder<'_>, now: u64) -> R
         let blink = state.blinkers.lamp(50, lamps[0], lamps[1]);
         ret.set_left_blinker(blink[0]);
         ret.set_right_blinker(blink[1]);
+        ret.set_blinker_lamp(if lamps[0] {
+            1
+        } else if lamps[1] {
+            2
+        } else {
+            0
+        });
     }
     if state.config.bsm {
         if let Some(channel) = state.bsm_channel {
@@ -160,6 +167,22 @@ pub fn update(state: &mut State, mut ret: car_state::Builder<'_>, now: u64) -> R
                     )?;
             ret.set_left_blindspot(left > 0.);
             ret.set_right_blindspot(right > 0.);
+            // carrot rear_gap.tbt_bsd_inputs: fresh OEM right BSD only, for the
+            // optional TBT physical-indicator trigger.
+            let latest = state
+                .inputs
+                .pt
+                .last_update
+                .max(state.inputs.cam.last_update);
+            let available = state.inputs.message_fresh(
+                channel,
+                "BLINDSPOTS_REAR_CORNERS",
+                24,
+                latest,
+                150_000_000,
+            );
+            ret.set_tbt_rear_inputs_available(available);
+            ret.set_tbt_right_rear_blocked(!available || right != 0.);
         } else if state.inputs.pt.seen_addresses.contains(&442) {
             state.bsm_channel = Some(Channel::Pt);
             state
@@ -217,6 +240,14 @@ pub fn update(state: &mut State, mut ret: car_state::Builder<'_>, now: u64) -> R
         .inputs
         .captured("cam_0x2a4")?
         .or(state.inputs.captured("cam_0x362")?);
+    // carrot lane_line_time: the exact cached OEM lane description's time.
+    ret.set_lane_line_info_mono_time(if state.inputs.captured("cam_0x2a4")?.is_some() {
+        state.inputs.captured_stamp("cam_0x2a4")
+    } else if lanes.is_some() {
+        state.inputs.captured_stamp("cam_0x362")
+    } else {
+        0
+    });
     if let Some(data) = lanes {
         ret.set_left_lane_line(int16(
             get(&data, "LEFT_LANE_COLOR")? * 10. + get(&data, "LEFT_LANE_TYPE")?,

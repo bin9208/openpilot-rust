@@ -1,9 +1,14 @@
+/// An encoder stream counts toward a rotation while its packets keep coming.
+const STREAM_ALIVE_NS: u64 = 2_000_000_000;
+
 #[derive(Default)]
 pub struct Rotation {
-    pub ready: usize,
+    pub encoder_part: [Option<i64>; 4],
     pub last_rotation_ns: u64,
     pub last_camera_ns: u64,
     pub test_mode: bool,
+    /// Last packet time of each encoder stream (road, wide, driver, qcamera).
+    pub stream_seen_ns: [u64; 4],
 }
 
 impl Rotation {
@@ -20,8 +25,23 @@ impl Rotation {
         None
     }
 
-    pub fn due(&self, now_ns: u64) -> bool {
-        self.ready == 4 || self.timeout_reason(now_ns).is_some()
+    /// Rotates once every encoder that is sending packets is ready. A camera
+    /// that never comes up (a C3X Lite or a failed driver camera sensor) is
+    /// not waited for: with four required, every segment ran to the 72 s
+    /// timeout while encoderd moved on every 60 s, the encoders ran further
+    /// ahead each segment and from the fifth segment on no video was written
+    /// at all (KIA K5 route 0000027e: no EncodeIdx in any rlog).
+    pub fn due(&self, now_ns: u64, part: i32) -> bool {
+        if self.timeout_reason(now_ns).is_some() {
+            return true;
+        }
+        let live = self
+            .stream_seen_ns
+            .map(|seen| seen != 0 && now_ns.saturating_sub(seen) < STREAM_ALIVE_NS);
+        let any_live = live.contains(&true);
+        self.encoder_part.iter().zip(live).all(|(encoder, alive)| {
+            (any_live && !alive) || encoder.is_some_and(|p| p > i64::from(part))
+        })
     }
 }
 
@@ -32,11 +52,34 @@ mod tests {
     #[test]
     fn rotates_when_all_four_encoders_are_ready() {
         let state = Rotation {
-            ready: 4,
+            encoder_part: [Some(1); 4],
             ..Rotation::default()
         };
-        let due = state.due(0);
+        let due = state.due(0, 0);
         assert!(due);
+    }
+
+    #[test]
+    fn a_camera_without_packets_is_not_waited_for() {
+        let now = 30_000_000_000;
+        let mut state = Rotation {
+            encoder_part: [Some(1), Some(1), None, Some(1)],
+            stream_seen_ns: [now - 10_000_000, now - 20_000_000, 0, now - 30_000_000],
+            ..Rotation::default()
+        };
+        assert!(state.due(now, 0));
+        // A driver camera that stopped long ago does not count either.
+        state.stream_seen_ns[2] = now - 5_000_000_000;
+        assert!(state.due(now, 0));
+        // Three live, but a ready camera went silent and a different camera rejoined.
+        state.stream_seen_ns.swap(0, 2);
+        assert!(!state.due(now, 0));
+        state.stream_seen_ns.swap(0, 2);
+        // All four sending: the fourth is still waited for.
+        state.stream_seen_ns[2] = now - 10_000_000;
+        assert!(!state.due(now, 0));
+        state.encoder_part[2] = Some(1);
+        assert!(state.due(now, 0));
     }
 
     #[test]
@@ -53,7 +96,7 @@ mod tests {
                 last_camera_ns: camera_ns,
                 ..Rotation::default()
             };
-            let due = state.due(now_ns);
+            let due = state.due(now_ns, 0);
             assert_eq!(due, expected, "now={now_ns}, camera={camera_ns}");
         }
     }
@@ -64,7 +107,7 @@ mod tests {
             test_mode: true,
             ..Rotation::default()
         };
-        let due = state.due(1_000_000_000_000);
+        let due = state.due(1_000_000_000_000, 0);
         assert!(!due);
     }
 }

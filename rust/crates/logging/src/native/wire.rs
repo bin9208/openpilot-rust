@@ -34,11 +34,6 @@ pub(super) fn context(version: &str, device: &str) -> Result<Context, Error> {
     context.insert("device", device.into());
     context.insert("dirty", env::var_os("CLEAN").is_none().into());
     context.insert("runtime_language", "rust".into());
-    context.insert(
-        "source_commit",
-        env!("OPENPILOT_LOGGING_SOURCE_COMMIT").into(),
-    );
-    context.insert("source_tree", env!("OPENPILOT_LOGGING_SOURCE_TREE").into());
     Ok(context)
 }
 

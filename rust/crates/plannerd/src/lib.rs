@@ -49,6 +49,7 @@ pub mod radar_decode;
 pub mod runtime;
 pub mod signal;
 pub mod stopping_lead;
+pub mod tesla_traffic_stop;
 pub mod traffic_stop;
 pub mod turn_accel;
 pub mod types;

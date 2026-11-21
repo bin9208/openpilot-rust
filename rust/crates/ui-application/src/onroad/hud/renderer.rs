@@ -406,6 +406,16 @@ impl Widget for Hud {
         });
         self.exp.render(frame, draw)?;
         self.animate(draw)?;
+        let (x, width) = (f64::from(rect.x), f64::from(rect.width));
+        let badge = (width * 0.62).min(500.);
+        crate::indicator_display::draw(
+            draw,
+            (self.context.now_monotonic)(),
+            x + (width - badge) / 2.,
+            f64::from(rect.y) + f64::from(rect.height) * 0.16,
+            badge,
+            if width > 1200. { 26. } else { 19. },
+        )?;
         Ok(RenderResult::None)
     }
 }

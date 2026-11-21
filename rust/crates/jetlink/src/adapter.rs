@@ -10,6 +10,8 @@ pub struct Adapter {
     plan: [usize; 2],
     hidden: Option<[usize; 2]>,
     previous_features: Vec<f32>,
+    /// A navigation graph (N16): `navigation` follows the 12 scalars.
+    navigation: bool,
 }
 impl Adapter {
     pub fn new() -> Result<Self, Error> {
@@ -40,6 +42,7 @@ impl Adapter {
                 vec![0.; spec.range("hidden_state")?[1] - spec.range("hidden_state")?[0]]
             },
             previous_desire: [0.0; 8],
+            navigation: spec.navigation(),
             reset_next: true,
             plan: slices["plan"],
             slices,
@@ -90,10 +93,19 @@ impl Adapter {
         desire: [f32; 8],
         traffic: [f32; 2],
         action: [f32; 2],
+        navigation: &[f32; crate::model_spec::NAVIGATION_FLOATS],
         packed_count: usize,
     ) -> Result<Vec<f32>, Error> {
-        if packed_count != 12 && packed_count != 12 + self.previous_features.len() {
+        let extra = if self.navigation {
+            crate::model_spec::NAVIGATION_FLOATS
+        } else {
+            self.previous_features.len()
+        };
+        if packed_count != 12 && packed_count != 12 + extra {
             return Err(Error::Contract("session recurrent packed size"));
+        }
+        if self.navigation && !navigation.iter().all(|v| v.is_finite()) {
+            return Err(Error::Contract("navigation input finite"));
         }
         let controls = self
             .prepare(warped, desire, traffic, action, false)?
@@ -101,7 +113,11 @@ impl Adapter {
         let mut packed = Vec::with_capacity(packed_count);
         packed.extend_from_slice(&controls);
         if packed_count > 12 {
-            packed.extend_from_slice(&self.previous_features);
+            if self.navigation {
+                packed.extend_from_slice(navigation);
+            } else {
+                packed.extend_from_slice(&self.previous_features);
+            }
         }
         Ok(packed)
     }
@@ -130,5 +146,28 @@ impl Adapter {
         self.reset_next = false;
         deadline.remaining()?;
         Ok(parsed)
+    }
+}
+
+#[cfg(test)]
+mod n16_tests {
+    use super::*;
+
+    #[test]
+    fn n16_outputs_parse_and_navigation_rides_after_the_scalars() {
+        let spec = crate::model_spec::ModelSpec::parse(include_bytes!("../data/n16.json")).unwrap();
+        let mut adapter = Adapter::for_spec(&spec).unwrap();
+        let warped = vec![0u8; contract::WARPED_BYTES];
+        let mut navigation = [0f32; crate::model_spec::NAVIGATION_FLOATS];
+        navigation[15] = 1.;
+        navigation[46] = 2.5;
+        let packed = adapter
+            .prepare_session(&warped, [0.; 8], [1., 0.], [0.2, 0.], &navigation, 12 + crate::model_spec::NAVIGATION_FLOATS)
+            .unwrap();
+        assert_eq!(packed.len(), 59);
+        assert_eq!(&packed[12..], &navigation);
+        let output = vec![0.01f32; spec.output_count().unwrap()];
+        let deadline = crate::Deadline(crate::now_ns() + 1_000_000_000);
+        adapter.parse(&output, deadline).expect("N16 output parses");
     }
 }

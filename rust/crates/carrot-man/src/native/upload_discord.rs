@@ -1,12 +1,7 @@
 use super::{attachment, parameters, Upload};
-use base64::Engine;
 use openpilot_web_upload::Response;
 use std::fs;
 
-const OBFUSCATED: &str = concat!(
-    "CxUGAhxOAkocChYTGxsLQE4ZXEwAAhtAA0gHEAwKGwdGXlsfQgdTUEVKXkEcUkpaVEdEWkAkRwMCFzEL",
-    "MF8zS1YzWh8YJlkpVk4EUwQ0ED02IkgXKjMkQzIYIRt/HgUWUTUQWCcaAS1XKhpFUT4cGDBnLiACOx1DXQ=="
-);
 fn webhook(upload: &Upload<'_>) -> String {
     if std::env::var("CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE")
         .is_ok_and(|v| ["1", "true", "yes", "on"].contains(&v.trim().to_lowercase().as_str()))
@@ -36,16 +31,8 @@ fn webhook(upload: &Upload<'_>) -> String {
             return value;
         }
     }
-    let Ok(mut bytes) = base64::engine::general_purpose::STANDARD.decode(OBFUSCATED) else {
-        return String::new();
-    };
-    let key = b"carrot-exception-v1";
-    for (index, byte) in bytes.iter_mut().enumerate() {
-        *byte ^= key[index % key.len()];
-    }
-    String::from_utf8(bytes)
-        .map(|s| s.trim().into())
-        .unwrap_or_default()
+    // No built-in destination: reports go to Discord only when configured.
+    String::new()
 }
 fn text(upload: &Upload<'_>, key: &str, default: &str) -> String {
     let value = parameters::text(upload.params, key);

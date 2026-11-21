@@ -27,6 +27,14 @@ fn command(paths: &Paths, mode: &str) -> Command {
 
 /// Returns true only for a terminal delivery failure. Cancellation never starts manager.
 pub(super) fn prepare(paths: &Paths, stopped: &AtomicBool) -> Result<bool, Error> {
+    // carrot launch: accept the pending external model once per real boot,
+    // before delivery, modeld or jetlinkd read the selection.
+    if !Server(command(paths, "--freeze-boot").spawn()?)
+        .finish(stopped)?
+        .success()
+    {
+        eprintln!("Big model selection could not be frozen for this boot.");
+    }
     if !Server(command(paths, "--present").spawn()?)
         .finish(stopped)?
         .success()

@@ -12,6 +12,15 @@ if [[ -x rust/bin/openpilot-launch && -f $stamp && $(<"$stamp") == "$head" ]]; t
   exit 0
 fi
 
+# Earlier builds hid the unpacked models with skip-worktree. Git then refused
+# to switch to any branch where those files differ, such as the original
+# carrot branch ("not uptodate. Cannot merge"), so the device stayed here.
+hidden=$(git ls-files -v | sed -n 's/^S //p')
+if [[ -n $hidden ]]; then
+  printf '%s\n' "$hidden" | xargs -d '\n' git update-index --no-skip-worktree --
+  git update-index -q --refresh || true
+fi
+
 store=${OPENPILOT_BUILD_STORE:-/data/openpilot-build}
 mkdir -p "$store" || exit 1
 log=$store/build.log
@@ -20,21 +29,31 @@ started=$SECONDS
 export LD_LIBRARY_PATH="$root/rust/bin/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 ui=
+feeder=
 recovery=
+# The spinner reads its text only between frames, after it has the display.
+# Writing to it directly stopped the whole build where the display never came
+# up or stalled (C3X lite: comma logo, idle CPUs, 6999 answering): the pipe
+# filled and cargo's output with it. Lines go to a file and tail feeds them,
+# so only tail waits on the spinner.
+status_file=$store/spinner.status
 stop_ui() {
-  exec 8>&- 2>/dev/null
+  [[ -n $feeder ]] && kill "$feeder" 2>/dev/null
   [[ -n $ui ]] && kill "$ui" 2>/dev/null
   [[ -n $recovery ]] && kill "$recovery" 2>/dev/null
   ui=
+  feeder=
   recovery=
 }
 start_ui() {
   [[ -z $ui && -x rust/bin/openpilot-spinner ]] || return 0
   local fifo=$store/spinner.fifo
   rm -f "$fifo" && mkfifo "$fifo" || return 0
+  : > "$status_file"
   rust/bin/openpilot-spinner --source-root "$root" < "$fifo" >> "$log" 2>&1 &
   ui=$!
-  exec 8> "$fifo"
+  tail -n +1 -F "$status_file" 2>/dev/null > "$fifo" &
+  feeder=$!
   if [[ -x rust/bin/openpilot-carrot-recovery ]]; then
     rust/bin/openpilot-carrot-recovery --port 6999 >> "$log" 2>&1 &
     recovery=$!
@@ -42,13 +61,14 @@ start_ui() {
 }
 status() {
   echo "[$((SECONDS - started))s] $1" >> "$log"
-  [[ -n $ui ]] && echo "$1" >&8
+  [[ -n $ui ]] && echo "$1" >> "$status_file"
 }
 fail() {
   status "$1"
+  [[ -n $feeder ]] && kill "$feeder" 2>/dev/null
   [[ -n $ui ]] && kill "$ui" 2>/dev/null
   ui=
-  exec 8>&- 2>/dev/null
+  feeder=
   if [[ -x rust/bin/openpilot-text-window ]]; then
     rust/bin/openpilot-text-window --source-root "$root" \
       --text "openpilot failed to build
@@ -77,6 +97,15 @@ set_cpu_limit() {
   done
 }
 
+# 6999's branch change and repair call rust/bin/openpilot-runtime-install. The
+# runtime files ship the old packaged-runtime installer, which only stages a
+# verified Rust package: until a first build finished, choosing carrot-wip
+# there failed and the device stayed on this branch. Updates are plain Git.
+install_update_helper() {
+  [[ -d rust/bin && ! -L rust/bin ]] || return 0
+  install -m 755 rust/tools/device_stage_update.sh rust/bin/openpilot-runtime-install
+}
+install_update_helper
 start_ui
 for core in 4 5 6 7; do
   [[ -f /AGNOS ]] && echo 1 | sudo -n tee "/sys/devices/system/cpu/cpu$core/online" > /dev/null
@@ -108,17 +137,58 @@ if [[ -L rust/bin || ! -f $assets_stamp || $(<"$assets_stamp") != "$assets_id" ]
   fi
   unpack assets . || fail 'Could not unpack runtime files'
   echo "$assets_id" > "$assets_stamp"
-  while IFS= read -r path; do
-    git update-index --skip-worktree -- "$path"
-  done < <(git ls-files -- '*.onnx' 'openpilot/selfdrive/carrot/xiaoge/assets/*')
+  # The unpacked models equal their LFS pointers through the clean filter;
+  # refreshing the index is enough for Git to see the checkout as unchanged.
+  git update-index -q --refresh || true
+  install_update_helper
   start_ui
 fi
+# Downloaded eGPU weights share the installed camera kernels and firmware.
+cp -R device-inputs/usbgpu-models/. rust/bin/usbgpu-assets/models/ \
+  || fail 'Could not install eGPU model descriptors'
+# Selectable internal models ship as their own bundles so adding one does not
+# change the large runtime bundle. Optional: CD210 runs if one is missing.
+for internal in cheddar popv2; do
+  grep -q " $internal\.tar\.zst\." device-inputs/MANIFEST || continue
+  internal_id=$(bundle_id "$internal")
+  internal_stamp=rust/bin/.$internal
+  [[ -f $internal_stamp && $(<"$internal_stamp") == "$internal_id" ]] && continue
+  status "Preparing internal model $internal"
+  rm -rf "rust/bin/driving-models-$internal"
+  if unpack "$internal" .; then
+    echo "$internal_id" > "$internal_stamp"
+  else
+    rm -rf "rust/bin/driving-models-$internal"
+    status "Internal model $internal unavailable; CD210 stays the internal model"
+  fi
+done
 
 export PATH="$sdk/rust/bin:$sdk/capnp/usr/bin:$PATH"
 export CARGO_HOME=$store/cargo-home CARGO_TARGET_DIR=$store/target CARGO_INCREMENTAL=0
 export CARGO_PROFILE_RELEASE_LTO=false CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16 CARGO_PROFILE_RELEASE_DEBUG=0
 export OPENPILOT_BUILD_STORE=$store
 export CC=/usr/bin/gcc CXX=$root/rust/tools/device_cxx.sh AR=/usr/bin/ar RANLIB=/usr/bin/ranlib
+# Isolated CPUs (isolcpus) take no compile unless one is pinned there.
+pinned=
+if [[ -f /AGNOS ]]; then
+  pinned=$(python3 -I -c '
+cores = []
+try:
+  text = open("/sys/devices/system/cpu/isolated").read().strip()
+  isolated = {c for part in text.split(",") if part
+              for c in range(int(part.split("-")[0]), int(part.split("-")[-1]) + 1)}
+  for core in (6, 7):
+    if core in isolated and open(f"/sys/devices/system/cpu/cpu{core}/online").read().strip() == "1":
+      cores.append(str(core))
+except (OSError, ValueError):
+  pass
+print(" ".join(cores))
+')
+fi
+if [[ -n $pinned ]]; then
+  export DEVICE_BUILD_PINNED_CORES=$pinned RUSTC_WRAPPER=$root/rust/tools/device_rustc.sh
+  status "Using isolated CPUs $pinned for compiles"
+fi
 # Collect more often; generated code does not change.
 export CXXFLAGS='--param ggc-min-expand=20 --param ggc-min-heapsize=32768'
 export HOST_CC=$CC HOST_CXX=$CXX HOST_AR=$AR HOST_RANLIB=$RANLIB
@@ -155,12 +225,14 @@ compile() {
   status "Compiling with $jobs jobs"
   # The compiler, not the display or recovery server, is what the kernel should
   # stop when memory runs out; a smaller job count then continues its results.
+  # Progress and diagnostics stay on stderr; the JSON list of every unit this
+  # build used goes to a file, so device_cleanup.sh can drop all other outputs.
   while IFS= read -r line; do
     echo "$line" >> "$log"
     case $line in
       *Compiling*)
         done=$((done + 1))
-        [[ -n $ui ]] && echo "Compiling ${line##*Compiling } · $done" >&8
+        [[ -n $ui ]] && echo "Compiling ${line##*Compiling } · $done" >> "$status_file"
         ;;
     esac
   done < <(
@@ -168,12 +240,17 @@ compile() {
     exec taskset -c 0-7 cargo --config 'source.crates-io.replace-with="device-vendor"' \
       --config "source.device-vendor.directory=\"$sdk/vendor\"" \
       build --manifest-path rust/Cargo.toml --locked --offline --release \
-      --target aarch64-unknown-linux-gnu -j "$jobs" "${arguments[@]}" 2>&1
+      --message-format=json-render-diagnostics \
+      --target aarch64-unknown-linux-gnu -j "$jobs" "${arguments[@]}" 2>&1 > "$store/artifacts.jsonl"
     )
   wait $!
+  local result=$?
+  compiled=$((compiled + done))
+  return $result
 }
 
 built=
+compiled=0
 for jobs in 6 4 3 2; do
   if compile "$jobs"; then
     built=1
@@ -196,4 +273,8 @@ install -m 755 rust/tools/device_stage_update.sh rust/bin/openpilot-runtime-inst
 rm -rf rust/.runtime-packages rust/.runtime-active rust/.runtime-bootstrap \
   rust/.runtime-install-rollback rust/.runtime-install-journal.json rust/runtime-manifest.json
 echo "$head" > "$stamp"
-status "Build complete in $((SECONDS - started))s"
+# One line the startup report carries (carrot_man appends this log's status
+# lines): an update that kept its build cache compiles only what changed.
+status "Build complete in $((SECONDS - started))s: $compiled crates compiled for ${head:0:9}"
+# Only this version stays: older build outputs, checkouts and history go.
+bash rust/tools/device_cleanup.sh now "$root" "$store" || status 'Update cleanup failed'

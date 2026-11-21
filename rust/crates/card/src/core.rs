@@ -107,6 +107,16 @@ pub enum Error {
 pub struct ApplyInput<'a> {
     pub control: car_control::Reader<'a>,
     pub now_ns: u64,
+    /// The card's subscriptions, for vehicle features that check other
+    /// services' freshness (Hyundai SPAS indicators).
+    pub subscribers: Option<&'a openpilot_messaging::state::State>,
+    pub initialized: bool,
+    /// carrot `lateral_startup.update(...)`.
+    pub lateral_ready: bool,
+    pub impact_reboot: bool,
+    /// Latest Xiaoge vision result and `CLOCK_MONOTONIC` ns.
+    pub vision: Option<&'a VisionResult>,
+    pub monotonic_ns: u64,
     pub model: Option<model_data_v2::Reader<'a>>,
     pub radar: Option<radar_state::Reader<'a>>,
 }
@@ -155,6 +165,15 @@ pub trait Vehicle {
     fn speedcam_gas_tok_consumed(&self) -> bool {
         false
     }
+    /// Names of timed-out CAN messages for the canError text2.
+    fn invalid_can_messages(&self) -> Vec<String> {
+        Vec::new()
+    }
+    /// Stock SCC set speed (km/h) while a restart hand-over waits (carrot
+    /// PR580 `stock_adopt_kph`); 0 = nothing to adopt.
+    fn stock_adopt_kph(&self) -> f64 {
+        0.
+    }
     fn update(&mut self, packets: &[Packet], now_ns: u64) -> Result<Message, Error>;
     fn init(&mut self, io: &mut impl StartupIo) -> Result<(), Error>;
     fn apply(&mut self, input: ApplyInput<'_>) -> Result<ApplyOutput, Error>;
@@ -166,6 +185,7 @@ pub trait StateTail {
         0.
     }
     fn set_speedcam_gas_tok_consumed(&mut self, _consumed: bool) {}
+    fn set_stock_adopt_kph(&mut self, _kph: f64) {}
     fn take_prints(&mut self) -> Vec<String> {
         Vec::new()
     }
@@ -226,6 +246,8 @@ pub struct Card {
     pub initialized_previous: bool,
     lateral_startup: openpilot_control_policy::lateral_readiness::Gate,
     pub can_timeouts: u64,
+    /// Last `CanParserResult` written (canError text2).
+    can_parser_result: String,
     pub last_actuators: Message,
     previous_state: Message,
     previous_enabled: bool,
@@ -243,6 +265,7 @@ pub struct Card {
     experimental: bool,
     pub remaining: f64,
     pub diagnostics: Diagnostics,
+    native_voice: Option<crate::voice_indicator::NativeVoiceIndicator>,
 }
 impl Card {
     pub fn new(
@@ -258,12 +281,16 @@ impl Card {
         previous_state.init_root::<car_state::Builder>();
         let mut last_actuators = Message::new_default();
         last_actuators.init_root::<car_control::actuators::Builder>();
+        let native_voice =
+            crate::voice_indicator::native(params.get_root_as_reader::<car_params::Reader>()?)
+                .map(crate::voice_indicator::NativeVoiceIndicator::new);
         Ok(Self {
             params,
             settings,
             initialized_previous: false,
             lateral_startup: Default::default(),
             can_timeouts: 0,
+            can_parser_result: String::new(),
             last_actuators,
             previous_state,
             previous_enabled: false,
@@ -281,6 +308,7 @@ impl Card {
             experimental,
             remaining: 0.,
             diagnostics: Diagnostics::default(),
+            native_voice,
         })
     }
 }

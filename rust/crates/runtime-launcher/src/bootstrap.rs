@@ -3,7 +3,6 @@ mod clock;
 mod failure;
 mod model;
 mod paths;
-mod power;
 mod services;
 mod system;
 use paths::acquire;
@@ -158,10 +157,6 @@ fn ready(
 }
 
 pub fn main() -> Result<(), Error> {
-    if env::args_os().skip(1).collect::<Vec<_>>() == ["--jetlink-boot-power"] {
-        power::command()?;
-        return Ok(());
-    }
     let mut paths = Paths::default();
     let mut verification_only = false;
     let mut arguments = env::args_os().skip(1);
@@ -192,7 +187,6 @@ pub fn main() -> Result<(), Error> {
         return verify_package(&paths.repository);
     }
     paths.environment()?;
-    power::prepare(&paths);
     fs::create_dir_all(&paths.temporary)?;
     let stopped = Arc::new(AtomicBool::new(false));
     for signal in [signal_hook::consts::SIGINT, signal_hook::consts::SIGTERM] {

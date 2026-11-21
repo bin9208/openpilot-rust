@@ -12,6 +12,26 @@ source IP/day, three concurrent uploads per device, sixteen globally, 512 MiB
 per file, a 10 GiB free-space floor, and safe path validation. Existing files
 are never removed automatically.
 
+## QNAP deployment (this port's default receiver)
+
+Devices running this port upload to `https://lunabox.myqnapcloud.com:18443`
+unless Carrot Web names another server
+(`DEFAULT_WEB_UPLOAD_URL` in `rust/crates/web-upload/src/targets.rs`).
+
+1. Create a shared folder for the logs (the compose file assumes
+   `/share/openpilot`) and copy this directory to the NAS.
+2. In Container Station create an application from `compose.qnap.yml`. Set
+   `CARROT_UID`/`CARROT_GID` to the account that owns the shared folder and
+   `CARROT_SHARE` if the folder is elsewhere.
+3. In QTS add a reverse proxy rule: HTTPS, port 18443 →
+   `http://127.0.0.1:18080`, using the myQNAPcloud certificate. Forward TCP
+   18443 on the router to the NAS. Do not expose 18080 itself.
+4. Check `https://lunabox.myqnapcloud.com:18443/api/v1/health` from outside the
+   LAN, then press "Test connection" and "send tmux" in Carrot Web.
+
+Tmux logs arrive as
+`<share>/<GitBranch>/<CarName> <DongleID>/<reason>-<time>-<branch>.txt`.
+
 ## DSM deployment
 
 1. Copy this directory to `/volume1/docker/carrot-upload`.

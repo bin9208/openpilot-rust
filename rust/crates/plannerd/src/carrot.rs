@@ -126,12 +126,13 @@ pub struct CarrotPlanner {
     pub prepare_decision: Option<crate::signal::prepare::Decision>,
     pub prepare_control_active: bool,
     start_guard: crate::signal::start::Guard,
+    signal_stop_owned: bool,
     stop_prepare: crate::signal::prepare::Prepare,
 }
 
 impl CarrotPlanner {
     pub fn new(parameters: &mut impl Parameters) -> Result<Self, Error> {
-        let driving_mode = DrivingMode::try_from(parameters.integer("MyDrivingMode")?)?;
+        let driving_mode = DrivingMode::from_setting(parameters.integer("MyDrivingMode")?);
         let config = Config {
             automatic_mode: parameters.integer("MyDrivingModeAuto")?,
             ..Config::default()
@@ -192,8 +193,22 @@ impl CarrotPlanner {
             prepare_decision: None,
             prepare_control_active: false,
             start_guard: crate::signal::start::Guard::default(),
+            signal_stop_owned: false,
             stop_prepare: crate::signal::prepare::Prepare::default(),
         })
+    }
+
+    /// `teslaTrafficStopTakeover` / `teslaTrafficStopWarning`, added every
+    /// cycle as carrot's `events.add` does.
+    pub fn add_tesla_event(&mut self, takeover: bool, _clock: &mut impl FnMut() -> f64) {
+        let event = if takeover {
+            EventName::TeslaTrafficStopTakeover
+        } else {
+            EventName::TeslaTrafficStopWarning
+        };
+        if !self.events.contains(&event) {
+            self.insert_event(event);
+        }
     }
 
     fn add_event(&mut self, event: EventName, clock: &mut impl FnMut() -> f64) {
@@ -343,6 +358,68 @@ mod signal_refresh_tests {
                 assert!(!decision.warn);
                 assert_eq!(planner.start_guard.snapshot()["warned"], false);
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod stop_release_tests {
+    use super::*;
+    struct Settings;
+    impl Parameters for Settings {
+        fn integer(&mut self, key: &'static str) -> Result<i32, Error> {
+            Ok(if key == "MyDrivingMode" { 3 } else { 0 })
+        }
+        fn float(&mut self, _: &'static str) -> Result<f64, Error> {
+            Ok(0.)
+        }
+    }
+    #[test]
+    fn a_brief_green_does_not_release_a_stop_being_approached() {
+        let mut planner = CarrotPlanner::new(&mut Settings).unwrap();
+        let car = CarState {
+            v_ego: 11.,
+            ..CarState::default()
+        };
+        let (model, radar) = (Model::default(), Radar::default());
+        let input = Input {
+            car: &car,
+            model: &model,
+            radar: &radar,
+            personality: Personality::Standard,
+            navigation: None,
+            navigation_receive_time: None,
+            mode_checks: false,
+            lane_valid: false,
+            model_ns: 0,
+            radar_ns: 0,
+            pose_ns: 0,
+            pose_valid: false,
+            yaw_rate: 0.,
+        };
+        // carrot 00d9cae3b: rolling to a red line below 3 m/s, even a steady
+        // green does not release the stop.
+        for (count, hold, released) in [
+            (5, false, false),
+            (19, false, false),
+            (20, false, true),
+            (40, true, false),
+        ] {
+            planner.x_state = XState::E2eStop;
+            planner.traffic_state = TrafficState::Green;
+            planner.start_sign_count = count;
+            let (mut cruise, mut stop_model) = (20., 50.);
+            planner
+                .transition(
+                    &input,
+                    &mut cruise,
+                    [50., 50.],
+                    &mut stop_model,
+                    (TrafficState::Red, hold),
+                    &mut || 100.,
+                )
+                .unwrap();
+            assert_eq!(planner.x_state == XState::E2eCruise, released, "{count}");
         }
     }
 }

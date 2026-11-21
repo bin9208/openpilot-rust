@@ -8,7 +8,7 @@ use protocol::receive;
 use rustix::process::{kill_process, Pid, Signal};
 use std::{
     io::Write,
-    path::Path,
+    path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::{atomic::AtomicBool, Arc},
     thread,
@@ -32,7 +32,65 @@ pub struct Client {
     first: bool,
     failed: bool,
     cancelled: Arc<AtomicBool>,
+    /// carrot's own precompiled_worker.py (pinned tinygrad USB+AMD runtime)
+    /// instead of the Rust native worker: only 'r' commands, and '0' means the
+    /// worker held the previous output for this cycle.
+    python: bool,
 }
+
+/// The original carrot eGPU worker for an artifact installed from carrot's
+/// precompiled catalog (model.pkl + installed.json + runtime-<sha>). The Rust
+/// native runtime never ran on a real eGPU (IONIQ 9 / comma four failed in it
+/// while the same user's eGPU worked on carrot-wip), so the original path is
+/// used unless USBGPU_NATIVE_WORKER=1.
+fn python_worker(worker: &Path, model: &Path) -> Option<(PathBuf, PathBuf)> {
+    if std::env::var_os("USBGPU_NATIVE_WORKER").is_some_and(|value| value == "1") {
+        return None;
+    }
+    let directory = model.parent()?;
+    let installed: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(directory.join("installed.json")).ok()?).ok()?;
+    let runtime = installed["runtime_directory"].as_str()?;
+    if !directory.join(runtime).is_dir() {
+        return None;
+    }
+    // worker = <repo>/rust/bin/openpilot-usbgpu-worker
+    let repository = worker.parent()?.parent()?.parent()?.to_path_buf();
+    let script = repository.join("openpilot/selfdrive/modeld/precompiled_worker.py");
+    script.is_file().then_some((script, repository))
+}
+
+fn worker_command(worker: &Path, model: &Path) -> (Command, bool) {
+    match python_worker(worker, model) {
+        Some((script, repository)) => {
+            // Loaded in the background while driving (carrot loads it before
+            // modeld runs): on the 3.5 GiB comma four the kernel must kill this
+            // worker first, never a driving process, if memory runs out.
+            let mut command = Command::new("sh");
+            command.args([
+                "-c",
+                "echo 1000 > /proc/self/oom_score_adj 2>/dev/null; exec \"$0\" \"$@\"",
+                "python3",
+            ]);
+            let mut path = std::ffi::OsString::from(repository.join("pydeps"));
+            path.push(":");
+            path.push(&repository);
+            if let Some(existing) = std::env::var_os("PYTHONPATH").filter(|v| !v.is_empty()) {
+                path.push(":");
+                path.push(existing);
+            }
+            command
+                .arg(script)
+                .env("PYTHONPATH", path)
+                .current_dir(&repository);
+            (command, true)
+        }
+        None => (Command::new(worker), false),
+    }
+}
+
+pub const LOAD_INACTIVITY: Duration = Duration::from_secs(110);
+pub const MAX_LOAD: Duration = Duration::from_secs(240);
 
 pub struct Launch<'a> {
     pub worker: &'a Path,
@@ -46,7 +104,12 @@ fn validate(info: &Info, camera: [u32; 2]) -> Result<(), Error> {
     let mut inputs = info
         .layout
         .iter()
-        .filter(|(name, _)| ["desire", "traffic_convention", "action_t"].contains(&name.as_str()))
+        .filter(|(name, _)| {
+            matches!(
+                name.as_str(),
+                "desire" | "traffic_convention" | "action_t" | "navigation" | "nav_map"
+            )
+        })
         .collect::<Vec<_>>();
     inputs.sort_by_key(|(_, view)| view.offset);
     let metadata = Metadata {
@@ -85,35 +148,37 @@ impl Client {
             worker,
             model,
             camera,
-            timeout: Duration::from_secs(110),
+            timeout: LOAD_INACTIVITY,
             cancelled: Arc::new(AtomicBool::new(false)),
         })
     }
     pub fn launch(launch: Launch<'_>) -> Result<Self, Error> {
-        let command = Command::new(launch.worker);
-        Self::from_command(command, launch)
+        let (command, python) = worker_command(launch.worker, launch.model);
+        Self::from_command(command, launch, python, false)
     }
     pub fn launch_with_assets(
         launch: Launch<'_>,
         binding: &crate::worker_artifact::Binding,
     ) -> Result<Self, Error> {
-        let mut command = Command::new(launch.worker);
+        let (mut command, python) = worker_command(launch.worker, launch.model);
         command
             .env("USBGPU_ASSETS_ROOT", binding.root())
             .env("USBGPU_ASSETS_MANIFEST_SHA256", binding.manifest_sha256());
-        Self::from_command(command, launch)
+        Self::from_command(command, launch, python, false)
     }
     /// Background recovery must never allocate or probe the internal QCOM GPU.
     pub fn launch_recovery_with_assets(
         launch: Launch<'_>,
         binding: &crate::worker_artifact::Binding,
     ) -> Result<Self, Error> {
-        let mut command = Command::new(launch.worker);
+        let (mut command, python) = worker_command(launch.worker, launch.model);
         command
             .env("USBGPU_ASSETS_ROOT", binding.root())
             .env("USBGPU_ASSETS_MANIFEST_SHA256", binding.manifest_sha256())
             .env("USBGPU_AMD_ONLY", "1");
-        Self::from_command(command, launch)
+        // carrot's worker takes '--recovery' after the positional arguments:
+        // AMD-only warp and the 'z' reset used after the probe.
+        Self::from_command(command, launch, python, python)
     }
     pub fn reset(&mut self) -> Result<(), Error> {
         if self.failed {
@@ -152,12 +217,19 @@ impl Client {
                 worker: Path::new(""),
                 model,
                 camera,
-                timeout: Duration::from_secs(110),
+                timeout: LOAD_INACTIVITY,
                 cancelled: Arc::new(AtomicBool::new(false)),
             },
+            false,
+            false,
         )
     }
-    fn from_command(mut command: Command, launch: Launch<'_>) -> Result<Self, Error> {
+    fn from_command(
+        mut command: Command,
+        launch: Launch<'_>,
+        python: bool,
+        recovery: bool,
+    ) -> Result<Self, Error> {
         let Launch {
             model,
             camera,
@@ -172,10 +244,14 @@ impl Client {
         } else {
             command.env_remove("USBGPU_PROGRESS_PATH");
         }
-        let child = command
+        command
             .arg(model)
             .arg(shared.path())
-            .args(camera.map(|dimension| dimension.to_string()))
+            .args(camera.map(|dimension| dimension.to_string()));
+        if recovery {
+            command.arg("--recovery");
+        }
+        let child = command
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()?;
@@ -200,14 +276,28 @@ impl Client {
             first: true,
             failed: false,
             cancelled,
+            python,
         };
+        if python {
+            eprintln!("eGPU worker: carrot precompiled_worker.py (pinned tinygrad runtime)");
+        }
         let stdout = client
             .child
             .stdout
             .as_mut()
             .ok_or(Error::Contract("missing worker output"))?;
-        let response = receive(stdout, timeout, &client.cancelled)
-            .map_err(|error| client.capture_failure(error))?;
+        let limit = if timeout == LOAD_INACTIVITY {
+            MAX_LOAD
+        } else {
+            timeout
+        };
+        let response = protocol::receive_bounded(stdout, timeout, limit, &client.cancelled, || {
+            client
+                .progress
+                .as_ref()
+                .and_then(|file| crate::worker_progress::upload_generation(file.path()))
+        })
+        .map_err(|error| client.capture_failure(error))?;
         let info: Info = serde_json::from_slice(&response)?;
         validate(&info, camera)?;
         if client.shared.as_file().metadata()?.len() != info.size as u64 {
@@ -284,5 +374,37 @@ impl Client {
 impl Drop for Client {
     fn drop(&mut self) {
         self.stop();
+    }
+}
+
+#[cfg(test)]
+mod worker_choice_tests {
+    use super::python_worker;
+    use std::fs;
+
+    #[test]
+    fn carrot_precompiled_installs_use_carrots_worker() {
+        let root = tempfile::tempdir().unwrap();
+        let repository = root.path().join("openpilot");
+        let worker = repository.join("rust/bin/openpilot-usbgpu-worker");
+        let script = repository.join("openpilot/selfdrive/modeld/precompiled_worker.py");
+        fs::create_dir_all(worker.parent().unwrap()).unwrap();
+        fs::create_dir_all(script.parent().unwrap()).unwrap();
+        fs::write(&script, "").unwrap();
+        let installed = root.path().join("models/precompiled/abc");
+        fs::create_dir_all(installed.join("runtime-0123456789abcdef")).unwrap();
+        fs::write(
+            installed.join("installed.json"),
+            r#"{"runtime_directory":"runtime-0123456789abcdef"}"#,
+        )
+        .unwrap();
+        let model = installed.join("model.pkl");
+        let (chosen, repo) = python_worker(&worker, &model).expect("carrot worker");
+        assert_eq!(chosen, script);
+        assert_eq!(repo, repository);
+        // Without the extracted runtime (or for a native/local artifact) the
+        // Rust worker stays in use.
+        fs::remove_dir(installed.join("runtime-0123456789abcdef")).unwrap();
+        assert!(python_worker(&worker, &model).is_none());
     }
 }

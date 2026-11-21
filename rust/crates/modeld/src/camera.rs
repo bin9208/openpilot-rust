@@ -38,17 +38,56 @@ impl<T> CameraPair<T> {
     }
 }
 
+/// One camera receive call of a pairing attempt, kept as evidence for a
+/// dropped-frame record: which camera, what arrived and how long it waited.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Received {
+    pub camera: &'static str,
+    pub frame_id: Option<u32>,
+    pub sof: Option<u64>,
+    pub wait_ms: f64,
+}
+
+fn traced<C: CameraSource>(
+    source: &mut C,
+    camera: &'static str,
+    trace: &mut Option<&mut Vec<Received>>,
+) -> Result<Option<Captured<C::Buffer>>, C::Error> {
+    let Some(trace) = trace else {
+        return source.receive();
+    };
+    let started = std::time::Instant::now();
+    let frame = source.receive()?;
+    trace.push(Received {
+        camera,
+        frame_id: frame.as_ref().map(|frame| frame.metadata.frame_id),
+        sof: frame.as_ref().map(|frame| frame.metadata.timestamp_sof),
+        wait_ms: started.elapsed().as_secs_f64() * 1000.0,
+    });
+    Ok(frame)
+}
+
 pub fn receive_pair<C: CameraSource>(
     main: &mut C,
     extra: Option<&mut C>,
 ) -> Result<Option<CameraPair<C::Buffer>>, C::Error> {
-    let Some(mut main_frame) = main.receive()? else {
+    receive_pair_traced(main, extra, None)
+}
+
+/// `receive_pair` that also appends every receive call to `trace`, as carrot's
+/// `receive_camera_pair(..., trace=...)` does.
+pub fn receive_pair_traced<C: CameraSource>(
+    main: &mut C,
+    extra: Option<&mut C>,
+    mut trace: Option<&mut Vec<Received>>,
+) -> Result<Option<CameraPair<C::Buffer>>, C::Error> {
+    let Some(mut main_frame) = traced(main, "main", &mut trace)? else {
         return Ok(None);
     };
     let Some(extra) = extra else {
         return Ok(Some(CameraPair::Single(main_frame)));
     };
-    let mut extra_frame = extra.receive()?;
+    let mut extra_frame = traced(extra, "extra", &mut trace)?;
     for _ in 0..10 {
         let Some(current_extra) = extra_frame.as_ref() else {
             return Ok(None);
@@ -59,12 +98,12 @@ pub fn receive_pair<C: CameraSource>(
             return Ok(extra_frame.map(|frame| CameraPair::Dual(main_frame, frame)));
         }
         if main_sof < extra_sof {
-            let Some(frame) = main.receive()? else {
+            let Some(frame) = traced(main, "main", &mut trace)? else {
                 return Ok(None);
             };
             main_frame = frame;
         } else {
-            extra_frame = extra.receive()?;
+            extra_frame = traced(extra, "extra", &mut trace)?;
         }
     }
     Ok(None)

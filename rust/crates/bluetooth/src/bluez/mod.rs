@@ -2,6 +2,7 @@ mod agent;
 mod client;
 mod digits;
 mod error;
+pub mod gatt;
 mod integer;
 mod objects;
 mod pairing;

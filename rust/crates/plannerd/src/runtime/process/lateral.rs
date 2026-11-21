@@ -25,6 +25,12 @@ impl Planner {
                 curvature: f64::from(views.controls()?.get_curvature()),
                 curve_speed: decoded.curve_speed,
                 atc_active: self.carrot.atc_active,
+                center_to_front_ratio: match state.topic("liveParameters")?.event()?.which() {
+                    Ok(openpilot_cereal::log_capnp::event::LiveParameters(Ok(live))) => {
+                        f64::from(live.get_center_to_front_ratio())
+                    }
+                    _ => 0.,
+                },
             },
             parameters,
             &mut || clock.monotonic(),

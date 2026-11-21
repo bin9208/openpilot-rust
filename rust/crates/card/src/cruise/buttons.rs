@@ -231,7 +231,10 @@ impl CruiseCarrot {
                     }
                 }
                 ("SPEED", arg) => {
-                    if let Some(value) = super::integer::command_speed(arg)? {
+                    // carrot's `int(self.carrot_arg)` raised on a non-numeric
+                    // argument and took card (and vehicle control) down; a
+                    // malformed remote command is ignored instead.
+                    if let Some(value) = super::integer::command_speed(arg).ok().flatten() {
                         speed = Number::int(value);
                         self.add_log(&format!("Cruise speed set to {speed} (carrot command)"));
                     }
@@ -257,6 +260,40 @@ impl CruiseCarrot {
         if self.commands.is_repeat && !enabled {
             remote = None;
         }
+        let voice = {
+            let minimum = self.s._cruise_speed_min.max(if self.pcm_cruise {
+                30.
+            } else {
+                self.s._cruise_speed_min
+            });
+            let current = speed.value;
+            let allowed = self.assistant_speed_valid
+                && cs.get_can_valid()
+                && enabled
+                && self.long_active
+                && self.openpilot_longitudinal
+                && cs.get_cruise_state()?.get_available()
+                && cs.get_gear_shifter()? == car_state::GearShifter::Drive
+                && !(cs.get_brake_pressed()
+                    || cs.get_gas_pressed()
+                    || !cs.get_button_events()?.is_empty()
+                    || remote.is_some()
+                    || self.s.button_cnt != 0
+                    || self.s._hold_interlock_active)
+                && self.s._soft_hold_active == 0
+                && minimum <= current
+                && current <= self.s._cruise_speed_max
+                && !(self.pcm_cruise
+                    && (self.s.speed_from_pcm == 1
+                        || (self.s.speed_from_pcm == 3 && self.brand == "toyota")))
+                && self.s.carrot_cmd_index_last == self.s.carrot_cmd_index;
+            self.assistant_speed
+                .read(now, allowed, current, minimum, self.s._cruise_speed_max)
+        };
+        if voice.as_ref().is_some_and(|v| v.action == "speed_up") {
+            // Same RES/+ handling, without driver-attention input.
+            remote = Some("accelCruise".to_owned());
+        }
         let (button_speed, button, long) = self.prepare_buttons(cs, speed, remote.as_deref())?;
         let remote_enable = remote.as_deref().is_some_and(|r| {
             [
@@ -269,6 +306,11 @@ impl CruiseCarrot {
         }) && !enabled
             && !(remote.as_deref() == Some("decelCruise") && self.s._soft_hold_active > 0);
         let (mut speed, button, long) = self.carrot_command(speed, button, long)?;
+        if let Some(target) = voice.as_ref().and_then(|v| v.target) {
+            speed = Number::float(target);
+            self.s._pause_auto_speed_up = true;
+            self.s._v_cruise_kph_at_brake = Number::int(0.);
+        }
         if [
             Button::AccelCruise,
             Button::DecelCruise,
@@ -278,6 +320,7 @@ impl CruiseCarrot {
         .contains(&button)
         {
             self.s._paddle_decel_active = false;
+            self.s._paddle_resume_kph = 0.;
             if self.s.auto_cruise_control_cancel_timer > 0 {
                 self.add_log(&format!(
                     "AutoCruiseControl cancel timer RESET {}",
@@ -405,10 +448,12 @@ impl CruiseCarrot {
                     match self.s._lfa_button_mode {
                         0 => {
                             self.s._lat_enabled = !self.s._lat_enabled;
+                            // carrot's `"Lateral " + "enabled" if ... else "disabled"`
+                            // dropped the prefix by precedence.
                             self.add_log(if self.s._lat_enabled {
                                 "Lateral enabled"
                             } else {
-                                "disabled"
+                                "Lateral disabled"
                             });
                         }
                         2 => self.s.carrot_cruise_active = true,
@@ -420,7 +465,7 @@ impl CruiseCarrot {
                     self.s._paddle_decel_active = false;
                     if self.s._cancel_button_mode == 1 {
                         self.s._lat_enabled = false;
-                        self.add_log("disabled");
+                        self.add_log("Lateral disabled");
                     }
                     self.s._cruise_cancel_state = true;
                 }
@@ -460,7 +505,7 @@ impl CruiseCarrot {
                     self.s._cruise_cancel_state = true;
                     self.s._lat_enabled = false;
                     self.s._paddle_decel_active = false;
-                    self.add_log("disabled");
+                    self.add_log("Lateral disabled");
                 }
                 Button::Unknown
                 | Button::LeftBlinker
@@ -543,5 +588,24 @@ impl CruiseCarrot {
             }
         }
         Ok(speed)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Button, Number};
+
+    #[test]
+    fn a_malformed_speed_command_is_ignored_instead_of_failing_the_frame() {
+        let mut c = super::super::pedals::tests::cruise();
+        for (arg, expected) in [("RESET", 80.), ("", 80.), ("120", 120.), ("250", 80.)] {
+            c.s.carrot_cmd = "SPEED".into();
+            c.s.carrot_arg = arg.into();
+            c.s.carrot_cmd_index += 1;
+            let (speed, _, _) = c
+                .carrot_command(Number::int(80.), Button::Unknown, false)
+                .unwrap_or_else(|e| panic!("{arg:?}: {e:?}"));
+            assert_eq!(speed.value, expected, "{arg:?}");
+        }
     }
 }

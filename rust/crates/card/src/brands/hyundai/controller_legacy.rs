@@ -66,7 +66,7 @@ pub fn messages(
             result.push(legacy_steering::mdps(&mut c.writer, &mut mdps, c.frame)?);
         }
     }
-    if c.frame.is_multiple_of(2) && config.longitudinal {
+    if c.frame.is_multiple_of(2) && config.longitudinal && c.pedal.is_none() {
         c.jerk((cc, state), command)?;
         let i = LegacyAccInput {
             enabled: cc.get_enabled(),
@@ -115,11 +115,36 @@ pub fn messages(
             hud.get_driver_monitoring_alert(),
         )?);
     }
-    if c.frame.is_multiple_of(20) && config.longitudinal && config.flags & f::CAMERA_SCC == 0 {
+    if c.frame.is_multiple_of(20)
+        && config.longitudinal
+        && config.flags & f::CAMERA_SCC == 0
+        && c.pedal.is_none()
+    {
         result.extend(legacy_acc::options(&mut c.writer, config.flags)?);
     }
-    if c.frame.is_multiple_of(50) && config.longitudinal && config.flags & f::CAMERA_SCC == 0 {
+    if c.frame.is_multiple_of(50)
+        && config.longitudinal
+        && config.flags & f::CAMERA_SCC == 0
+        && c.pedal.is_none()
+    {
         result.push(legacy_acc::radar_option(&mut c.writer)?);
+    }
+    if let Some(pedal) = &mut c.pedal {
+        let active = cc.get_long_active()
+            && !state.pedal_cruise_blocked
+            && !state.pedal.faulted()
+            && !cc.get_cruise_control()?.get_override()
+            && !cs.get_gas_pressed()
+            && !cs.get_brake_pressed();
+        if let Some(frame) = pedal.update(
+            c.frame,
+            active,
+            command.accel,
+            f64::from(cs.get_v_ego()),
+            f64::from(hud.get_set_speed()),
+        )? {
+            result.push(frame);
+        }
     }
     Ok(result)
 }

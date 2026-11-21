@@ -89,8 +89,16 @@ pub fn run(environment: Environment) -> Result<(), Error> {
     let mut byte_count = 0_u64;
     let mut receive_buffer = Vec::new();
     let started = clock::now()?;
+    // Logging needs no low latency: scan the ~140 queues at most every 10 ms
+    // and drain what came meanwhile, instead of once per message (~1,150 a
+    // second, 21 % of a core on a comma 3X; see msgq's poll_not_before).
+    const BATCH: Duration = Duration::from_millis(10);
+    let mut last_poll = std::time::Instant::now();
     while signal.load(Ordering::Relaxed) == 0 {
-        for index in subscribers.poll_ready(Duration::from_millis(1000))? {
+        let ready =
+            subscribers.poll_ready_not_before(Duration::from_millis(1000), last_poll + BATCH)?;
+        last_poll = std::time::Instant::now();
+        for index in ready {
             if signal.load(Ordering::Relaxed) != 0 {
                 break;
             }
@@ -130,13 +138,15 @@ pub fn run(environment: Environment) -> Result<(), Error> {
                     for state in &mut states {
                         if let Some(encoder) = &mut state.encoder {
                             if encoder.include_audio {
+                                if data.get_sample_rate() > 0 {
+                                    encoder.audio_rate = data.get_sample_rate();
+                                }
                                 if let Some(writer) = &mut encoder.writer {
                                     writer.write_audio(
                                         data.get_data()?,
                                         event.get_log_mono_time() / 1000,
                                         data.get_sample_rate(),
                                     )?;
-                                    encoder.audio_initialized = true;
                                 }
                             }
                         }
@@ -148,11 +158,11 @@ pub fn run(environment: Environment) -> Result<(), Error> {
                 match &mut state.encoder {
                     Some(encoder) => {
                         rotation.last_camera_ns = clock::now()?;
-                        let outcome =
-                            encoder.handle(&mut logger, std::mem::take(bytes), rotation.ready)?;
+                        rotation.stream_seen_ns[encoder.stream.index()] = rotation.last_camera_ns;
+                        let outcome = encoder.handle(&mut logger, std::mem::take(bytes))?;
                         byte_count = byte_count.wrapping_add(u64::try_from(outcome.bytes)?);
-                        if outcome.ready_part.is_some() {
-                            rotation.ready += 1;
+                        if let Some(part) = outcome.part {
+                            rotation.encoder_part[encoder.stream.index()] = Some(part);
                         }
                     }
                     None => {
@@ -168,8 +178,15 @@ pub fn run(environment: Environment) -> Result<(), Error> {
                 if let Some(reason) = rotation.timeout_reason(now) {
                     diagnostics::emit(log_site!(), Level::Error, reason.into());
                 }
-                if rotation.due(now) {
+                if rotation.due(now, logger.part) {
                     rotate(&mut logger, &mut rotation)?;
+                    for state in &mut states {
+                        if let Some(encoder) = &mut state.encoder {
+                            encoder.close()?;
+                            byte_count = byte_count
+                                .wrapping_add(u64::try_from(encoder.flush_current(&mut logger)?)?);
+                        }
+                    }
                 }
                 message_count = message_count.wrapping_add(1);
                 if message_count.is_multiple_of(10000) {
@@ -220,7 +237,6 @@ fn rotate_with_clock(
     mut now: impl FnMut() -> Result<u64, Error>,
 ) -> Result<(), Error> {
     logger.next(now()?)?;
-    rotation.ready = 0;
     rotation.last_rotation_ns = now()?;
     diagnostics::emit(
         log_site!(),
@@ -260,8 +276,8 @@ mod tests {
         })
         .unwrap();
         assert_eq!(calls, 2);
-        assert!(!rotation.due(61_000_000_001));
-        assert!(rotation.due(69_000_000_001));
+        assert!(!rotation.due(61_000_000_001, logger.part));
+        assert!(rotation.due(69_000_000_001, logger.part));
         logger.close(0, 70_000_000_000).unwrap();
     }
 }

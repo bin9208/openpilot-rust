@@ -41,6 +41,8 @@ pub struct ProportionalMemory {
     pub pss: u64,
     pub anon: u64,
     pub shared: u64,
+    /// `Private_Dirty` summed over the same completed scan.
+    pub private_dirty: u64,
     /// Monotonic scan start in nanoseconds; zero means unavailable.
     pub mono_time_ns: u64,
 }

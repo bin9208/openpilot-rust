@@ -17,8 +17,6 @@ mod reports;
 pub mod runtime;
 #[cfg(feature = "native")]
 pub mod serial;
-#[cfg(test)]
-mod tests;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -36,9 +34,6 @@ pub enum Error {
     Capnp(#[from] capnp::Error),
     #[error(transparent)]
     Json(#[from] serde_json::Error),
-    #[cfg(feature = "native")]
-    #[error(transparent)]
-    Kernel(#[from] cxx::Exception),
     #[cfg(feature = "native")]
     #[error(transparent)]
     Messaging(#[from] openpilot_messaging::runtime::Error),

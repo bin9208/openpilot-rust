@@ -84,6 +84,56 @@ impl Decoded {
                 "modelV2",
             ])?,
             navigation_seen: views.0.topic("carrotMan")?.seen,
+            tesla: tesla_car(views.car()?)?,
+            long_active_checks: views.control()?.get_long_active()
+                && views.0.all_checks(&[
+                    "carState",
+                    "carControl",
+                    "selfdriveState",
+                    "controlsState",
+                    "modelV2",
+                ])?,
+            boot_ns: boot_ns(),
         })
     }
+}
+
+/// carrot `CLOCK_BOOTTIME` ns, the domain of CAN sample times.
+fn boot_ns() -> u64 {
+    let now = rustix::time::clock_gettime(rustix::time::ClockId::Boottime);
+    u64::try_from(now.tv_sec)
+        .unwrap_or(0)
+        .saturating_mul(1_000_000_000)
+        .saturating_add(u64::try_from(now.tv_nsec).unwrap_or(0))
+}
+
+/// The carState fields the Tesla stop-line constraint reads.
+fn tesla_car(
+    cs: openpilot_cereal::car_capnp::car_state::Reader<'_>,
+) -> Result<crate::tesla_traffic_stop::Car, Error> {
+    use openpilot_cereal::car_capnp::car_state::{tesla_traffic_control::Light, GearShifter};
+    let traffic = cs.get_tesla_traffic_control()?;
+    Ok(crate::tesla_traffic_stop::Car {
+        v_ego: f64::from(cs.get_v_ego()),
+        gas_pressed: cs.get_gas_pressed(),
+        brake_pressed: cs.get_brake_pressed(),
+        drive: cs.get_gear_shifter() == Ok(GearShifter::Drive),
+        can_valid: cs.get_can_valid(),
+        sensors_invalid: cs.get_vehicle_sensors_invalid(),
+        door_open: cs.get_door_open(),
+        seatbelt_unlatched: cs.get_seatbelt_unlatched(),
+        parking_brake: cs.get_parking_brake(),
+        acc_faulted: cs.get_acc_faulted(),
+        esp_disabled: cs.get_esp_disabled(),
+        valid: traffic.get_valid(),
+        sample: traffic.get_sample_mono_time(),
+        stop_line_distance: f64::from(traffic.get_stop_line_distance()),
+        light: match traffic.get_light() {
+            Ok(Light::Red) => 1,
+            Ok(Light::Green) => 2,
+            Ok(Light::Yellow) => 3,
+            _ => 0,
+        },
+        status: traffic.get_status()?.to_str()?.to_owned(),
+    })
 }

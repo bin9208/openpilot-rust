@@ -104,7 +104,7 @@ impl Controller {
         }
         self.hardware_events(state)?;
         self.calibration_events(cs, state, effects)?;
-        self.lane_events(cs, state)?;
+        self.lane_events(cs, state, effects)?;
         self.safety_events(state)?;
         self.health_events(cs, state, lagging, effects)?;
         self.motion_events(cs, state, effects)?;

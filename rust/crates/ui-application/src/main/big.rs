@@ -162,6 +162,15 @@ impl Big {
         child.set_rect(rect);
         child.state_mut().enabled = state.enabled.get().into();
         let result = child.render(frame, draw)?;
+        if matches!(self.mode, Mode::Home | Mode::Onroad) {
+            crate::indicator_display::draw_b1_badge(
+                draw,
+                (context.now_monotonic)(),
+                rect,
+                None,
+                None,
+            )?;
+        }
         self.process(context, frame)?;
         Ok(result)
     }

@@ -37,10 +37,6 @@ name = "openpilot-joystick-control"
 path = "src/bin/joystick-control.rs"
 required-features = ["native"]
 
-[[example]]
-name = "joystick_input_fixture"
-required-features = ["native"]
-
 [[bin]]
 name = "openpilot-joystick"
 path = "src/bin/joystick.rs"

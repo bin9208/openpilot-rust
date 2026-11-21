@@ -3,7 +3,7 @@ use num_traits::ToPrimitive;
 use openpilot_can::{dbc::Dbc, packer::Packer, Frame};
 use std::{collections::BTreeMap, path::Path, sync::Arc};
 
-pub type Values = BTreeMap<String, f64>;
+pub type Values = BTreeMap<std::sync::Arc<str>, f64>;
 
 pub struct CanWriter {
     pub packer: Packer,
@@ -30,7 +30,7 @@ impl CanWriter {
         let address = self.packer.dbc.message(name)?.address;
         let signals: Vec<_> = values
             .iter()
-            .map(|(name, value)| (name.as_str(), *value))
+            .map(|(name, value)| (&**name, *value))
             .collect();
         Ok(Frame {
             address,
@@ -43,7 +43,7 @@ impl CanWriter {
 pub fn values(entries: &[(&str, f64)]) -> Values {
     entries
         .iter()
-        .map(|(name, value)| ((*name).to_owned(), *value))
+        .map(|(name, value)| (std::sync::Arc::<str>::from(*name), *value))
         .collect()
 }
 
@@ -51,7 +51,7 @@ pub fn set(target: &mut Values, entries: &[(&str, f64)]) {
     target.extend(
         entries
             .iter()
-            .map(|(name, value)| ((*name).to_owned(), *value)),
+            .map(|(name, value)| (std::sync::Arc::<str>::from(*name), *value)),
     );
 }
 
@@ -65,7 +65,7 @@ pub fn get(target: &Values, name: &str) -> Result<f64, Error> {
 pub fn copy_signals(target: &Values, names: &[&str]) -> Result<Values, Error> {
     names
         .iter()
-        .map(|name| Ok(((*name).to_owned(), get(target, name)?)))
+        .map(|name| Ok((std::sync::Arc::<str>::from(*name), get(target, name)?)))
         .collect()
 }
 

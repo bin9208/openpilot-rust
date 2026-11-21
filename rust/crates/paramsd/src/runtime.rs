@@ -129,7 +129,23 @@ pub fn run(mut remaining: Option<u64>, memory_root: Option<PathBuf>) -> Result<(
     let mut logger = Factory::for_runtime()?.logger();
     let mut logs = Vec::new();
     cache::migrate(&mut params, monotonic(), &mut logs);
-    let initial = cache::retrieve(&mut params, &car, replay, debug, &mut logs);
+    let requested_ratio = |params: &mut Params| {
+        let percent = Store::get(params, "CenterToFrontRatio")
+            .and_then(|bytes| String::from_utf8(bytes).ok())
+            .and_then(|text| text.trim().parse::<i64>().ok())
+            .unwrap_or(0);
+        openpilot_control_policy::geometry::requested_ratio(
+            percent,
+            car.globals[2],
+            car.wheelbase(),
+        )
+    };
+    let geometry_ratio = if replay {
+        car.center_to_front_ratio()
+    } else {
+        requested_ratio(&mut params)
+    };
+    let initial = cache::retrieve(&mut params, &car, replay, debug, geometry_ratio, &mut logs);
     emit(&mut logger, &mut logs)?;
     let estimator = Estimator::new(
         &car,
@@ -137,6 +153,7 @@ pub fn run(mut remaining: Option<u64>, memory_root: Option<PathBuf>) -> Result<(
         initial.stiffness,
         initial.offset_degrees.to_radians(),
         initial.covariance,
+        geometry_ratio,
     )?;
     let mut state = LoopState {
         estimator,
@@ -148,9 +165,19 @@ pub fn run(mut remaining: Option<u64>, memory_root: Option<PathBuf>) -> Result<(
     let mut memory = Params::open(&memory_root, &prefix)?;
     Store::remove(&mut memory, "LastGPSPosition");
     let memory = PendingWrites::new(memory, "LastGPSPosition")?;
+    let mut geometry_params = Params::for_runtime()?;
     let persistent = PendingWrites::new(params, "LiveParametersV2")?;
+    let mut last_geometry_time = monotonic() as f64 * 1e-9;
     while !stop.load(Ordering::Relaxed) {
         subscriber.update(Duration::from_millis(100))?;
+        let geometry_time = monotonic() as f64 * 1e-9;
+        if !replay {
+            let target = requested_ratio(&mut geometry_params);
+            state
+                .estimator
+                .update_geometry(target, geometry_time - last_geometry_time)?;
+        }
+        last_geometry_time = geometry_time;
         let output = state.step(&subscriber.state, monotonic())?;
         emit(&mut logger, &mut state.estimator.logs)?;
         if let Some(bytes) = output.gps {

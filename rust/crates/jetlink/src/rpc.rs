@@ -17,7 +17,13 @@ pub struct Hello {
     pub identity: Identity,
     #[serde(default = "legacy_protocol")]
     pub protocol: u16,
+    /// The daemon offers a RAM input slot (`ram_input_v1`).
+    #[serde(default)]
+    pub shared_input: bool,
 }
+/// Cleared after a slot could not be set up, so later connections in this
+/// process copy frames over the socket instead of failing again.
+static SHARED_INPUT: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(true);
 fn legacy_protocol() -> u16 {
     2
 }
@@ -93,6 +99,7 @@ pub fn encode_generation(bytes: [u8; 16]) -> String {
 pub struct ProxyClient {
     source_sof: u64,
     stream: Option<UnixStream>,
+    shared: Option<crate::shared_input::Writer>,
     pub generation: [u8; 16],
     pub identity: Identity,
     pub session: crate::session_contract::SessionContract,
@@ -135,14 +142,35 @@ impl ProxyClient {
         if !hello.ready {
             return Err(Error::Contract("owner readiness/model"));
         }
+        let session = crate::session_contract::SessionContract::parse(
+            hello.spec,
+            crate::wire::Version::from_u16(hello.protocol)?,
+        )?;
+        let shared =
+            if hello.shared_input && SHARED_INPUT.load(std::sync::atomic::Ordering::Relaxed) {
+                match crate::shared_input::Writer::request(
+                    &mut stream,
+                    session.packed_count(),
+                    deadline,
+                ) {
+                    Ok(writer) => Some(writer),
+                    Err(error) => {
+                        // The stream position is unknown now: retire this
+                        // connection; the next one copies frames.
+                        SHARED_INPUT.store(false, std::sync::atomic::Ordering::Relaxed);
+                        eprintln!("jetlink shared input unavailable, copying frames: {error}");
+                        return Err(error);
+                    }
+                }
+            } else {
+                None
+            };
         Ok(Self {
             stream: Some(stream),
+            shared,
             source_sof: 0,
             generation: generation(&hello.generation)?,
-            session: crate::session_contract::SessionContract::parse(
-                hello.spec,
-                crate::wire::Version::from_u16(hello.protocol)?,
-            )?,
+            session,
             identity: hello.identity,
         })
     }
@@ -179,10 +207,17 @@ impl ProxyClient {
     ) -> Result<Vec<f32>, Error> {
         self.session.check_input(warped, packed)?;
         let stream = self.stream.as_mut().ok_or(Error::Closed)?;
-        let mut request = encode_request(self.generation, frame, deadline, reset, warped, packed);
-        if self.source_sof > 0 {
-            request.extend(self.source_sof.to_le_bytes());
-        }
+        let request = if let Some(shared) = &mut self.shared {
+            let header = encode_header(self.generation, frame, deadline, reset);
+            shared.token(&header, warped, packed, self.source_sof)?
+        } else {
+            let mut request =
+                encode_request(self.generation, frame, deadline, reset, warped, packed);
+            if self.source_sof > 0 {
+                request.extend(self.source_sof.to_le_bytes());
+            }
+            request
+        };
         send_packet(stream, &request, deadline)?;
         let reply = recv_packet(stream, deadline)?;
         if reply.len() != 21 + self.session.spec.output_count()? * 4
@@ -211,6 +246,15 @@ impl Drop for ProxyClient {
     fn drop(&mut self) {
         self.close();
     }
+}
+/// The 29 bytes after the request kind: generation, frame, deadline, reset.
+pub fn encode_header(generation: [u8; 16], frame: u32, deadline: Deadline, reset: bool) -> Vec<u8> {
+    let mut header = Vec::with_capacity(REQUEST_BYTES);
+    header.extend(generation);
+    header.extend(frame.to_le_bytes());
+    header.extend(deadline.0.to_le_bytes());
+    header.push(u8::from(reset));
+    header
 }
 pub fn encode_request(
     generation: [u8; 16],
