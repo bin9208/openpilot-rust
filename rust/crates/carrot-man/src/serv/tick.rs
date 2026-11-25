@@ -209,6 +209,8 @@ impl CarrotServ {
             car,
             false,
         );
+        self.note_turn(&atc.kind, input.now);
+        let curve_floor = self.curve_floor(input.now);
         if !matches!(self.settings.auto_turn_control, 2 | 3) {
             atc.desired = 250.;
             next_atc.desired = 250.;
@@ -243,16 +245,9 @@ impl CarrotServ {
             (limit_speed, "road"),
         ];
         if matches!(self.settings.turn_speed_mode, 1 | 2) {
-            candidates.push((
-                input
-                    .vision_speed
-                    .abs()
-                    .max(self.settings.curve_lower_limit),
-                "vturn",
-            ));
+            candidates.push((input.vision_speed.abs().max(curve_floor), "vturn"));
         }
-        let route_speed = (input.route_speed * self.settings.map_turn_factor)
-            .max(self.settings.curve_lower_limit);
+        let route_speed = (input.route_speed * self.settings.map_turn_factor).max(curve_floor);
         if (self.settings.turn_speed_mode == 2
             && self.nav.x_turn_distance > -500.
             && self.nav.x_turn_distance < 500.)

@@ -89,7 +89,7 @@ pub(super) fn tick(context: Tick<'_>) -> Result<(), Error> {
                 CurveInput {
                     v_ego: car.v_ego,
                     sensitivity: factor,
-                    lower_limit_kph: owner.serv.settings.curve_lower_limit,
+                    lower_limit_kph: owner.serv.curve_floor(mono),
                     speed_ratio: car.v_clu_ratio,
                     a_ego: car.a_ego,
                 },

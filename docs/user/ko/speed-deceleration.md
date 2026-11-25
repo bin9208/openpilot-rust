@@ -351,7 +351,7 @@ Kia PV5는 순정 내비의 같은 단속 상태·제한속도가 계속 수신�
 <a id="curve-turn"></a>
 ## 4. 커브·턴
 
-관련 설정은 `AutoCurveSpeedFactor`, `AutoCurveSpeedLowerLimit`, `TurnSpeedControlMode`, `MapTurnSpeedFactor`, `ApplyModelSpeed`입니다.
+관련 설정은 `AutoCurveSpeedFactor`, `AutoCurveSpeedLowerLimit`, `AutoCurveSpeedTurnLowerLimit`, `TurnSpeedControlMode`, `MapTurnSpeedFactor`, `ApplyModelSpeed`입니다.
 
 커브 관련 속도는 하나가 아닙니다.
 
@@ -385,6 +385,16 @@ Kia PV5는 순정 내비의 같은 단속 상태·제한속도가 계속 수신�
 - 낮추면 더 낮은 커브 속도를 허용
 
 이 값은 안전 최저속도를 자동으로 판단하지 않습니다. 너무 높이면 급커브 감속이 부족할 수 있습니다.
+
+### `AutoCurveSpeedTurnLowerLimit`
+
+교차로 회전 전용 최저속도입니다(km/h, 기본 `0`=끔). ATC가 좌/우회전 단계(`turn left`/`turn right`, 회전 지점 약 43~60m 전부터)에 있는 동안과 그 뒤 8초 동안만, 비전 커브와 경로 턴 후보의 최저속도로 `AutoCurveSpeedLowerLimit` 대신 이 값을 씁니다. 내비가 회전 지점을 지나 다음 안내로 넘어가도 회전을 마칠 때까지 유지하려는 8초입니다.
+
+- 일반 커브, 램프, ATC 접근 속도(`AutoTurnControlSpeedTurn`)는 바뀌지 않습니다.
+- `AutoCurveSpeedLowerLimit`보다 높게 설정하면 아무 효과가 없습니다.
+- 예: `AutoCurveSpeedLowerLimit` 22에서 반경 10m 교차로를 22km/h로 돌면 횡가속도가 3~4m/s²가 되어 조향이 따라가지 못할 수 있습니다. 이 값을 12로 두면 모델 곡률과 경로 모양에 따라 회전 중 12~17km/h까지 더 감속합니다.
+
+이 값도 안전 최저속도를 자동으로 판단하지 않습니다. 뒤차와 도로 상황을 운전자가 확인해야 합니다.
 
 ### `TurnSpeedControlMode`
 

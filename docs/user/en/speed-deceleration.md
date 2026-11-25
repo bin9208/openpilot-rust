@@ -308,6 +308,16 @@ The relationship is approximately inverse-square-root: changing 100% to 120% pro
 
 This floor applies to vision-curve and route-turn candidates. For vision curves, it applies to the curve target before remaining distance determines the current approach ceiling. Raising it prevents those sources from selecting a lower speed, which can leave insufficient slowing for a sharp curve. It is not an automatically safe minimum.
 
+### `AutoCurveSpeedTurnLowerLimit`
+
+An intersection-turn floor (km/h, default `0` = off). Only while ATC is in a left/right turn (`turn left`/`turn right`, from about 43-60 m before the turn point) and for 8 s afterwards, the vision-curve and route-turn candidates use this floor instead of `AutoCurveSpeedLowerLimit`. The 8 s keep it through the turn after the navigation has already moved on to the next instruction.
+
+- Ordinary curves, ramps and the ATC approach speed (`AutoTurnControlSpeedTurn`) are unchanged.
+- A value above `AutoCurveSpeedLowerLimit` has no effect.
+- Example: with `AutoCurveSpeedLowerLimit` 22, a 10 m-radius intersection taken at 22 km/h asks 3-4 m/s² of lateral acceleration and can saturate the steering. At 12 the turn slows further, to about 12-17 km/h depending on the model curvature and route shape.
+
+It is not an automatically safe minimum either; the driver still checks following traffic and the road.
+
 ### `TurnSpeedControlMode`
 
 | Value | Vision curve | Route turn |

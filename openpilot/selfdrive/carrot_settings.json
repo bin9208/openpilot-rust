@@ -297,6 +297,7 @@
               "params": [
                 "AutoCurveSpeedFactor",
                 "AutoCurveSpeedLowerLimit",
+                "AutoCurveSpeedTurnLowerLimit",
                 "TurnSpeedControlMode",
                 "MapTurnSpeedFactor",
                 "ApplyModelSpeed"
@@ -3851,6 +3852,23 @@
       "max": 200,
       "default": 30,
       "unit": 10,
+      "display_unit": "speedKph"
+    },
+    {
+      "group": "감속제어",
+      "name": "AutoCurveSpeedTurnLowerLimit",
+      "title": "교차로 회전 최저속도(0)",
+      "descr": "ATC가 교차로 좌/우회전 단계(회전 지점 약 43~60m 전부터 지난 뒤 8초)일 때만 커브·경로 감속의 최저속도를 이 값으로 낮춥니다. 0이면 끔(커브속도 최저속도를 그대로 사용). 일반 커브에는 영향이 없습니다.",
+      "egroup": "FDIST",
+      "etitle": "Intersection turn minimum speed(0)",
+      "edescr": "Only while ATC is in an intersection left/right turn (from about 43-60 m before the turn point until 8 s after), the curve and route slowing floor drops to this value. 0 = off (the curve minimum speed applies). Ordinary curves are unchanged.",
+      "cgroup": "跟车距离",
+      "ctitle": "路口转弯最低速度 (0)",
+      "cdescr": "仅在 ATC 处于路口左/右转阶段（转弯点前约 43-60 米至通过后 8 秒）时，将弯道与路线减速的最低速度降至此值。0 为关闭（沿用弯道最低速度）。普通弯道不受影响。",
+      "min": 0,
+      "max": 200,
+      "default": 0,
+      "unit": 1,
       "display_unit": "speedKph"
     },
     {
