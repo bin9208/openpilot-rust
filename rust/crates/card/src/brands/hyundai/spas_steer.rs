@@ -10,7 +10,9 @@
 //!
 //! Sequence (one run per setting edge): mode 4 at the current wheel angle for
 //! 0.1 s, then mode 5 ramping to the target at 100 deg/s, 2 s hold, back to
-//! the start angle, 0.2 s of mode 3. Stops at once on leaving P, moving, the
+//! the start angle, 0.2 s of mode 3. Runs in P, or in D held by the brake
+//! pedal or AutoHold (the stock frame changes once D is selected; P alone left
+//! the EPS at 0xEA byte 5 0x42, 11-25). Stops at once on leaving that, moving, the
 //! driver's hand or lever, a stock SPAS sender, or the setting going to 0
 //! (then it ramps back first). panda (phase 13) admits only this shape.
 use super::spas;

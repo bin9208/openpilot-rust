@@ -33,6 +33,11 @@ static bool hyundai_spas_drive_used;
 #define HYUNDAI_SPAS_STEER_STEP 30    // 0.1 deg per accepted frame
 #define HYUNDAI_SPAS_STEER_TORQUE 250
 static uint32_t hyundai_spas_steer_at, hyundai_spas_steer_end;
+// Gear and pedal from 0x35 (GEAR byte 24 bits 0..2: P 0, D 5, R 7) and
+// AutoHold from ESP_STATUS 0x60 (AVH_Sta byte 24 bits 0..1: 1 held).
+static uint8_t hyundai_spas_gear;
+static bool hyundai_spas_pedal_up, hyundai_spas_avh_held;
+static uint32_t hyundai_spas_avh_at;
 static int hyundai_spas_steer_angle;
 static bool hyundai_spas_steer_used;
 
@@ -51,6 +56,9 @@ static void hyundai_spas_init(bool enabled, int bus) {
   hyundai_spas_steer_at = hyundai_spas_steer_end = 0U;
   hyundai_spas_steer_angle = 0;
   hyundai_spas_steer_used = false;
+  hyundai_spas_gear = 0xFFU;
+  hyundai_spas_pedal_up = hyundai_spas_avh_held = false;
+  hyundai_spas_avh_at = 0U;
   for (int i = 0; i < 3; i++) {
     hyundai_spas_park_at[i] = hyundai_spas_park_count[i] = 0U;
     hyundai_spas_park_value[i] = false;
@@ -75,10 +83,15 @@ static bool hyundai_spas_stock_ready(uint32_t now) {
   return ready;
 }
 
-static bool hyundai_spas_park_guard(uint32_t now) {
+// held_drive (SpasSteerTest only): besides P, also D or R while the brake
+// pedal or AutoHold holds the car; wheels must still read exactly zero.
+static bool hyundai_spas_standing_guard(uint32_t now, bool held_drive) {
   bool ready = !controls_allowed && !vehicle_moving && !gas_pressed && (hyundai_spas_bus == 0);
+  bool held = brake_pressed || (hyundai_spas_avh_held && (get_ts_elapsed(now, hyundai_spas_avh_at) < 100000U));
+  bool gear_ok = hyundai_spas_park_value[1] ||
+                 (held_drive && hyundai_spas_pedal_up && held && ((hyundai_spas_gear == 5U) || (hyundai_spas_gear == 7U)));
   for (int i = 0; i < 3; i++) {
-    ready = ready && hyundai_spas_park_value[i] && (hyundai_spas_park_count[i] >= ((i == 2) ? 3U : 10U)) &&
+    ready = ready && ((i == 1) ? gear_ok : hyundai_spas_park_value[i]) && (hyundai_spas_park_count[i] >= ((i == 2) ? 3U : 10U)) &&
             (get_ts_elapsed(now, hyundai_spas_park_at[i]) < ((i == 2) ? 500000U : 100000U));
   }
   // Corrupt checked frames never reach the vehicle RX hook. Consult the
@@ -93,6 +106,10 @@ static bool hyundai_spas_park_guard(uint32_t now) {
     }
   }
   return ready;
+}
+
+static bool hyundai_spas_park_guard(uint32_t now) {
+  return hyundai_spas_standing_guard(now, false);
 }
 
 // No stock SPAS sender (HDA1 cars without APRK): neither message for 1 s.
@@ -152,7 +169,8 @@ static bool hyundai_spas_steer_fits(const CANPacket_t *pkt) {
 }
 
 static bool hyundai_spas_steer_ready(uint32_t now) {
-  return hyundai_spas_solo_ready(now) && (torque_driver.max <= HYUNDAI_SPAS_STEER_TORQUE) &&
+  return hyundai_spas_standing_guard(now, true) && hyundai_spas_stock_absent(now) &&
+         (torque_driver.max <= HYUNDAI_SPAS_STEER_TORQUE) &&
          (torque_driver.min >= -HYUNDAI_SPAS_STEER_TORQUE);
 }
 
@@ -168,6 +186,13 @@ static bool hyundai_spas_park_ready(uint32_t now) {
 static void hyundai_spas_rx(const CANPacket_t *pkt, uint32_t now) {
   if (hyundai_spas_enabled && (GET_BUS(pkt) == hyundai_spas_bus)) {
     int addr = GET_ADDR(pkt);
+    if (addr == 0x60) {
+      bool valid = (GET_LEN(pkt) == 32) && hyundai_spas_crc(pkt);
+      hyundai_spas_avh_held = valid && ((GET_BYTE(pkt, 24) & 3U) == 1U);
+      if (valid) {
+        hyundai_spas_avh_at = now;
+      }
+    }
     if ((addr == 0xA0) || (addr == 0x35)) {
       int idx = (addr == 0xA0) ? 0 : 1;
       bool valid = (GET_LEN(pkt) == ((idx == 0) ? 24 : 32)) && hyundai_spas_crc(pkt);
@@ -185,6 +210,8 @@ static void hyundai_spas_rx(const CANPacket_t *pkt, uint32_t now) {
         } else {
           // Known EV ACCELERATOR layout: P=0, pedal=0. Other layouts do not arm.
           hyundai_spas_park_value[idx] = ((GET_BYTE(pkt, 24) & 7U) == 0U) && (GET_BYTE(pkt, 5) == 0U);
+          hyundai_spas_gear = GET_BYTE(pkt, 24) & 7U;
+          hyundai_spas_pedal_up = GET_BYTE(pkt, 5) == 0U;
         }
       } else {
         hyundai_spas_park_count[idx] = 0U;

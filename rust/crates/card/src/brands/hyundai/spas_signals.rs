@@ -321,7 +321,22 @@ impl SpasSignals {
     }
 
     fn parked(&self, healthy: bool, input: &Inputs<'_>) -> Result<bool, Error> {
+        self.standing(healthy, input, false)
+    }
+
+    /// `held_drive` (SpasSteerTest only): D or R also counts while the brake
+    /// pedal or AutoHold holds the car, as panda's phase-13 guard.
+    fn standing(&self, healthy: bool, input: &Inputs<'_>, held_drive: bool) -> Result<bool, Error> {
         let (cs, subs, now) = (input.cs, input.subscribers, input.now);
+        let gear = cs.get_gear_shifter()?;
+        let gear_ok = gear == car_state::GearShifter::Park
+            || (held_drive
+                && matches!(
+                    gear,
+                    car_state::GearShifter::Drive | car_state::GearShifter::Reverse
+                )
+                && (cs.get_brake_pressed() || cs.get_brake_hold_active())
+                && !cs.get_gas_pressed());
         // A missing or undecodable service is never "parked".
         let control = subs.topic("carControl").ok().and_then(|topic| {
             match topic.event().ok()?.which().ok()? {
@@ -340,7 +355,7 @@ impl SpasSignals {
         };
         let pandas = pandas(subs);
         Ok(healthy
-            && cs.get_gear_shifter()? == car_state::GearShifter::Park
+            && gear_ok
             && cs.get_standstill()
             && cs.get_v_ego().abs() < 0.01
             && !(control.get_lat_active()
@@ -405,7 +420,7 @@ impl SpasSignals {
             && !override_now
             && !self.driver_active
             && self.session.stock_absent(now)
-            && self.parked(healthy, &input)?;
+            && self.standing(healthy, &input, true)?;
         let frames = self.steer.update(
             cs,
             steer_ready,
