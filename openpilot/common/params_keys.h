@@ -334,6 +334,8 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"CanfdBlinkerTest", {CLEAR_ON_MANAGER_START, INT, "0"}},
     {"TorqueSteerTest", {CLEAR_ON_MANAGER_START, INT, "0"}},
     {"TorqueSteerTestCopy", {CLEAR_ON_MANAGER_START, BOOL, "0"}},
+    {"SpasSteerTest", {CLEAR_ON_MANAGER_START, INT, "0"}},
+    {"SpasSteerTestSpas2", {CLEAR_ON_MANAGER_START, BOOL, "0"}},
     {"CanfdDebug", {PERSISTENT, INT, "0"}},
 
     {"SoundVolumeAdjust", {PERSISTENT, INT, "100"}},

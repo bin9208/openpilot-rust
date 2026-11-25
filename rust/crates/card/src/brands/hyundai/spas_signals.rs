@@ -117,6 +117,8 @@ pub struct SpasSignals {
     pub status: String,
     /// Driving lane-change indicator on a car with no stock SPAS sender.
     pub solo: spas::SoloDrive,
+    /// `SpasSteerTest`: parked SPAS1 steering request (owner's car only).
+    pub steer: super::spas_steer::SpasSteer,
     /// Keeps `solo` lit through a stop or the rest of a turn.
     signal_hold: spas::SignalHold,
     worker: Option<crate::blink::source::SpasWorker>,
@@ -269,6 +271,7 @@ impl SpasSignals {
             },
             worker: None,
             solo: spas::SoloDrive::default(),
+            steer: super::spas_steer::SpasSteer::default(),
             signal_hold: spas::SignalHold::default(),
             feedback: crate::blink::source::Feedback::default(),
             feedback_at: 0.,
@@ -393,6 +396,29 @@ impl SpasSignals {
             && self.driver_count >= 3
         {
             self.driver_override = false;
+        }
+        // SpasSteerTest runs alone: no other SPAS output while it steers.
+        let steer_ready = self.hold_supported
+            && self.session.state == spas::State::Idle
+            && self.test_request.is_none()
+            && !self.solo.busy()
+            && !override_now
+            && !self.driver_active
+            && self.session.stock_absent(now)
+            && self.parked(healthy, &input)?;
+        let frames = self.steer.update(
+            cs,
+            steer_ready,
+            now,
+            self.session.bus,
+            input.settings,
+        );
+        if self.steer.active() {
+            self.status = format!("steer_{}", self.steer.stage.name());
+            return Ok(frames);
+        }
+        if let Some(reason) = self.steer.take_report() {
+            self.status = format!("steer_{reason}");
         }
         if now >= self.settings_at {
             let setting = super::parameters::setting_int(input.settings, "CanfdBlinkerTest")?;

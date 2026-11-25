@@ -43,6 +43,7 @@ mod runtime;
 pub mod settings_float;
 pub mod spas;
 pub mod spas_signals;
+pub mod spas_steer;
 pub mod stalks;
 mod startup;
 pub mod state;
