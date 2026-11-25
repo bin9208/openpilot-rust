@@ -31,6 +31,9 @@ class TestHyundaiSpasSteer(unittest.TestCase):
     self.lever_left = False
     self.torque = 0
     self.c = 0
+    self.gear = 0  # P 0, D 5, N 6, R 7
+    self.brake = False
+    self.avh = False
 
   def rx(self, address, data, bus=0):
     return self.safety.safety_rx_hook(libsafety_py.make_CANPacket(address, bus, data))
@@ -46,7 +49,9 @@ class TestHyundaiSpasSteer(unittest.TestCase):
       self.counter = (self.counter + 1) & 0xFF
       speeds = {8: self.wheel, 10: self.wheel, 12: self.wheel, 14: self.wheel}
       self.rx(0xA0, canfd(0xA0, 24, self.counter, speeds))
-      self.rx(0x35, canfd(0x35, 32, self.counter))
+      self.rx(0x35, canfd(0x35, 32, self.counter, {24: self.gear}))
+      self.rx(0x60, canfd(0x60, 32, self.counter, {24: 1 if self.avh else 0}))
+      self.rx(0x175, canfd(0x175, 24, self.counter, {10: 0x02 if self.brake else 0}))
       if self.counter % 20 == 0:
         self.rx(0x3C1, stalk(left=self.lever_left))
       raw = 4095 + self.torque
@@ -143,6 +148,26 @@ class TestHyundaiSpasSteer(unittest.TestCase):
     self.tick(1000)
     self.assertTrue(self.send(ASK))
     self.assertFalse(self.send(ACTIVE, 0, step_ms=250))
+
+  def test_drive_or_reverse_only_while_held(self):
+    for gear, brake, avh, ok in ((5, True, False, True), (5, False, True, True), (7, True, False, True),
+                                 (5, False, False, False), (6, True, False, False), (6, False, True, False)):
+      self.setUp()
+      self.gear, self.brake, self.avh = gear, brake, avh
+      self.tick(1000)
+      self.assertEqual(self.send(ASK), ok, (gear, brake, avh))
+
+  def test_releasing_the_hold_in_drive_ends_it(self):
+    for release in ("brake", "avh"):
+      self.setUp()
+      self.gear = 5
+      self.brake, self.avh = release == "brake", release == "avh"
+      self.tick(1000)
+      self.assertTrue(self.send(ASK))
+      self.assertTrue(self.send(ACTIVE, 20))
+      self.brake = self.avh = False
+      self.tick(200)
+      self.assertFalse(self.send(ACTIVE, 40), release)
 
   def test_blinker_trial_still_arms(self):
     # The existing parked blinker trial (all-zero SPAS1) is unchanged.
