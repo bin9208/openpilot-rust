@@ -16,6 +16,8 @@ pub struct CarConfig {
     pub bus: CanBus,
     /// `HyundaiSafetyFlags.CANFD_BLINKER_KICK` on a non-passive car.
     pub kick: bool,
+    /// `HyundaiSafetyFlags.CLASSIC_CGW_BLINKER` on a non-passive classic-CAN car.
+    pub classic_cgw: bool,
 }
 
 impl CarConfig {
@@ -44,6 +46,11 @@ impl CarConfig {
                     .get_safety_configs()?
                     .iter()
                     .any(|config| config.get_safety_param() & f::safety::CANFD_BLINKER_KICK != 0),
+            classic_cgw: !cp.get_passive()
+                && flags & f::CANFD == 0
+                && cp.get_safety_configs()?.iter().any(|config| {
+                    config.get_safety_param() & f::safety::CLASSIC_CGW_BLINKER != 0
+                }),
             bus: CanBus::with_offset(
                 offset,
                 flags & f::HDA2 != 0,

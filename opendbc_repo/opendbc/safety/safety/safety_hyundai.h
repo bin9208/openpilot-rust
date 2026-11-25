@@ -71,6 +71,128 @@ static const PedalInterceptorLimits HYUNDAI_RAY_PEDAL_INTERCEPTOR_LIMITS = {
   .driver_threshold1 = 272U, .driver_threshold2 = 513U,
 };
 
+// ClassicCgwBlinker (classic CAN only, opt-in, safetyParam 1024 = HyundaiSafetyFlags.CLASSIC_CGW_BLINKER): the
+// BCM's own CGW1 (0x541) with the lever side and that side's lamp bit, the way joongyu01/carrot-wip-dev drove the
+// Palisade (exterior lamps lit, 10-27) and the K5 DL3 (cluster only, 11-14). Without the flag nothing here runs:
+// 0x541 is not in any TX list, the tx hook refuses it and the rx/tx hook never sends.
+// Our frame is held and sent right behind the next stock CGW1 (10 Hz), never next to it: sending it directly at
+// 20 Hz made 32 bus-0 errors in 0.5 s on the Palisade (00000e46).
+#define HYUNDAI_CGW_FLAG 1024U
+#define HYUNDAI_CGW_TEMPLATE_US 250000U  // the stock frame we copy must be this fresh
+#define HYUNDAI_CGW_HOLD_US 150000U      // a held frame older than this is dropped, not sent
+#define HYUNDAI_CGW_RATE_US 50000U       // at most one accepted frame per 50 ms (the host sends every 60 ms)
+#define HYUNDAI_CGW_TRIAL_US 30000000U   // one continuous request at most 30 s ...
+#define HYUNDAI_CGW_REARM_US 1000000U    // ... then 1 s without any request before the next one
+
+static struct {
+  bool enabled, template_valid, attempted, sent, trial_active, cutoff, pending;
+  uint8_t template[8];
+  uint32_t template_ts, attempt_ts, sent_ts, trial_ts, push_ts;
+  CANPacket_t pkt;
+} hyundai_cgw;
+
+static void hyundai_cgw_init(uint16_t param) {
+  hyundai_cgw = (__typeof__(hyundai_cgw)){0};  // no libc in the host libsafety build
+  hyundai_cgw.enabled = GET_FLAG(param, HYUNDAI_CGW_FLAG);
+}
+
+// The frame may differ from the stock one (tmpl) only in the lever side (byte 5 bits 1..2: 2 left, 1 right) and that
+// side's lamp bit (CF_Gway_TurnSigLh byte 2 bit 3, CF_Gway_TurnSigRh byte 7 bit 6), on or off. The stock frame must
+// show no hazard switch (byte 4 bits 1..2) and no lever of the driver's own.
+static bool hyundai_cgw_fits(const CANPacket_t *msg, const uint8_t *tmpl) {
+  unsigned int left = (GET_BYTE(msg, 2) >> 3) & 3U;
+  unsigned int right = GET_BYTE(msg, 7) >> 6;
+  unsigned int lever = (GET_BYTE(msg, 5) >> 1) & 3U;
+  bool fits = ((lever == 2U) && (left <= 1U) && (right == 0U)) || ((lever == 1U) && (left == 0U) && (right <= 1U));
+  fits = fits && ((tmpl[4] & 0x06U) == 0U) && ((tmpl[5] & 0x06U) == 0U);
+  for (int i = 0; i < 8; i++) {
+    uint8_t mask = (i == 2) ? 0xE7U : ((i == 7) ? 0x3FU : ((i == 5) ? 0xF9U : 0xFFU));
+    fits = fits && ((GET_BYTE(msg, i) & mask) == (tmpl[i] & mask));
+  }
+  return fits;
+}
+
+static void hyundai_cgw_rx(const CANPacket_t *to_push) {
+  if (hyundai_cgw.enabled && (GET_BUS(to_push) == 0) && (GET_ADDR(to_push) == 0x541)) {
+    bool valid = (GET_LEN(to_push) == 8) && !to_push->extended && !to_push->fd;
+    hyundai_cgw.template_valid = valid;
+    if (valid) {
+      for (int i = 0; i < 8; i++) {
+        hyundai_cgw.template[i] = to_push->data[i];
+      }
+      hyundai_cgw.template_ts = microsecond_timer_get();
+    }
+  }
+}
+
+static bool hyundai_cgw_tx(const CANPacket_t *msg) {
+  bool allowed = false;
+  if (hyundai_cgw.enabled) {
+    uint32_t now = microsecond_timer_get();
+    // A rejected request counts as activity too, so a sender cannot rearm itself by being refused.
+    if (hyundai_cgw.attempted && (get_ts_elapsed(now, hyundai_cgw.attempt_ts) >= HYUNDAI_CGW_REARM_US)) {
+      hyundai_cgw.trial_active = false;
+      hyundai_cgw.cutoff = false;
+    }
+    hyundai_cgw.attempted = true;
+    hyundai_cgw.attempt_ts = now;
+    if (hyundai_cgw.trial_active && (get_ts_elapsed(now, hyundai_cgw.trial_ts) >= HYUNDAI_CGW_TRIAL_US)) {
+      hyundai_cgw.cutoff = true;
+    }
+    allowed = !relay_malfunction && (GET_BUS(msg) == 0) && (GET_LEN(msg) == 8) && !msg->extended && !msg->fd &&
+              hyundai_cgw.template_valid && !hyundai_cgw.cutoff &&
+              (get_ts_elapsed(now, hyundai_cgw.template_ts) <= HYUNDAI_CGW_TEMPLATE_US) &&
+              (!hyundai_cgw.sent || (get_ts_elapsed(now, hyundai_cgw.sent_ts) >= HYUNDAI_CGW_RATE_US)) &&
+              hyundai_cgw_fits(msg, hyundai_cgw.template);
+    if (allowed) {
+      if (!hyundai_cgw.trial_active) {
+        hyundai_cgw.trial_active = true;
+        hyundai_cgw.trial_ts = now;
+      }
+      hyundai_cgw.sent = true;
+      hyundai_cgw.sent_ts = now;
+      hyundai_cgw.pkt = *msg;
+      hyundai_cgw.pending = true;
+      hyundai_cgw.push_ts = now;
+      extern bool safety_tx_buffered_for_fwd;
+      safety_tx_buffered_for_fwd = true;  // held here, not queued: hyundai_rx_tx_hook sends it
+    }
+  }
+  return allowed;
+}
+
+static bool hyundai_rx_tx_hook(const CANPacket_t *to_push, CANPacket_t *to_send) {
+  bool send = false;
+  if (hyundai_cgw.enabled && hyundai_cgw.pending && (GET_BUS(to_push) == 0) && (GET_ADDR(to_push) == 0x541)) {
+    hyundai_cgw.pending = false;
+    // Checked again against the stock frame it rides behind: the driver's lever or hazard there now wins.
+    if ((get_ts_elapsed(microsecond_timer_get(), hyundai_cgw.push_ts) < HYUNDAI_CGW_HOLD_US) &&
+        (GET_LEN(to_push) == 8) && !to_push->extended && !to_push->fd &&
+        hyundai_cgw_fits(&hyundai_cgw.pkt, to_push->data)) {
+      *to_send = hyundai_cgw.pkt;
+      send = true;
+    }
+  }
+  return send;
+}
+
+// Only with the flag: the active TX list plus CGW1 on bus 0.
+static safety_config hyundai_cgw_tx_list(safety_config ret) {
+  safety_config out = ret;
+  if (hyundai_cgw.enabled && (ret.tx_msgs != NULL)) {
+    static CanMsg cgw_tx_msgs[24];
+    if ((ret.tx_msgs_len + 1) <= (int)(sizeof(cgw_tx_msgs) / sizeof(cgw_tx_msgs[0]))) {
+      for (int i = 0; i < ret.tx_msgs_len; i++) {
+        cgw_tx_msgs[i] = ret.tx_msgs[i];
+      }
+      cgw_tx_msgs[ret.tx_msgs_len] = (CanMsg){0x541, 0, 8};
+      out.tx_msgs = cgw_tx_msgs;
+      out.tx_msgs_len = ret.tx_msgs_len + 1;
+    }
+  }
+  return out;
+}
+
 static uint8_t hyundai_get_counter(const CANPacket_t *to_push) {
   int addr = GET_ADDR(to_push);
 
@@ -153,6 +275,8 @@ static uint32_t hyundai_compute_checksum(const CANPacket_t *to_push) {
 static void hyundai_rx_hook(const CANPacket_t *to_push) {
   int bus = GET_BUS(to_push);
   int addr = GET_ADDR(to_push);
+
+  hyundai_cgw_rx(to_push);
 
   // SCC12 is on bus 2 for camera-based SCC cars, bus 0 on all others
   if (addr == 0x421) {
@@ -243,6 +367,11 @@ static bool hyundai_tx_hook(const CANPacket_t *to_send) {
 
   bool tx = true;
   int addr = GET_ADDR(to_send);
+
+  // ClassicCgwBlinker: refused unless the flag is set (and 0x541 is in no TX list without it)
+  if (addr == 0x541) {
+    return hyundai_cgw_tx(to_send);
+  }
 
   if (hyundai_pedal_interceptor) {
     // Reject before the existing SCC hook can change controls_allowed, even
@@ -521,6 +650,7 @@ static safety_config hyundai_init(uint16_t param) {
   };
 
   hyundai_common_init(param);
+  hyundai_cgw_init(param);
   hyundai_legacy = false;
   hyundai_pedal_interceptor = false;
   hyundai_pedal_interceptor_healthy = false;
@@ -549,7 +679,7 @@ static safety_config hyundai_init(uint16_t param) {
     hyundai_pedal_interceptor_cruise_rx = hyundai_pedal_interceptor_rx - 1;
     return BUILD_SAFETY_CFG(hyundai_pedal_interceptor_rx_checks, HYUNDAI_PEDAL_INTERCEPTOR_TX_MSGS);
   }
-  return hyundai_init_carrot(hyundai_legacy);
+  return hyundai_cgw_tx_list(hyundai_init_carrot(hyundai_legacy));
 
   safety_config ret;
   if (hyundai_longitudinal) {
@@ -586,11 +716,12 @@ static safety_config hyundai_legacy_init(uint16_t param) {
   };
 
   hyundai_common_init(param);
+  hyundai_cgw_init(param);
   hyundai_legacy = true;
   hyundai_pedal_interceptor = false;
   hyundai_pedal_interceptor_rx = NULL;
 
-  return hyundai_init_carrot(hyundai_legacy);
+  return hyundai_cgw_tx_list(hyundai_init_carrot(hyundai_legacy));
 
   hyundai_longitudinal = false;
   hyundai_camera_scc = false;
@@ -602,6 +733,7 @@ const safety_hooks hyundai_hooks = {
   .rx = hyundai_rx_hook,
   .tx = hyundai_tx_hook,
   .fwd = hyundai_fwd_hook,
+  .rx_tx = hyundai_rx_tx_hook,
   .get_counter = hyundai_get_counter,
   .get_checksum = hyundai_get_checksum,
   .compute_checksum = hyundai_compute_checksum,
@@ -612,6 +744,7 @@ const safety_hooks hyundai_legacy_hooks = {
   .rx = hyundai_rx_hook,
   .tx = hyundai_tx_hook,
   .fwd = hyundai_fwd_hook,
+  .rx_tx = hyundai_rx_tx_hook,
   .get_counter = hyundai_get_counter,
   .get_checksum = hyundai_get_checksum,
   .compute_checksum = hyundai_compute_checksum,

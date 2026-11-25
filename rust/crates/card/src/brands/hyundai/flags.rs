@@ -67,4 +67,8 @@ pub mod safety {
     /// Observed SPAS + stalk contract on the camera-SCC harness: panda
     /// admits the Kick ids behind stock SPAS frames.
     pub const CANFD_BLINKER_KICK: u16 = 32768;
+    /// `ClassicCgwBlinker` on a classic-CAN car (hyundai / hyundaiLegacy
+    /// models only): panda admits our CGW1 (0x541) right behind the stock
+    /// one. A bit no other Hyundai model or consumer reads.
+    pub const CLASSIC_CGW_BLINKER: u16 = 1024;
 }

@@ -300,7 +300,7 @@ VW MEB(ID.4 포함)에도 수동 조향비와 학습 비율이 적용됩니다. 
 
 수동 차선변경 감지에서 순간적인 차로 폭 오류는 마지막 유효 관측부터 0.15초 이내에 정상 관측이 돌아올 때 기존 추적을 이어갑니다. 송신 단계는 감지 단계가 확정한 차선 판단을 사용합니다. [자세한 동작](lane-change.md)
 
-설정 > 차량·하드웨어 > 깜박이 제어에 자동 점등, 출력 장치, 레버 동작을 모았습니다. 자동 점등에는 `AutoBlinkerControl`, `ManualLaneChangeIndicator`, `ManualTurnIndicator`, `ModelDesireIndicator`, `ModelPathIndicator`가 있습니다. 출력 장치에는 `CanfdBlinkerKick`, `CanfdBlinkerKickMode`, `CanfdBlinkerControl`, `CanfdBlinkerTest`가 있으며 레버 동작에는 `BlinkerLatchedTurn`, `LaneChangeLeverWait`가 있습니다.
+설정 > 차량·하드웨어 > 깜박이 제어에 자동 점등, 출력 장치, 레버 동작을 모았습니다. 자동 점등에는 `AutoBlinkerControl`, `ManualLaneChangeIndicator`, `ManualTurnIndicator`, `ModelDesireIndicator`, `ModelPathIndicator`가 있습니다. 출력 장치에는 `CanfdBlinkerKick`, `CanfdBlinkerKickMode`, `CanfdBlinkerControl`, `CanfdBlinkerTest`, `ClassicCgwBlinker`, `ClassicCgwBlinkerTest`가 있으며 레버 동작에는 `BlinkerLatchedTurn`, `LaneChangeLeverWait`가 있습니다.
 
 **Panda/SPAS 깜박이 출력** (`CanfdBlinkerKick`)은 공통 판단이 만든 깜박이 요청을 Panda로 송신합니다. 차종명 제한 없이 ECAN의 SPAS 0x165(24바이트)·0x16A(32바이트)와 레버 0x3C1(8바이트)가 확인된 카메라 SCC CAN-FD 구성에서 지원합니다. 수동 차로변경·수동 회전·모델 관찰·내비 회전·음성 차로변경의 시작과 유지, 종료는 기존 공통 설정을 따릅니다. 실제 레버 조작과 오래된 입력은 출력을 중단하며, 종료된 요청은 새 요청 없이 재개하지 않습니다.
 
@@ -311,6 +311,10 @@ VW MEB(ID.4 포함)에도 수동 조향비와 학습 비율이 적용됩니다. 
 수동 차로변경·수동 회전의 정상 완료가 빨라도 Panda/SPAS 출력은 첫 송신 요청부터 최소 2초 유지합니다. 송신 준비 중에는 관찰 시작부터 최대 2초 동안 정상 완료를 늦춥니다. 실제 레버 조작, 크루즈 취소, 기능 끄기, 반대 방향 램프, 입력·차선 오류는 즉시 종료 조건입니다. 실제 점멸 횟수는 차량에서 확인해야 합니다.
 
 자동 램프 피드백은 조향 요청과 격리합니다. 독점 소유권 중 검증된 실제 레버의 새 조작은 보호시간 중에도 일반 차로변경 조건에 전달되며 Kick 출력을 중단합니다.
+
+**일반 CAN 깜박이 출력(CGW1, 시험)** (`ClassicCgwBlinker`)은 일반 CAN 현대/기아 차량 전용 시험 기능이며 기본 꺼짐입니다. 켜고 다음 OnRoad를 시작하면, 버스 0에 8바이트 순정 CGW1(`0x541`)이 있고 페달 인터셉터를 쓰지 않는 일반 CAN 차량에서만 Panda가 이 출력을 허용합니다. CAN-FD 차량과 스위치를 켜지 않은 차량은 Panda 동작이 이전과 같습니다. 순정 CGW1 프레임에서 레버 방향과 해당 쪽 램프 비트만 바꿔 0.35초 간격으로 깜박이며, 순정 프레임 바로 뒤에 보냅니다. 자동 점등은 `AutoBlinkerControl` 등 공통 설정을 따릅니다(1: ATC 회전, 2: 회전과 내비 차로변경). 실제 레버나 비상등 조작은 즉시 출력을 멈추고, 끄기는 즉시 적용됩니다. 한 번의 요청은 최대 약 30초 동안 이어지며, 더 길면 1초 쉬었다가 계속합니다.
+
+차량마다 결과가 다릅니다. 같은 방식으로 팰리세이드는 바깥 램프가 켜졌고, K5 DL3는 계기판과 후측방 표시만 켜졌습니다. 먼저 **일반 CAN 깜박이 P단 시험**(`ClassicCgwBlinkerTest`)을 쓰세요. P단 정차, 크루즈 해제, 순정 깜박이 꺼짐 상태에서 1은 왼쪽, 2는 오른쪽을 3초 보내고 0으로 돌아갑니다. 차 밖에서 바깥 램프가 점멸하는지 확인하고, 계기판만 켜지면 그 차량은 지원되지 않으니 스위치를 끄세요. 결과는 [깜빡이 제어 장치](indicator-adapters.md#classic-cgw1)의 표에 정리합니다.
 
 `RadarTrackFlip`은 `0: 정상`(기본값), `1: 좌우 반전`입니다. 전방 레이더 트랙의 좌우 위치·횡속도를 함께 반전하여 선행차 선택과 표시에 적용하며 SCC·코너·비전은 그대로 유지합니다. 차종별 자동 반전은 없고, 실제 좌우 불일치가 확인된 차량에서만 사용합니다. 변경 후 재시동 또는 재부팅하면 다음 OnRoad 시작부터 적용됩니다. [레이더 좌우 반전](radar.md#radar-track-flip)을 참고하세요.
 

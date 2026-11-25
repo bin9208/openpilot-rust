@@ -461,7 +461,9 @@
                 "CanfdBlinkerKick",
                 "CanfdBlinkerKickMode",
                 "CanfdBlinkerControl",
-                "CanfdBlinkerTest"
+                "CanfdBlinkerTest",
+                "ClassicCgwBlinker",
+                "ClassicCgwBlinkerTest"
               ]
             },
             {
@@ -2125,6 +2127,41 @@
       "cdescr": "With SPAS enabled after reboot: 1/2 acknowledged continuous left/right, 3/4 acknowledged short-plus-hold. Parked coexistence comparisons on Ioniq5PE only: 5/6 continuous, 7/8 0.2-second pulse plus existing hold, 9/10 pulse only. 11/12 one packet per new stock receipt, ending 0.1s after lamp confirmation and at most 0.5s, then existing confirmed hold for a 10-second total. 13/14 repeat only SPAS after fresh stock reception for up to 10 seconds, without the existing hold. Coexistence tests send no ECU diagnostics. P, zero speed and inactive controls required throughout; 7/8/11/12/13/14 last 10 seconds total, others at most 3 seconds; coexistence cooldown is 30 seconds from start. Select 0 to cancel or before repeating. Resets at startup. 15/16: supplied-patch left/right parked comparison: APRK 1003, then 288301 after five controller frames, SPAS on even frames without waiting for replies. Uses actual controller frame/native packer, at most 10 seconds, 1001 restore on end or CAN/vehicle guard failure. 17/18: parked left/right 0x3C1 lever replay at 20Hz, max 10s; no APRK/SPAS, cancel on driver/input/CAN change.",
       "min": 0,
       "max": 18,
+      "default": 0,
+      "unit": 1,
+      "risk": "high"
+    },
+    {
+      "group": "시작",
+      "name": "ClassicCgwBlinker",
+      "title": "일반 CAN 깜박이 출력(CGW1, 시험)",
+      "descr": "일반 CAN 현대/기아 차량 전용 시험 기능입니다. 기본 꺼짐이며 CAN-FD 차량에는 적용되지 않습니다. 켜면 다음 OnRoad 시작부터 버스 0에 8바이트 순정 CGW1(0x541)이 있는 차량에서만 Panda가 이 출력을 허용합니다. 페달 인터셉터 차량은 제외됩니다.\n순정 CGW1 프레임에 레버 방향과 램프 비트만 바꿔 순정 프레임 바로 뒤에 보냅니다. 「깜박이 자동제어」 등 공통 자동 점등 설정을 따르며, 1은 ATC 회전, 2는 회전과 내비 차로변경에 점등합니다.\n차량마다 결과가 다릅니다. 팰리세이드는 바깥 램프가 켜졌고 K5 DL3는 계기판만 켜졌습니다. 먼저 「일반 CAN 깜박이 P단 시험」으로 바깥 램프가 실제로 점멸하는지 확인하세요.\n실제 레버나 비상등 조작은 출력을 즉시 중단합니다. 끄기는 즉시 적용됩니다.",
+      "egroup": "START",
+      "etitle": "Classic CAN indicator output (CGW1, test)",
+      "edescr": "Test feature for classic-CAN Hyundai/Kia only. Default off; never applies to CAN-FD cars. When on, from the next onroad start Panda admits this output only on a car with the stock 8-byte CGW1 (0x541) on bus 0. Pedal-interceptor cars are excluded.\nSends the stock CGW1 frame with only the lever side and lamp bit changed, right behind the stock frame. Follows Automatic turn signals and the other common indicator settings: 1 lights ATC turns, 2 turns and navigation lane changes.\nResults differ by car: the Palisade lit its exterior lamps, the K5 DL3 only the cluster. First run the Classic CAN indicator P test to check that the exterior lamps really flash.\nA real lever or hazard switch stops the output at once. Turning it off applies immediately.",
+      "cgroup": "启动设置",
+      "ctitle": "普通CAN转向灯输出（CGW1，测试）",
+      "cdescr": "仅限普通CAN现代/起亚车辆的测试功能，默认关闭，不适用于CAN-FD车辆。开启后从下次OnRoad起，仅在总线0上有8字节原车CGW1（0x541）的车辆上由Panda允许输出，踏板拦截器车辆除外。\n在原车CGW1帧中仅修改拨杆方向和灯位，紧跟原车帧发送。遵循自动转向灯等共用设置：1为ATC转弯，2为转弯及导航变道。\n结果因车而异：Palisade外部灯点亮，K5 DL3仅仪表点亮。请先用普通CAN转向灯P挡测试确认外部灯实际闪烁。\n真实拨杆或双闪操作立即停止输出。关闭立即生效。",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "unit": 1,
+      "control": "toggle",
+      "risk": "high"
+    },
+    {
+      "group": "시작",
+      "name": "ClassicCgwBlinkerTest",
+      "title": "일반 CAN 깜박이 P단 시험",
+      "descr": "「일반 CAN 깜박이 출력」을 켜고 재시동한 뒤 사용합니다. P단 정차, 크루즈 해제, 순정 깜박이 꺼짐 상태에서 1 왼쪽 / 2 오른쪽을 3초 동안 보냅니다. 끝나면 0으로 돌아갑니다.\n차 밖에서 바깥 램프가 점멸하는지 확인하세요. 계기판만 켜지면 이 차량은 지원되지 않습니다.",
+      "egroup": "START",
+      "etitle": "Classic CAN indicator P test",
+      "edescr": "Use after turning on Classic CAN indicator output and restarting. In P, not engaged, stock indicators off: 1 left / 2 right for 3 s, then it returns to 0.\nCheck from outside the car that the exterior lamps flash. If only the cluster lights, this car is not supported.",
+      "cgroup": "启动设置",
+      "ctitle": "普通CAN转向灯P挡测试",
+      "cdescr": "开启普通CAN转向灯输出并重启后使用。P挡停车、未接合、原车转向灯关闭时，1左/2右发送3秒，结束后回到0。\n请在车外确认外部灯是否闪烁。若只有仪表亮，则该车不支持。",
+      "min": 0,
+      "max": 2,
       "default": 0,
       "unit": 1,
       "risk": "high"

@@ -194,6 +194,25 @@ pub fn parameters(input: ParamsInput<'_>) -> Result<Builder<HeapAllocator>, Erro
             );
         }
     }
+    // ClassicCgwBlinker (opt-in test switch): a classic-CAN car with the
+    // BCM's 8-byte CGW1 on bus 0. Never with the pedal interceptor, whose
+    // panda branch takes one exact safetyParam. Read at fingerprint time,
+    // so switching it on applies from the next onroad start.
+    if detection.flags & (flags::CANFD | flags::PEDAL_INTERCEPTOR) == 0
+        && matches!(
+            detection.safety_model,
+            SafetyModel::Hyundai | SafetyModel::HyundaiLegacy
+        )
+        && super::bus::size(input.fingerprints, 0, super::cgw_kick::CGW1) == Some(8)
+        && input.settings.get_bool("ClassicCgwBlinker")?
+    {
+        let mut configs = cp.reborrow().get_safety_configs()?;
+        let last = configs.len() - 1;
+        let mut safety = configs.reborrow().get(last);
+        safety.set_safety_param(
+            safety.reborrow_as_reader().get_safety_param() | flags::safety::CLASSIC_CGW_BLINKER,
+        );
+    }
     vehicle_params::finish(
         cp,
         input.settings,
@@ -202,4 +221,67 @@ pub fn parameters(input: ParamsInput<'_>) -> Result<Builder<HeapAllocator>, Erro
         },
     )?;
     Ok(message)
+}
+
+#[cfg(test)]
+mod classic_cgw_tests {
+    use super::*;
+
+    /// The IONIQ PHEV's bus 0/1/2 ids (route 00000003 seg 0), sizes as logged.
+    fn phev() -> Vec<(u8, Vec<(u32, usize)>)> {
+        let bus0 = [
+            0x7f, 0x130, 0x140, 0x153, 0x160, 0x220, 0x240, 0x251, 0x340, 0x371, 0x372, 0x381,
+            0x386, 0x387, 0x389, 0x38d, 0x394, 0x410, 0x412, 0x420, 0x421, 0x483, 0x48c, 0x495,
+            0x49f, 0x4a9, 0x4c9, 0x50a, 0x50b, 0x50c, 0x50e, 0x52a, 0x541, 0x544, 0x54b, 0x553,
+            0x559, 0x563, 0x57f, 0x58b, 0x58c, 0x595, 0x596, 0x5a8, 0x5be, 0x5c4, 0x5ff,
+        ]
+        .map(|a| (a, 8usize))
+        .to_vec();
+        vec![(0, bus0.clone()), (1, vec![(0x201, 8)]), (2, bus0)]
+    }
+
+    fn param(candidate: &str, fingerprints: &[(u8, Vec<(u32, usize)>)], switch: bool) -> u16 {
+        let temp = tempfile::tempdir().unwrap();
+        let settings = Params::open(temp.path(), "d").unwrap();
+        settings.put_bool("ClassicCgwBlinker", switch).unwrap();
+        let message = parameters(ParamsInput {
+            candidate,
+            fingerprints,
+            firmware: &[],
+            alpha_long: false,
+            is_release: false,
+            settings: &settings,
+        })
+        .unwrap();
+        let cp = message.get_root_as_reader::<car_params::Reader<'_>>().unwrap();
+        let configs = cp.get_safety_configs().unwrap();
+        configs.get(configs.len() - 1).get_safety_param()
+    }
+
+    #[test]
+    fn only_the_switch_on_a_classic_car_with_cgw1_sets_the_bit() {
+        let fp = phev();
+        let bit = flags::safety::CLASSIC_CGW_BLINKER;
+        let on = param("HYUNDAI_IONIQ_PHEV", &fp, true);
+        let off = param("HYUNDAI_IONIQ_PHEV", &fp, false);
+        assert_ne!(on & bit, 0);
+        assert_eq!(off & bit, 0);
+        assert_eq!(on & !bit, off, "nothing else changes");
+        // No 8-byte CGW1 on bus 0: never.
+        let without: Vec<_> = fp
+            .iter()
+            .map(|(bus, ids)| (*bus, ids.iter().copied().filter(|(a, _)| *a != 0x541).collect()))
+            .collect();
+        assert_eq!(param("HYUNDAI_IONIQ_PHEV", &without, true) & bit, 0);
+    }
+
+    #[test]
+    fn never_on_a_canfd_car() {
+        // CAN-FD ids plus an 8-byte 0x541 on bus 0: the switch is ignored.
+        let fp = vec![(0, vec![(0x541, 8), (0x1ba, 32), (0x3c1, 8), (0x413, 8)]), (2, vec![])];
+        assert_eq!(
+            param("HYUNDAI_IONIQ_5_PE", &fp, true) & flags::safety::CLASSIC_CGW_BLINKER,
+            0
+        );
+    }
 }
