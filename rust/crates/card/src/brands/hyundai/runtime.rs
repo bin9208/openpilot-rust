@@ -26,6 +26,9 @@ pub struct Hyundai {
     pub spas: super::spas_signals::SpasSignals,
     spas_logged: (String, f64),
     pub kick: super::kick::Kick,
+    /// `ClassicCgwBlinker` (classic CAN only, opt-in test switch).
+    pub cgw: super::cgw_kick::CgwKick,
+    cgw_logged: (&'static str, u8),
 }
 
 impl Hyundai {
@@ -55,12 +58,17 @@ impl Hyundai {
             state.config.kick && state.config.flags & f::CANFD != 0,
             state.config.bus,
         );
+        let cgw = super::cgw_kick::CgwKick::new(
+            state.config.classic_cgw && state.config.flags & f::CANFD == 0,
+        );
         Ok(Self {
             state,
             controller,
             spas,
             spas_logged: (String::new(), 0.),
             kick,
+            cgw,
+            cgw_logged: ("idle", 0),
         })
     }
 
@@ -76,6 +84,10 @@ impl Hyundai {
             self.kick.refresh(&self.state.settings, now);
             self.kick
                 .observe(packets, message.get_root::<car_state::Builder<'_>>()?, now);
+        }
+        if self.cgw.configured {
+            self.cgw.refresh(&self.state.settings, now);
+            self.cgw.observe(packets, now);
         }
         Ok(message)
     }
@@ -145,6 +157,33 @@ impl Hyundai {
                 )?);
             }
         }
+        if self.cgw.configured {
+            let fresh = |name: &str| {
+                input.subscribers.is_some_and(|subs| {
+                    subs.topic(name).is_ok_and(|t| {
+                        t.valid && t.alive && (0. ..0.2).contains(&(now - t.receive_time))
+                    })
+                })
+            };
+            let cs = self
+                .state
+                .out
+                .get_root_as_reader::<car_state::Reader<'_>>()?;
+            let valid = cs.get_can_valid()
+                && !input.impact_reboot
+                && input.model.is_some()
+                && fresh("carControl")
+                && fresh("modelV2");
+            self.cgw.update(valid, now);
+            match input.subscribers {
+                Some(subs) => {
+                    self.cgw
+                        .request(cs, now, input.initialized, subs, &self.state.settings)?;
+                }
+                None => self.cgw.direction = 0,
+            }
+        }
+        let engaged = input.control.get_enabled();
         let isolation_mask = input
             .model
             .and_then(|model| model.get_meta().ok())
@@ -164,7 +203,34 @@ impl Hyundai {
                 .get_root_as_reader::<car_state::Reader<'_>>()?;
             self.kick.feedback(cs, now, &output.can);
         }
+        if self.cgw.configured {
+            let cs = self
+                .state
+                .out
+                .get_root_as_reader::<car_state::Reader<'_>>()?;
+            let frames = self
+                .cgw
+                .frames(cs, engaged, isolation_mask, now, &self.state.settings);
+            self.cgw.feedback(now, &frames);
+            output.can.extend(frames);
+            self.log_cgw();
+        }
         Ok(output)
+    }
+    /// One line per status or side change, so a drive or parked test can be
+    /// read back from the rlog.
+    fn log_cgw(&mut self) {
+        let c = &self.cgw;
+        if (c.status, c.direction) != self.cgw_logged {
+            self.state.inputs.diagnostics.logs.push(crate::core::VehicleLog {
+                level: crate::query::DiagnosticLevel::Info,
+                message: format!(
+                    "hyundai_classic_cgw status={} direction={} sent={}",
+                    c.status, c.direction, c.sent
+                ),
+            });
+            self.cgw_logged = (c.status, c.direction);
+        }
     }
     /// carrot card.py `cloudlog.event('hyundai_spas', ...)`: on every status
     /// change, and once a second while a session or a parked trial runs.

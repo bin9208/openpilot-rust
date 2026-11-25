@@ -83,6 +83,7 @@ class HyundaiSafetyFlags(IntFlag):
   CANFD_LKA_STEERING_ALT = 128
   FCEV_GAS = 256
   ALT_LIMITS_2 = 512
+  CLASSIC_CGW_BLINKER = 1024  # ClassicCgwBlinker: our CGW1 behind the stock one, classic CAN (hyundai/hyundaiLegacy) only
   CANFD_CLUSTER_DIRECT_TX = 2048
   CANFD_SPAS_BLINKERS = 4096
   PEDAL_INTERCEPTOR = 8192

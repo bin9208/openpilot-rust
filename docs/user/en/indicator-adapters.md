@@ -30,6 +30,21 @@ There is no vehicle-model allowlist. USB, BLE and Panda/SPAS outputs use the sam
 
 - **USB/BLE:** the existing B1 classic CAN profile requires 500 kbit/s, eight-byte `0x3C1` and `0x413`, matching signal meanings, CRC and fresh reception. An adapter's CAN-FD hardware support does not extend this control profile.
 - **Kicker/Panda:** camera-SCC wiring must expose ECAN SPAS `0x165` (24 bytes), `0x16A` (32 bytes) and stalk `0x3C1` (8 bytes). A new request requires ten CRC-valid advancing stock SPAS frames and a fresh neutral stalk. Selecting Kicker continues to suspend external USB/BLE output.
+- **Classic CAN CGW1 (test):** with `ClassicCgwBlinker` on, a classic-CAN car must show the stock 8-byte CGW1 `0x541` on bus 0. Only the stock frame's lever side and lamp bit are changed, and the frame is sent right behind the stock one. See [Classic CAN CGW1 test results](#classic-cgw1).
 - **Holding:** comma maintains an indication when camera-side `0x1EA` (32 bytes) is observed and its existing transmit path is enabled. Otherwise BLE uses S3 holding; USB retains one-touch and relight behavior.
 
 The reported EV4 `0x3E3` CAN-FD+BRS, 16-byte format is a separate protocol. Removing model-name restrictions does not add transmission support for it. Verify physical illumination, holding and release separately on a newly supported vehicle. Apply the comma update and restart; this change requires no S3 or CANable firmware reinstall.
+
+<a id="classic-cgw1"></a>
+## Classic CAN CGW1 test results
+
+CGW1 is the status message the BCM broadcasts to other modules. Whether the exterior lamps react to a changed copy differs by car; **only cars whose exterior lamps flashed in the P test are marked "works".** See `ClassicCgwBlinkerTest` in [Settings](settings.md) for the test.
+
+| Car | Result | Source |
+|---|---|---|
+| Palisade | Works (exterior lamps) | joongyu01 carrot-wip-dev, 10-27 P test, 11-15 driving report |
+| K5 DL3 2021 | Does not work (cluster and blind-spot display only) | joongyu01 carrot-wip-dev, 11-14 |
+| Ioniq Plug-in Hybrid 2020-22 | Awaiting test | CGW1 layout matches (logs), not tested on the car |
+
+After testing a new car, report the model, the P test result (exterior lamps / cluster only) and the drive log.
+
