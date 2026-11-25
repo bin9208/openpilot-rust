@@ -169,6 +169,39 @@ class TestHyundaiSpasSteer(unittest.TestCase):
       self.tick(200)
       self.assertFalse(self.send(ACTIVE, 40), release)
 
+  def test_spas2_gv80_body_whole_only(self):
+    body = {3: 0x26, 4: 0x41, 5: 0x19, 6: 0x04, 7: 0x01, 15: 0x13}
+    self.tick(1000)
+    self.assertTrue(self.send(ASK))
+    self.tick(20)
+    self.assertTrue(self.tx(SPAS2, canfd(SPAS2, 32, 0, body)), "the whole GV80 body")
+    partial = dict(body)
+    del partial[15]
+    self.tick(20)
+    self.assertFalse(self.tx(SPAS2, canfd(SPAS2, 32, 1, partial)), "a partial body")
+    self.tick(20)
+    self.assertFalse(self.tx(SPAS2, canfd(SPAS2, 32, 2, {**body, 20: 1})), "body plus another byte")
+
+  def test_one_refused_frame_does_not_block_the_ramp(self):
+    # A frame refused for spacing must not leave every later frame over the step.
+    self.tick(1000)
+    self.assertTrue(self.send(ASK, 0))
+    angle = 0
+    for _ in range(5):
+      angle += 20
+      self.assertTrue(self.send(ACTIVE, angle))
+    angle += 20
+    self.assertFalse(self.send(ACTIVE, angle, step_ms=10), "too soon")
+    for _ in range(10):  # the ramp keeps going at 2 deg per frame
+      angle += 20
+      self.assertTrue(self.send(ACTIVE, angle), angle)
+
+  def test_step_still_bounded_after_a_gap(self):
+    self.tick(1000)
+    self.assertTrue(self.send(ASK, 0))
+    # after one 20 ms frame the bound is 3 deg; a 40 deg jump is refused
+    self.assertFalse(self.send(ACTIVE, 400))
+
   def test_blinker_trial_still_arms(self):
     # The existing parked blinker trial (all-zero SPAS1) is unchanged.
     self.tick(1000)

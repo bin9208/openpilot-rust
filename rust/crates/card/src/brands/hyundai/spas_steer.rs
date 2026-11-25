@@ -22,6 +22,7 @@ use openpilot_params::Params;
 
 pub const KEY: &str = "SpasSteerTest";
 pub const SPAS2_KEY: &str = "SpasSteerTestSpas2";
+pub const BODY_KEY: &str = "SpasSteerTestBody";
 const PERIOD: f64 = 0.02;
 const ASK: f64 = 0.1;
 /// deg per 20 ms frame: 100 deg/s (panda admits 3).
@@ -74,6 +75,28 @@ pub fn steer_frame(counter: u8, mode: u8, angle_deg: f64, bus: u8) -> Frame {
     }
 }
 
+/// SPAS2 either all-zero, or the GV80 parking-active body (CanfdBlinkerMenuTest
+/// 3/4: byte 3 0x26, 4 0x41, 5 0x19, 6 0x04, 7 0x01, 15 0x13).
+pub fn spas2_frame(counter: u8, body: bool, bus: u8) -> Frame {
+    let mut data = vec![0u8; 32];
+    data[2] = counter;
+    if body {
+        data[3] = 0x26;
+        data[4] = 0x41;
+        data[5] = 0x19;
+        data[6] = 0x04;
+        data[7] = 0x01;
+        data[15] = 0x13;
+    }
+    let crc = spas::checksum(0x16a, &data).to_le_bytes();
+    data[..2].copy_from_slice(&crc);
+    Frame {
+        address: 0x16a,
+        data,
+        bus,
+    }
+}
+
 fn toward(from: f64, to: f64) -> f64 {
     from + (to - from).clamp(-STEP, STEP)
 }
@@ -82,6 +105,7 @@ pub struct SpasSteer {
     setting: i32,
     settings_at: f64,
     with_spas2: bool,
+    with_body: bool,
     pub stage: Stage,
     started: f64,
     stage_at: f64,
@@ -100,6 +124,7 @@ impl Default for SpasSteer {
             setting: 0,
             settings_at: f64::NEG_INFINITY,
             with_spas2: false,
+            with_body: false,
             stage: Stage::Off,
             started: 0.,
             stage_at: 0.,
@@ -151,6 +176,7 @@ impl SpasSteer {
                 .unwrap_or(0)
                 .clamp(-LIMIT as i32, LIMIT as i32);
             self.with_spas2 = settings.get_bool(SPAS2_KEY).unwrap_or(false);
+            self.with_body = settings.get_bool(BODY_KEY).unwrap_or(false);
             if setting != self.setting && setting != 0 && !self.active() {
                 if ready && !cs.get_steering_pressed() {
                     let angle = f64::from(cs.get_steering_angle_deg());
@@ -228,7 +254,7 @@ impl SpasSteer {
         let mut frames = vec![steer_frame(self.counter[0], mode, self.command, bus)];
         self.counter[0] = self.counter[0].wrapping_add(1);
         if self.with_spas2 {
-            frames.push(spas::frame(0x16a, self.counter[1], None, bus));
+            frames.push(spas2_frame(self.counter[1], self.with_body, bus));
             self.counter[1] = self.counter[1].wrapping_add(1);
         }
         frames
@@ -238,6 +264,23 @@ impl SpasSteer {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn spas2_body_is_the_gv80_set_or_zero() {
+        let b = spas2_frame(3, true, 0);
+        assert_eq!(b.address, 0x16a);
+        assert_eq!(b.data.len(), 32);
+        assert_eq!(&b.data[3..8], &[0x26, 0x41, 0x19, 0x04, 0x01]);
+        assert_eq!(b.data[15], 0x13);
+        for (i, v) in b.data.iter().enumerate().skip(3) {
+            if ![3, 4, 5, 6, 7, 15].contains(&i) {
+                assert_eq!(*v, 0, "byte {i}");
+            }
+        }
+        assert_eq!(u16::from_le_bytes([b.data[0], b.data[1]]), spas::checksum(0x16a, &b.data));
+        let z = spas2_frame(3, false, 0);
+        assert!(z.data[3..].iter().all(|v| *v == 0));
+    }
 
     #[test]
     fn frame_layout_matches_the_parking_ecu() {

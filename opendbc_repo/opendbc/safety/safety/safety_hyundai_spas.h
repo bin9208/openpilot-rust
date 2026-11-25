@@ -39,6 +39,7 @@ static uint8_t hyundai_spas_gear;
 static bool hyundai_spas_pedal_up, hyundai_spas_avh_held;
 static uint32_t hyundai_spas_avh_at;
 static int hyundai_spas_steer_angle;
+static uint32_t hyundai_spas_steer_angle_at;
 static bool hyundai_spas_steer_used;
 
 static void hyundai_spas_init(bool enabled, int bus) {
@@ -55,6 +56,7 @@ static void hyundai_spas_init(bool enabled, int bus) {
   hyundai_spas_drive_used = false;
   hyundai_spas_steer_at = hyundai_spas_steer_end = 0U;
   hyundai_spas_steer_angle = 0;
+  hyundai_spas_steer_angle_at = 0U;
   hyundai_spas_steer_used = false;
   hyundai_spas_gear = 0xFFU;
   hyundai_spas_pedal_up = hyundai_spas_avh_held = false;
@@ -419,12 +421,26 @@ static bool hyundai_spas_tx(const CANPacket_t *pkt, uint32_t now) {
       bool fits;
       if (idx == 0) {
         int step = hyundai_spas_steer_value(pkt) - hyundai_spas_steer_angle;
-        fits = hyundai_spas_steer_fits(pkt) && (step <= HYUNDAI_SPAS_STEER_STEP) && (step >= -HYUNDAI_SPAS_STEER_STEP);
+        // Per-frame step scaled by the gap since the last accepted frame, so a
+        // single refused frame does not block the rest of the ramp. Capped.
+        uint32_t frames = (get_ts_elapsed(now, hyundai_spas_steer_angle_at) + 10000U) / 20000U;
+        if (frames < 1U) { frames = 1U; }
+        if (frames > 10U) { frames = 10U; }
+        int limit = HYUNDAI_SPAS_STEER_STEP * (int)frames;
+        fits = hyundai_spas_steer_fits(pkt) && (step <= limit) && (step >= -limit);
       } else {
+        // SPAS2: all-zero, or the GV80 parking-active body as a whole
+        // (b3 0x26, b4 0x41, b5 0x19, b6 0x04, b7 0x01, b15 0x13); nothing else.
         fits = (GET_LEN(pkt) == 32) && hyundai_spas_crc(pkt);
+        bool zero = true, body = true;
         for (int i = 3; i < 32; i++) {
-          fits = fits && (GET_BYTE(pkt, i) == 0U);
+          uint8_t b = GET_BYTE(pkt, i);
+          zero = zero && (b == 0U);
+          uint8_t want = (i == 3) ? 0x26U : (i == 4) ? 0x41U : (i == 5) ? 0x19U :
+                         (i == 6) ? 0x04U : (i == 7) ? 0x01U : (i == 15) ? 0x13U : 0U;
+          body = body && (b == want);
         }
+        fits = fits && (zero || body);
       }
       if (fits && hyundai_spas_tx_seen[idx]) {
         uint8_t gap = (uint8_t)(GET_BYTE(pkt, 2) - hyundai_spas_tx_counter[idx] - 1U);
@@ -437,6 +453,7 @@ static bool hyundai_spas_tx(const CANPacket_t *pkt, uint32_t now) {
         hyundai_spas_tx_counter[idx] = GET_BYTE(pkt, 2);
         if (idx == 0) {
           hyundai_spas_steer_angle = hyundai_spas_steer_value(pkt);
+          hyundai_spas_steer_angle_at = now;
         }
       }
       return fits;
@@ -450,6 +467,7 @@ static bool hyundai_spas_tx(const CANPacket_t *pkt, uint32_t now) {
       hyundai_spas_steer_at = now;
       hyundai_spas_steer_used = true;
       hyundai_spas_steer_angle = hyundai_spas_steer_value(pkt);
+      hyundai_spas_steer_angle_at = now;
       hyundai_spas_tx_seen[0] = true;
       hyundai_spas_tx_seen[1] = false;
       hyundai_spas_tx_at[0] = now;
