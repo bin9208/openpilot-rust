@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 pub const DT: f64 = 0.05;
 pub const MIN_SPEED: f64 = 30.0 / 3.6;
+/// 내비(ATC)가 시킨 차선 변경·포켓차로 진입은 교차로 앞 감속·정체에서도 이어지도록 이 속도까지 허용한다.
+pub const ATC_LANE_CHANGE_MIN_SPEED: f64 = 10.0 / 3.6;
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub enum State {

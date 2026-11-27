@@ -67,3 +67,75 @@ fn constant_infinite_geometry_matches_numpy_interpolation() {
     assert_eq!(helper.left.dist_to_edge, f64::INFINITY);
     assert_eq!(helper.left.dist_to_edge_far, f64::INFINITY);
 }
+
+fn drive(helper: &mut DesireHelper, input: &Input, frames: usize) -> Vec<(State, u8)> {
+    (0..frames)
+        .map(|_| {
+            let desire = helper.update(input, Config::default, |_| None).unwrap();
+            (helper.lane_change_state, desire)
+        })
+        .collect()
+}
+
+fn atc_input(kind: &str, kph: f64) -> Input {
+    let mut input = Input::default();
+    input.navigation.atc_type = kind.to_owned();
+    input.car.v_ego = kph / 3.6;
+    input
+}
+
+#[test]
+fn atc_lane_change_continues_below_30_kph() {
+    for (kind, desire) in [("atc right", 4), ("atc left", 3)] {
+        let mut helper = DesireHelper::default();
+        let trace = drive(&mut helper, &atc_input(kind, 20.0), 100);
+        assert!(
+            trace.contains(&(State::Starting, desire)),
+            "{kind}: no automatic lane change at 20 km/h"
+        );
+    }
+}
+
+#[test]
+fn atc_lane_change_stops_below_10_kph() {
+    let mut helper = DesireHelper::default();
+    let trace = drive(&mut helper, &atc_input("atc right", 8.0), 100);
+    assert!(trace.iter().all(|(state, _)| *state == State::Off));
+}
+
+#[test]
+fn driver_blinker_keeps_30_kph_floor() {
+    let mut helper = DesireHelper::default();
+    let mut input = atc_input("", 20.0);
+    input.car.right_blinker = true;
+    let trace = drive(&mut helper, &input, 100);
+    assert!(trace.iter().all(|(state, _)| *state == State::Off));
+}
+
+#[test]
+fn turn_without_pocket_gives_turn_desire() {
+    let mut helper = DesireHelper::default();
+    let trace = drive(&mut helper, &atc_input("turn right", 20.0), 100);
+    assert!(trace.iter().all(|(state, _)| *state == State::Off));
+    assert_eq!(trace.last().unwrap().1, 2);
+    assert!(!helper.pocket_done);
+}
+
+#[test]
+fn turn_enters_pocket_lane_once_before_turning() {
+    let mut helper = DesireHelper::default();
+    let mut input = atc_input("turn right", 20.0);
+    // 오른쪽 차로 끝에 새 차로(포켓)가 붙어 있음: 가장자리까지 3.6 m, 그 사이 차선 확실
+    input.model.road_edges[1] = vec![5.4; 33];
+    let trace = drive(&mut helper, &input, 100);
+    assert!(
+        trace.contains(&(State::Starting, 4)),
+        "no pocket lane change"
+    );
+    assert!(helper.pocket_done);
+    // 옮긴 뒤(차선 변경 끝) 교차로에서 가장자리가 열리면 다시 포켓 진입을 하지 않고 회전 desire 로 넘어감
+    input.lane_change_prob = 0.0;
+    input.model.road_edges[1] = vec![7.2; 33];
+    let trace = drive(&mut helper, &input, 200);
+    assert_eq!(trace.last().unwrap().1, 2, "no turn desire after pocket");
+}

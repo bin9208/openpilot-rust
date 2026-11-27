@@ -1,7 +1,8 @@
 use crate::{
     side::SideState,
     types::{
-        maximum, minimum, Config, Input, InvalidModel, Maneuver, Navigation, State, DT, MIN_SPEED,
+        maximum, minimum, Config, Input, InvalidModel, Maneuver, Navigation, State,
+        ATC_LANE_CHANGE_MIN_SPEED, DT, MIN_SPEED,
     },
 };
 use serde::Serialize;
@@ -38,6 +39,8 @@ pub struct DesireHelper {
     pub desire_log: String,
     pub lane_change_available_left: bool,
     pub lane_change_available_right: bool,
+    /// 이번 회전(ATC turn 단계)에서 포켓차로로 이미 한 번 옮겼는지
+    pub pocket_done: bool,
 }
 
 impl Default for DesireHelper {
@@ -73,6 +76,7 @@ impl Default for DesireHelper {
             desire_log: String::new(),
             lane_change_available_left: false,
             lane_change_available_right: false,
+            pocket_done: false,
         }
     }
 }
@@ -131,6 +135,7 @@ impl DesireHelper {
         }
         if self.atc_type != kind {
             enabled = false;
+            self.pocket_done = false;
         }
         self.atc_type.clone_from(&navigation.atc_type);
         (blinker, enabled)
@@ -225,10 +230,27 @@ impl DesireHelper {
                 self.atc_type.as_str(),
                 "fork left" | "fork right" | "atc left" | "atc right"
             );
-        let atc_manual = atc_enabled
-            && !driver_enabled
-            && matches!(self.atc_type.as_str(), "fork left" | "atc left");
+        // 원본 당근은 좌측 ATC 차선 변경과 연속 차선 변경에 핸들 밀기를 요구했다.
+        // 목적지 자동 주행을 위해 ATC 차선 변경은 좌우·연속 모두 운전자 깜박이와 같은 안전 조건만 보고 자동으로 한다.
         let atc_only = atc_requested && !driver_enabled;
+        // 포켓차로: 회전 단계(turn left/right)에서 회전 쪽에 새 차로가 생기면 회전 전에 한 번 옮긴다.
+        let turn_phase = atc_enabled
+            && !driver_enabled
+            && matches!(self.atc_type.as_str(), "turn left" | "turn right");
+        let pocket_request = turn_phase
+            && !self.pocket_done
+            && !trailer
+            && side.is_some_and(|side| {
+                side.edge_available
+                    && (side.lane_available_trigger || side.lane_appeared)
+                    && side.lane_change_available
+            });
+        // ATC 가 시킨 차선 변경은 30 km/h 아래에서도 10 km/h 까지 이어간다.
+        let lane_change_below_speed = if atc_only || pocket_request {
+            car.v_ego < ATC_LANE_CHANGE_MIN_SPEED
+        } else {
+            below_speed
+        };
         let retry_blocked =
             atc_only && side.is_some_and(|side| !matches!(side.lane_line_info_mod, 0 | 5));
         let mut auto_trigger = false;
@@ -237,7 +259,6 @@ impl DesireHelper {
                 side.lane_change_available
             } else {
                 self.auto_lane_change_enable
-                    && !atc_manual
                     && side.edge_available
                     && (side.lane_available_trigger || side.lane_appeared)
                     && !side.side_object_detected
@@ -267,6 +288,7 @@ impl DesireHelper {
             self.maneuver_type = Maneuver::None;
         } else {
             let new_type = match side.filter(|_| enabled) {
+                Some(_) if pocket_request => Maneuver::LaneChange,
                 Some(side) => classify(
                     input,
                     side,
@@ -303,8 +325,10 @@ impl DesireHelper {
                     State::Off => {
                         if let Some(side) = side.filter(|_| {
                             enabled
-                                && (!self.prev_desire_enabled || (driver_enabled && driver_changed))
-                                && !below_speed
+                                && (!self.prev_desire_enabled
+                                    || (driver_enabled && driver_changed)
+                                    || pocket_request)
+                                && !lane_change_below_speed
                         }) {
                             self.lane_change_state = State::PreLaneChange;
                             self.lane_change_ll_prob = 1.0;
@@ -332,7 +356,7 @@ impl DesireHelper {
                             if atc_only && last_lane(side) {
                                 self.auto_lane_change_enable = true;
                             }
-                            if !enabled || below_speed {
+                            if !enabled || lane_change_below_speed {
                                 self.lane_change_state = State::Off;
                                 self.lane_change_direction = 0;
                             } else {
@@ -348,25 +372,30 @@ impl DesireHelper {
                                     || solid
                                     || block_released
                                     || line_release;
-                                let start = if solid {
-                                    line_release
-                                        || (torque && !(bsd_active && self.config.bsd == 1))
-                                } else if bsd_active {
-                                    torque && self.config.bsd != 1
-                                } else if self.config.need_torque > 0 || self.next_lane_change {
-                                    torque
-                                } else if driver_enabled {
-                                    side.lane_change_available || line_release
-                                } else {
-                                    (torque
-                                        || (!atc_manual
-                                            && (auto_trigger
-                                                || side.lane_line_info_edge_detect
-                                                || block_released)))
-                                        && (side.lane_change_available || line_release)
-                                };
+                                let start = pocket_request
+                                    || if solid {
+                                        line_release
+                                            || (torque && !(bsd_active && self.config.bsd == 1))
+                                    } else if bsd_active {
+                                        torque && self.config.bsd != 1
+                                    } else if self.config.need_torque > 0
+                                        || (self.next_lane_change && !atc_only)
+                                    {
+                                        torque
+                                    } else if driver_enabled || atc_only {
+                                        side.lane_change_available || line_release
+                                    } else {
+                                        (torque
+                                            || auto_trigger
+                                            || side.lane_line_info_edge_detect
+                                            || block_released)
+                                            && (side.lane_change_available || line_release)
+                                    };
                                 if gate && start {
                                     self.lane_change_state = State::Starting;
+                                    if pocket_request {
+                                        self.pocket_done = true;
+                                    }
                                 }
                             }
                         } else {
