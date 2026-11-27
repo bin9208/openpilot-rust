@@ -71,6 +71,7 @@ pub fn desire_config(params: &Params) -> Result<Config, Error> {
     Ok(Config {
         need_torque: integer(params, "LaneChangeNeedTorque")?,
         bsd: integer(params, "LaneChangeBsd")?,
+        atc_without_bsd: integer(params, "AtcLaneChangeNoBsd")? == 1,
         line_check: integer(params, "LaneLineCheck")?,
         delay_tenths: float(params, "LaneChangeDelay")?,
         latched_turn: f64::from(integer(params, "BlinkerLatchedTurn")?) * (1. / 3.6),

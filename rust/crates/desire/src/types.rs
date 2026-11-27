@@ -27,6 +27,8 @@ pub enum Maneuver {
 pub struct Config {
     pub need_torque: i32,
     pub bsd: i32,
+    /// AtcLaneChangeNoBsd: ATC changes into an existing lane by itself without having seen BSD work.
+    pub atc_without_bsd: bool,
     pub line_check: i32,
     pub delay_tenths: f64,
     /// BlinkerLatchedTurn in m/s, 0 = off.

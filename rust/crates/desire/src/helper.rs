@@ -72,6 +72,8 @@ pub struct DesireHelper {
     pub lever_turn: bool,
     /// 회전 붙잡기: 회전 desire 로 돌기 시작한 방향과, 그동안 모델 기준으로 돈 각도(도)
     pub turn_hold_side: u8,
+    /// 이번 주행에서 그쪽 BSD(사각지대) 신호가 한 번이라도 켜졌나 [왼, 오]
+    pub bsd_seen: [bool; 2],
     pub turn_hold_heading: f64,
     #[serde(skip)]
     turn_hold_time: f64,
@@ -169,6 +171,7 @@ impl Default for DesireHelper {
             blinker_hold_direction: 0,
             lever_turn: false,
             turn_hold_side: 0,
+            bsd_seen: [false; 2],
             turn_hold_heading: 0.0,
             turn_hold_time: 0.0,
             indicator_supported: false,
@@ -900,6 +903,21 @@ impl DesireHelper {
         // Such a request now waits below MIN_SPEED and may start there once
         // `pocket_start_allowed`.
         let pocket = atc_only && matches!(self.atc_type.as_str(), "atc left" | "atc right");
+        // Automatic ATC lane changes into a lane that already exists need the car's
+        // blind-spot sensing, seen working on that side this drive: carrot left them
+        // to the driver's nudge, and some cars report no BSD and no side radar at all
+        // (Ioniq PHEV logs, 2026-11-27). Until then the driver's nudge starts them,
+        // as before; a pocket opening beside the last lane still starts by itself.
+        // AtcLaneChangeNoBsd lets a car without BSD start them by itself anyway.
+        self.bsd_seen[0] |= car.left_blindspot;
+        self.bsd_seen[1] |= car.right_blindspot;
+        let atc_auto = atc_only
+            && (self.config.atc_without_bsd
+                || match blinker {
+                    1 => self.bsd_seen[0],
+                    2 => self.bsd_seen[1],
+                    _ => false,
+                });
         let pocket_blindspot = match blinker {
             1 => car.left_blindspot,
             2 => car.right_blindspot,
@@ -1076,10 +1094,10 @@ impl DesireHelper {
                                     } else if bsd_active {
                                         torque && self.config.bsd != 1
                                     } else if self.config.need_torque > 0
-                                        || (self.next_lane_change && !atc_only)
+                                        || (self.next_lane_change && !atc_auto)
                                     {
                                         torque
-                                    } else if driver_enabled || atc_only {
+                                    } else if driver_enabled || atc_auto {
                                         side.lane_change_available || line_release
                                     } else {
                                         (torque
@@ -1609,6 +1627,51 @@ mod pocket_tests {
             .collect();
         input.car.steering_angle_deg = wheel;
         input
+    }
+
+    /// Three lanes, the car in the middle: a lane already exists on both sides.
+    fn middle_lane(kph: f64, atc: &str) -> Input {
+        let mut input = input(kph, atc, false);
+        input.model.lane_line_probs = [0.9; 4];
+        input.model.road_edges = [vec![-8.75; N], vec![8.75; N]];
+        input
+    }
+
+    #[test]
+    fn an_atc_change_into_an_existing_lane_waits_for_working_bsd() {
+        let mut helper = DesireHelper::new(false, None);
+        // the lane-line type's first-frame edge passes before navigation asks
+        run(&mut helper, &middle_lane(60., ""), 10);
+        run(&mut helper, &middle_lane(60., "atc right"), 60);
+        assert_eq!(
+            helper.lane_change_state,
+            State::PreLaneChange,
+            "no BSD seen: the driver's nudge starts it"
+        );
+        // the car's right BSD lights once (a car passing), then clears
+        let mut lit = middle_lane(60., "atc right");
+        lit.car.right_blindspot = true;
+        run(&mut helper, &lit, 2);
+        let mut started = false;
+        for _ in 0..80 {
+            step(&mut helper, &middle_lane(60., "atc right"));
+            started |= helper.lane_change_state == State::Starting;
+        }
+        assert!(started, "BSD seen working: automatic");
+    }
+
+    #[test]
+    fn atc_lane_change_no_bsd_starts_without_seeing_bsd() {
+        let mut helper = DesireHelper::new(false, None);
+        // the setting as the device reads it (every 100 frames)
+        helper.config.atc_without_bsd = true;
+        let mut started = false;
+        for frame in 0..90 {
+            let atc = if frame < 10 { "" } else { "atc right" };
+            step(&mut helper, &middle_lane(60., atc));
+            started |= helper.lane_change_state == State::Starting;
+        }
+        assert!(started, "AtcLaneChangeNoBsd=1: automatic without BSD");
     }
 
     #[test]
