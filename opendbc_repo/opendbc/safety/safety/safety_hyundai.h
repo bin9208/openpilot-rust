@@ -91,9 +91,12 @@ static struct {
   CANPacket_t pkt;
 } hyundai_cgw;
 
+static void hyundai_lamp_reset(void);
+
 static void hyundai_cgw_init(uint16_t param) {
   hyundai_cgw = (__typeof__(hyundai_cgw)){0};  // no libc in the host libsafety build
   hyundai_cgw.enabled = GET_FLAG(param, HYUNDAI_CGW_FLAG);
+  hyundai_lamp_reset();
 }
 
 // The frame may differ from the stock one (tmpl) only in the lever side (byte 5 bits 1..2: 2 left, 1 right) and that
@@ -112,7 +115,10 @@ static bool hyundai_cgw_fits(const CANPacket_t *msg, const uint8_t *tmpl) {
   return fits;
 }
 
+static void hyundai_lamp_rx(const CANPacket_t *to_push);
+
 static void hyundai_cgw_rx(const CANPacket_t *to_push) {
+  hyundai_lamp_rx(to_push);
   if (hyundai_cgw.enabled && (GET_BUS(to_push) == 0) && (GET_ADDR(to_push) == 0x541)) {
     bool valid = (GET_LEN(to_push) == 8) && !to_push->extended && !to_push->fd;
     hyundai_cgw.template_valid = valid;
@@ -161,8 +167,112 @@ static bool hyundai_cgw_tx(const CANPacket_t *msg) {
   return allowed;
 }
 
+// ClassicCgwBlinkerTest 3..6 (parked only, same flag 1024): 0x5B6 with one side bit. K5 DL3 2021: byte 2 = 0x10 left /
+// 0x40 right for the whole real flash, 0x50 on hazard (joongyu 11-14 routes 249/24a, ours 000002ac seg 2), 5 Hz on bus 0;
+// a forged CGW1 lit only the cluster and BSM there and 0x5B6 did not follow it, so 0x5B6 is the next candidate for
+// the exterior lamps (joongyu 64abaefe3, never run on a car). Held and sent right behind the next stock 0x5B6 like
+// CGW1, only while not engaged and standing still (fresh WHL_SPD11), 3 s per trial, 1 s quiet to rearm.
+#define HYUNDAI_LAMP_ADDR 0x5B6
+#define HYUNDAI_LAMP_TEMPLATE_US 500000U  // stock is 5 Hz
+#define HYUNDAI_LAMP_HOLD_US 300000U      // one stock period plus margin
+#define HYUNDAI_LAMP_WHEELS_US 100000U    // WHL_SPD11 is 100 Hz
+#define HYUNDAI_LAMP_RATE_US 50000U
+#define HYUNDAI_LAMP_TRIAL_US 3000000U
+
+static struct {
+  bool template_valid, wheels_seen, attempted, sent, trial_active, cutoff, pending;
+  uint8_t template[8];
+  uint32_t template_ts, wheels_ts, attempt_ts, sent_ts, trial_ts, push_ts;
+  CANPacket_t pkt;
+} hyundai_lamp;
+
+// Ours = the stock frame plus exactly one side bit in byte 2 (0x10 left, 0x40 right); the stock frame shows neither.
+static void hyundai_lamp_reset(void) {
+  hyundai_lamp = (__typeof__(hyundai_lamp)){0};
+}
+
+static bool hyundai_lamp_fits(const CANPacket_t *msg, const uint8_t *tmpl) {
+  uint8_t side = GET_BYTE(msg, 2) ^ tmpl[2];
+  bool fits = ((side == 0x10U) || (side == 0x40U)) && ((tmpl[2] & 0x50U) == 0U);
+  for (int i = 0; i < 8; i++) {
+    fits = fits && ((i == 2) || (GET_BYTE(msg, i) == tmpl[i]));
+  }
+  return fits;
+}
+
+static void hyundai_lamp_rx(const CANPacket_t *to_push) {
+  if (hyundai_cgw.enabled && (GET_BUS(to_push) == 0)) {
+    bool valid = (GET_LEN(to_push) == 8) && !to_push->extended && !to_push->fd;
+    if (GET_ADDR(to_push) == HYUNDAI_LAMP_ADDR) {
+      hyundai_lamp.template_valid = valid;
+      if (valid) {
+        for (int i = 0; i < 8; i++) {
+          hyundai_lamp.template[i] = to_push->data[i];
+        }
+        hyundai_lamp.template_ts = microsecond_timer_get();
+      }
+    } else if ((GET_ADDR(to_push) == 0x386) && valid) {
+      // vehicle_moving itself is set further down in hyundai_rx_hook from this same frame
+      hyundai_lamp.wheels_seen = true;
+      hyundai_lamp.wheels_ts = microsecond_timer_get();
+    } else {
+    }
+  }
+}
+
+static bool hyundai_lamp_parked(uint32_t now) {
+  return !controls_allowed && !vehicle_moving && hyundai_lamp.wheels_seen &&
+         (get_ts_elapsed(now, hyundai_lamp.wheels_ts) <= HYUNDAI_LAMP_WHEELS_US);
+}
+
+static bool hyundai_lamp_tx(const CANPacket_t *msg) {
+  bool allowed = false;
+  if (hyundai_cgw.enabled) {
+    uint32_t now = microsecond_timer_get();
+    if (hyundai_lamp.attempted && (get_ts_elapsed(now, hyundai_lamp.attempt_ts) >= HYUNDAI_CGW_REARM_US)) {
+      hyundai_lamp.trial_active = false;
+      hyundai_lamp.cutoff = false;
+    }
+    hyundai_lamp.attempted = true;
+    hyundai_lamp.attempt_ts = now;
+    if (hyundai_lamp.trial_active && (get_ts_elapsed(now, hyundai_lamp.trial_ts) >= HYUNDAI_LAMP_TRIAL_US)) {
+      hyundai_lamp.cutoff = true;
+    }
+    allowed = !relay_malfunction && hyundai_lamp_parked(now) && (GET_BUS(msg) == 0) && (GET_LEN(msg) == 8) &&
+              !msg->extended && !msg->fd && hyundai_lamp.template_valid && !hyundai_lamp.cutoff &&
+              (get_ts_elapsed(now, hyundai_lamp.template_ts) <= HYUNDAI_LAMP_TEMPLATE_US) &&
+              (!hyundai_lamp.sent || (get_ts_elapsed(now, hyundai_lamp.sent_ts) >= HYUNDAI_LAMP_RATE_US)) &&
+              hyundai_lamp_fits(msg, hyundai_lamp.template);
+    if (allowed) {
+      if (!hyundai_lamp.trial_active) {
+        hyundai_lamp.trial_active = true;
+        hyundai_lamp.trial_ts = now;
+      }
+      hyundai_lamp.sent = true;
+      hyundai_lamp.sent_ts = now;
+      hyundai_lamp.pkt = *msg;
+      hyundai_lamp.pending = true;
+      hyundai_lamp.push_ts = now;
+      extern bool safety_tx_buffered_for_fwd;
+      safety_tx_buffered_for_fwd = true;  // held here, not queued: hyundai_rx_tx_hook sends it
+    }
+  }
+  return allowed;
+}
+
 static bool hyundai_rx_tx_hook(const CANPacket_t *to_push, CANPacket_t *to_send) {
   bool send = false;
+  if (hyundai_cgw.enabled && hyundai_lamp.pending && (GET_BUS(to_push) == 0) && (GET_ADDR(to_push) == HYUNDAI_LAMP_ADDR)) {
+    hyundai_lamp.pending = false;
+    // Rechecked against the stock frame it rides behind: a real flash or hazard there, motion or engagement wins.
+    uint32_t now = microsecond_timer_get();
+    if ((get_ts_elapsed(now, hyundai_lamp.push_ts) < HYUNDAI_LAMP_HOLD_US) && hyundai_lamp_parked(now) &&
+        (GET_LEN(to_push) == 8) && !to_push->extended && !to_push->fd &&
+        hyundai_lamp_fits(&hyundai_lamp.pkt, to_push->data)) {
+      *to_send = hyundai_lamp.pkt;
+      send = true;
+    }
+  }
   if (hyundai_cgw.enabled && hyundai_cgw.pending && (GET_BUS(to_push) == 0) && (GET_ADDR(to_push) == 0x541)) {
     hyundai_cgw.pending = false;
     // Checked again against the stock frame it rides behind: the driver's lever or hazard there now wins.
@@ -176,18 +286,19 @@ static bool hyundai_rx_tx_hook(const CANPacket_t *to_push, CANPacket_t *to_send)
   return send;
 }
 
-// Only with the flag: the active TX list plus CGW1 on bus 0.
+// Only with the flag: the active TX list plus CGW1 and the 0x5B6 parked test on bus 0.
 static safety_config hyundai_cgw_tx_list(safety_config ret) {
   safety_config out = ret;
   if (hyundai_cgw.enabled && (ret.tx_msgs != NULL)) {
     static CanMsg cgw_tx_msgs[24];
-    if ((ret.tx_msgs_len + 1) <= (int)(sizeof(cgw_tx_msgs) / sizeof(cgw_tx_msgs[0]))) {
+    if ((ret.tx_msgs_len + 2) <= (int)(sizeof(cgw_tx_msgs) / sizeof(cgw_tx_msgs[0]))) {
       for (int i = 0; i < ret.tx_msgs_len; i++) {
         cgw_tx_msgs[i] = ret.tx_msgs[i];
       }
       cgw_tx_msgs[ret.tx_msgs_len] = (CanMsg){0x541, 0, 8};
+      cgw_tx_msgs[ret.tx_msgs_len + 1] = (CanMsg){HYUNDAI_LAMP_ADDR, 0, 8};  // parked test only, see hyundai_lamp_tx
       out.tx_msgs = cgw_tx_msgs;
-      out.tx_msgs_len = ret.tx_msgs_len + 1;
+      out.tx_msgs_len = ret.tx_msgs_len + 2;
     }
   }
   return out;
@@ -371,6 +482,9 @@ static bool hyundai_tx_hook(const CANPacket_t *to_send) {
   // ClassicCgwBlinker: refused unless the flag is set (and 0x541 is in no TX list without it)
   if (addr == 0x541) {
     return hyundai_cgw_tx(to_send);
+  }
+  if (addr == HYUNDAI_LAMP_ADDR) {
+    return hyundai_lamp_tx(to_send);
   }
 
   if (hyundai_pedal_interceptor) {

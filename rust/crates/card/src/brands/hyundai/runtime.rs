@@ -222,13 +222,17 @@ impl Hyundai {
     fn log_cgw(&mut self) {
         let c = &self.cgw;
         if (c.status, c.direction) != self.cgw_logged {
-            self.state.inputs.diagnostics.logs.push(crate::core::VehicleLog {
-                level: crate::query::DiagnosticLevel::Info,
-                message: format!(
-                    "hyundai_classic_cgw status={} direction={} sent={}",
-                    c.status, c.direction, c.sent
-                ),
-            });
+            self.state
+                .inputs
+                .diagnostics
+                .logs
+                .push(crate::core::VehicleLog {
+                    level: crate::query::DiagnosticLevel::Info,
+                    message: format!(
+                        "hyundai_classic_cgw status={} direction={} sent={} test={} lamp_sent={}",
+                        c.status, c.direction, c.sent, c.test_value, c.lamp_sent
+                    ),
+                });
             self.cgw_logged = (c.status, c.direction);
         }
     }

@@ -18,6 +18,13 @@
 //! The request side follows the CAN-FD Kick (`kick.rs`): the policy worker in
 //! Kick mode, the shared indicator lease and the lamp-ownership journal with
 //! the modeld isolation mask before any driving frame.
+//!
+//! `ClassicCgwBlinkerTest` 3..6 adds the K5 DL3 exterior-lamp candidate
+//! 0x5B6 (byte 2: 0x10 left, 0x40 right during a real flash, 0x50 on hazard;
+//! 5 Hz on bus 0). joongyu's forged CGW1 lit only the cluster and BSM on that
+//! car and 0x5B6 did not follow it (11-14), so 0x5B6 is tried next
+//! (joongyu 64abaefe3, never run on a car). Parked test only: 3/4 CGW1 plus
+//! 0x5B6, 5/6 0x5B6 alone (to tell which of the two lit a lamp).
 use super::Error;
 use crate::blink::{
     owner::Owner,
@@ -32,6 +39,10 @@ use serde_json::json;
 use std::collections::VecDeque;
 
 pub const CGW1: u32 = 0x541;
+/// Lamp status the K5 DL3 2021 shows during a real flash (parked test only).
+pub const LAMP: u32 = 0x5B6;
+/// Stock 0x5B6 is 5 Hz; panda wants it within 500 ms.
+const LAMP_TTL: f64 = 0.4;
 /// Same as joongyu's `CGW_TX_FRAMES` (6 frames at 100 Hz); panda's own limit is 50 ms.
 const TX_PERIOD: f64 = 0.06;
 /// Stock CGW1 lamp rhythm (Palisade 00000e40, IONIQ PHEV 0000000f seg 9).
@@ -44,6 +55,26 @@ const REARM: f64 = 1.05;
 /// `ClassicCgwBlinkerTest` 1/2: one parked 3 s run left/right.
 const TEST_LENGTH: f64 = 3.0;
 pub const TEST_KEY: &str = "ClassicCgwBlinkerTest";
+
+/// `ClassicCgwBlinkerTest` value -> (side 1 left / 2 right, send CGW1, send 0x5B6).
+fn test_plan(value: i32) -> Option<(u8, bool, bool)> {
+    match value {
+        1..=6 => Some((((value - 1) % 2 + 1) as u8, value <= 4, value >= 3)),
+        _ => None,
+    }
+}
+
+/// The stock 0x5B6 with that side's bit (byte 2: 0x10 left, 0x40 right), the
+/// same bytes panda's `hyundai_lamp_fits` admits.
+pub fn lamp_frame(stock: &[u8; 8], side: u8) -> Frame {
+    let mut data = *stock;
+    data[2] |= if side == 1 { 0x10 } else { 0x40 };
+    Frame {
+        address: LAMP,
+        bus: 0,
+        data: data.to_vec(),
+    }
+}
 
 fn fresh(stamp: f64, now: f64, ttl: f64) -> bool {
     stamp.is_finite() && (0. ..ttl).contains(&(now - stamp))
@@ -95,6 +126,8 @@ pub struct CgwKick {
     owner: Owner,
     stock: Option<[u8; 8]>,
     stock_at: f64,
+    lamp_stock: Option<[u8; 8]>,
+    lamp_at: f64,
     worker: Option<Worker>,
     record: Option<Record>,
     seen: VecDeque<String>,
@@ -126,7 +159,13 @@ pub struct CgwKick {
     test_side: u8,
     test_started: f64,
     test_armed: bool,
+    test_cgw: bool,
+    test_lamp: bool,
+    /// The `ClassicCgwBlinkerTest` value of the running (or last) test.
+    pub test_value: i32,
     pub sent: u32,
+    /// 0x5B6 frames handed to panda in the running (or last) test.
+    pub lamp_sent: u32,
     /// The direction this cycle's request asks for (1 left, 2 right, 0).
     pub direction: u8,
     pub status: &'static str,
@@ -139,6 +178,8 @@ impl CgwKick {
             owner: Owner::new("Classic CGW1"),
             stock: None,
             stock_at: f64::NEG_INFINITY,
+            lamp_stock: None,
+            lamp_at: f64::NEG_INFINITY,
             worker: None,
             record: None,
             seen: VecDeque::with_capacity(256),
@@ -168,7 +209,11 @@ impl CgwKick {
             test_side: 0,
             test_started: 0.,
             test_armed: true,
+            test_cgw: false,
+            test_lamp: false,
+            test_value: 0,
             sent: 0,
+            lamp_sent: 0,
             direction: 0,
             status: "idle",
         }
@@ -199,12 +244,22 @@ impl CgwKick {
             if frame.bus == 0 && frame.address == CGW1 {
                 self.stock = <[u8; 8]>::try_from(frame.data.as_slice()).ok();
                 self.stock_at = now;
+            } else if frame.bus == 0 && frame.address == LAMP {
+                self.lamp_stock = <[u8; 8]>::try_from(frame.data.as_slice()).ok();
+                self.lamp_at = now;
             }
         }
     }
 
     fn stock_ready(&self, now: f64) -> Option<[u8; 8]> {
-        self.stock.filter(|s| fresh(self.stock_at, now, STOCK_TTL) && idle(s))
+        self.stock
+            .filter(|s| fresh(self.stock_at, now, STOCK_TTL) && idle(s))
+    }
+
+    /// Fresh stock 0x5B6 showing no flash of its own (no side bit, no hazard).
+    fn lamp_ready(&self, now: f64) -> Option<[u8; 8]> {
+        self.lamp_stock
+            .filter(|s| fresh(self.lamp_at, now, LAMP_TTL) && s[2] & 0x50 == 0)
     }
 
     fn driver_active(&self, now: f64) -> bool {
@@ -317,6 +372,13 @@ impl CgwKick {
 
     /// One frame every 60 ms inside panda's trial; `None` between them.
     fn emit(&mut self, stock: &[u8; 8], side: u8, now: f64) -> Option<Frame> {
+        self.tick(side, now)
+            .map(|lamp| cgw_frame(stock, side, lamp))
+    }
+
+    /// The 60 ms send tick inside panda's trial: `Some(lamp phase)` when a
+    /// frame is due.
+    fn tick(&mut self, side: u8, now: f64) -> Option<bool> {
         if side != self.pulse_side {
             self.pulse_side = side;
             self.pulse_started = now;
@@ -330,8 +392,30 @@ impl CgwKick {
             return None;
         }
         self.last_tx = now;
-        let lamp = (((now - self.pulse_started) / FLASH_HALF) as i64) % 2 == 0;
-        Some(cgw_frame(stock, side, lamp))
+        Some((((now - self.pulse_started) / FLASH_HALF) as i64) % 2 == 0)
+    }
+
+    /// One parked-test cycle: CGW1 and/or 0x5B6 on the same tick.
+    fn test_frames(
+        &mut self,
+        stock: &[u8; 8],
+        lamp_stock: Option<[u8; 8]>,
+        now: f64,
+    ) -> Vec<Frame> {
+        let side = self.test_side;
+        let Some(phase) = self.tick(side, now) else {
+            return Vec::new();
+        };
+        let mut frames = Vec::with_capacity(2);
+        if self.test_cgw {
+            frames.push(cgw_frame(stock, side, phase));
+            self.sent += 1;
+        }
+        if let Some(lamp) = lamp_stock.filter(|_| self.test_lamp) {
+            frames.push(lamp_frame(&lamp, side));
+            self.lamp_sent += 1;
+        }
+        frames
     }
 
     /// The frames for this cycle: the parked test, else the driving request
@@ -355,32 +439,39 @@ impl CgwKick {
             == car_state::GearShifter::Park
             && cs.get_v_ego() == 0.
             && !engaged;
-        if !matches!(self.test_setting, 1 | 2) {
-            self.test_armed = true;
-            self.test_side = 0;
-        } else if self.test_armed {
-            self.test_armed = false;
-            let ok = self.enabled() && parked && stock.is_some_and(|s| dark(&s));
-            self.status = if ok { "test_running" } else { "test_refused" };
-            if ok {
-                self.test_side = self.test_setting as u8;
-                self.test_started = now;
-                self.sent = 0;
-            } else {
-                let _ = settings.put(TEST_KEY, b"0");
+        let lamp_stock = self.lamp_ready(now);
+        match test_plan(self.test_setting) {
+            None => {
+                self.test_armed = true;
+                self.test_side = 0;
             }
+            Some((side, cgw, lamp)) if self.test_armed => {
+                self.test_armed = false;
+                let ok = self.enabled()
+                    && parked
+                    && stock.is_some_and(|s| dark(&s))
+                    && (!lamp || lamp_stock.is_some());
+                self.status = if ok { "test_running" } else { "test_refused" };
+                self.test_value = self.test_setting;
+                if ok {
+                    self.test_side = side;
+                    self.test_cgw = cgw;
+                    self.test_lamp = lamp;
+                    self.test_started = now;
+                    self.sent = 0;
+                    self.lamp_sent = 0;
+                } else {
+                    let _ = settings.put(TEST_KEY, b"0");
+                }
+            }
+            Some(_) => {}
         }
         if self.test_side != 0 {
             let running = now - self.test_started < TEST_LENGTH;
-            match stock.filter(|_| running && parked && self.enabled()) {
+            let lamp_ok = !self.test_lamp || lamp_stock.is_some();
+            match stock.filter(|_| running && parked && lamp_ok && self.enabled()) {
                 Some(s) => {
-                    return self
-                        .emit(&s, self.test_side, now)
-                        .map(|f| {
-                            self.sent += 1;
-                            vec![f]
-                        })
-                        .unwrap_or_default();
+                    return self.test_frames(&s, lamp_stock, now);
                 }
                 None => {
                     self.status = if running { "test_stopped" } else { "test_done" };
@@ -505,6 +596,64 @@ mod tests {
     }
 
     #[test]
+    fn lamp_frame_sets_one_side_bit() {
+        // K5 DL3 2021: stock idle all zero; real flash byte 2 0x10 left / 0x40 right.
+        assert_eq!(lamp_frame(&[0; 8], 1).data, [0, 0, 0x10, 0, 0, 0, 0, 0]);
+        assert_eq!(lamp_frame(&[0; 8], 2).data, [0, 0, 0x40, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_values_map_to_side_and_messages() {
+        assert_eq!(test_plan(0), None);
+        assert_eq!(test_plan(1), Some((1, true, false)));
+        assert_eq!(test_plan(2), Some((2, true, false)));
+        assert_eq!(test_plan(3), Some((1, true, true)));
+        assert_eq!(test_plan(4), Some((2, true, true)));
+        assert_eq!(test_plan(5), Some((1, false, true)));
+        assert_eq!(test_plan(6), Some((2, false, true)));
+        assert_eq!(test_plan(7), None);
+    }
+
+    #[test]
+    fn lamp_stock_with_a_flash_or_hazard_is_not_ready() {
+        let mut k = CgwKick::new(true);
+        let packet = |data: [u8; 8]| Packet {
+            mono_time: 0,
+            frames: vec![Frame {
+                address: LAMP,
+                bus: 0,
+                data: data.to_vec(),
+            }],
+        };
+        k.observe(&[packet([0; 8])], 1.0);
+        assert!(k.lamp_ready(1.1).is_some());
+        assert!(k.lamp_ready(1.5).is_none(), "older than 400 ms");
+        k.observe(&[packet([0, 0, 0x50, 0, 0, 0, 0, 0])], 2.0);
+        assert!(k.lamp_ready(2.1).is_none(), "hazard");
+    }
+
+    #[test]
+    fn test_frames_send_cgw1_and_lamp_on_the_same_tick() {
+        let mut k = CgwKick::new(true);
+        k.test_side = 1;
+        k.test_cgw = true;
+        k.test_lamp = true;
+        let frames = k.test_frames(&IDLE, Some([0; 8]), 10.);
+        assert_eq!(frames.len(), 2);
+        assert_eq!(frames[0].address, CGW1);
+        assert_eq!(frames[1].data, [0, 0, 0x10, 0, 0, 0, 0, 0]);
+        assert!(
+            k.test_frames(&IDLE, Some([0; 8]), 10.03).is_empty(),
+            "60 ms tick"
+        );
+        k.test_cgw = false;
+        let frames = k.test_frames(&IDLE, Some([0; 8]), 10.06);
+        assert_eq!(frames.len(), 1);
+        assert_eq!(frames[0].address, LAMP);
+        assert_eq!((k.sent, k.lamp_sent), (1, 2));
+    }
+
+    #[test]
     fn driver_lever_or_hazard_is_not_idle() {
         assert!(idle(&IDLE));
         let mut lever = IDLE;
@@ -545,13 +694,13 @@ mod tests {
             }
             now += 0.01;
         }
-        let gap = times
-            .windows(2)
-            .map(|w| w[1] - w[0])
-            .fold(0., f64::max);
+        let gap = times.windows(2).map(|w| w[1] - w[0]).fold(0., f64::max);
         assert!(gap >= REARM - 0.011, "a quiet gap of at least 1 s: {gap}");
         let first_gap = times.windows(2).position(|w| w[1] - w[0] > 0.5).unwrap();
-        assert!(times[first_gap] - times[0] < 30., "inside panda's 30 s trial");
+        assert!(
+            times[first_gap] - times[0] < 30.,
+            "inside panda's 30 s trial"
+        );
         assert!(*times.last().unwrap() > 31., "continues after the rearm");
     }
 }

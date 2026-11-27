@@ -43,7 +43,8 @@ CGW1 is the status message the BCM broadcasts to other modules. Whether the exte
 | Car | Result | Source |
 |---|---|---|
 | Palisade | Works (exterior lamps) | joongyu01 carrot-wip-dev, 10-27 P test, 11-15 driving report |
-| K5 DL3 2021 | Does not work (cluster and blind-spot display only) | joongyu01 carrot-wip-dev, 11-14 |
+| K5 DL3 2021 | CGW1 alone: does not work (cluster and blind-spot display only) | joongyu01 carrot-wip-dev, 11-14 |
+| K5 DL3 2021 + `0x5B6` | Awaiting test (`ClassicCgwBlinkerTest` 3-6) | During a real flash `0x5B6` byte 2 = 0x10 left / 0x40 right, 0x50 on hazard (joongyu 11-14, 000002ac seg 2) |
 | Ioniq Plug-in Hybrid 2020-22 | Awaiting test | CGW1 layout matches (logs), not tested on the car |
 
 After testing a new car, report the model, the P test result (exterior lamps / cluster only) and the drive log.
