@@ -70,6 +70,11 @@ pub struct DesireHelper {
     /// modelV2.meta.leverTurn: the turn desire comes from a latched lever.
     #[serde(skip)]
     pub lever_turn: bool,
+    /// 회전 붙잡기: 회전 desire 로 돌기 시작한 방향과, 그동안 모델 기준으로 돈 각도(도)
+    pub turn_hold_side: u8,
+    pub turn_hold_heading: f64,
+    #[serde(skip)]
+    turn_hold_time: f64,
     /// Physical-indicator observers (carrot `boundary_indicator_supported`:
     /// any non-passive car, or a Kick car).
     #[serde(skip)]
@@ -163,6 +168,9 @@ impl Default for DesireHelper {
             crossing: LaneCrossing::default(),
             blinker_hold_direction: 0,
             lever_turn: false,
+            turn_hold_side: 0,
+            turn_hold_heading: 0.0,
+            turn_hold_time: 0.0,
             indicator_supported: false,
             kick_supported: false,
             indicator_config: IndicatorConfig::default(),
@@ -718,7 +726,12 @@ impl DesireHelper {
             self.desire_log = "TRAILER:MANEUVER_BLOCKED".to_owned();
         }
         self.turn_desire_state = input.model.desire_state[1] + input.model.desire_state[2] > 0.1;
+        // carrot ended the turn desire once the wheel passed 80 deg and the model's
+        // turn rate eased. A 90 deg junction at 20-30 km/h passes 80 deg early, so it
+        // cut the desire mid-turn and the model straightened (2026-11-27 drives): it
+        // now waits for the turn hold's TURN_HOLD_DONE_DEG.
         if self.maneuver_type == Maneuver::Turn
+            && self.turn_hold_heading >= TURN_HOLD_DONE_DEG
             && car.steering_angle_deg.abs() > 80.0
             && input.model.orientation_rate_z[15].abs() < input.model.orientation_rate_z[5].abs()
         {
@@ -1197,6 +1210,7 @@ impl DesireHelper {
         } else {
             hold
         };
+        self.hold_turn(input, driver);
         self.lever_turn = lever_decided_turn && self.turn_direction != 0;
         self.desire = if self.turn_direction != 0 {
             self.lane_change_direction = self.turn_direction;
@@ -1260,6 +1274,62 @@ impl DesireHelper {
             }
         }
         Ok(self.desire)
+    }
+}
+
+/// Turn hold: once a turn desire has the car turning (TURN_HOLD_START_DEG by the
+/// model's own yaw rate), the desire stays until the car has turned
+/// TURN_HOLD_DONE_DEG, for at most TURN_HOLD_MAX_S after it would have ended:
+/// navigation's turn state flickering to none near the junction, or the 80 deg
+/// rule, no longer drop it mid-turn. The driver steering against it, the other
+/// blinker or lateral control off releases it at once.
+const TURN_HOLD_START_DEG: f64 = 5.0;
+const TURN_HOLD_DONE_DEG: f64 = 60.0;
+const TURN_HOLD_MAX_S: f64 = 8.0;
+
+impl DesireHelper {
+    fn hold_turn(&mut self, input: &Input, driver: u8) {
+        let car = &input.car;
+        let rate = input
+            .model
+            .orientation_rate_z
+            .first()
+            .copied()
+            .unwrap_or(0.0)
+            .abs()
+            .to_degrees();
+        if self.turn_direction != 0 {
+            if self.turn_hold_side != self.turn_direction {
+                self.turn_hold_side = self.turn_direction;
+                self.turn_hold_heading = 0.0;
+            }
+            self.turn_hold_heading += rate * DT;
+            self.turn_hold_time = 0.0;
+            return;
+        }
+        let side = self.turn_hold_side;
+        if side == 0 {
+            return;
+        }
+        let against = car.steering_pressed
+            && ((car.steering_torque < 0.0 && side == 1)
+                || (car.steering_torque > 0.0 && side == 2));
+        let keep = self.turn_hold_heading >= TURN_HOLD_START_DEG
+            && self.turn_hold_heading < TURN_HOLD_DONE_DEG
+            && self.turn_hold_time < TURN_HOLD_MAX_S
+            && input.lateral_active
+            && !against
+            && !(driver != 0 && driver != side);
+        if keep {
+            self.turn_direction = side;
+            self.lane_change_direction = side;
+            self.turn_hold_heading += rate * DT;
+            self.turn_hold_time += DT;
+        } else {
+            self.turn_hold_side = 0;
+            self.turn_hold_heading = 0.0;
+            self.turn_hold_time = 0.0;
+        }
     }
 }
 
@@ -1530,6 +1600,55 @@ mod pocket_tests {
             run(&mut helper, &nudge, 5);
             assert_ne!(helper.lane_change_state, State::Starting, "{why}");
         }
+    }
+
+    fn turning(kph: f64, atc: &str, rate: f64, wheel: f64) -> Input {
+        let mut input = input(kph, atc, false);
+        input.model.orientation_rate_z = (0..N)
+            .map(|i| if i < 10 { rate } else { rate * 0.5 })
+            .collect();
+        input.car.steering_angle_deg = wheel;
+        input
+    }
+
+    #[test]
+    fn a_turn_keeps_its_desire_past_80_degrees_until_the_car_has_turned() {
+        let mut helper = DesireHelper::new(false, None);
+        run(&mut helper, &input(20., "turn left", false), 20);
+        assert_eq!(helper.desire, 1, "turnLeft");
+        // 0.3 rad/s (17 deg/s), the wheel past 80 deg, the model's rate easing:
+        // carrot cut the desire here; it now holds until 60 deg (~3.5 s)
+        for frame in 0..60 {
+            step(&mut helper, &turning(20., "turn left", 0.3, 120.));
+            assert_eq!(helper.desire, 1, "frame {frame}: still turning");
+        }
+        // past 60 deg the 80 deg rule may end it
+        run(&mut helper, &turning(20., "turn left", 0.3, 120.), 20);
+        assert_eq!(helper.desire, 0, "turn finished");
+    }
+
+    #[test]
+    fn a_turn_in_progress_survives_navigation_dropping_to_none() {
+        let mut helper = DesireHelper::new(false, None);
+        run(&mut helper, &turning(20., "turn right", -0.3, -60.), 30); // 0.3 rad/s x 1.5 s ~ 26 deg
+        assert_eq!(helper.desire, 2, "turnRight");
+        run(&mut helper, &turning(20., "none", -0.3, -60.), 20);
+        assert_eq!(helper.desire, 2, "held through navigation's none");
+        // the driver steering against the turn releases it at once
+        let mut against = turning(20., "none", -0.3, -60.);
+        against.car.steering_pressed = true;
+        against.car.steering_torque = 1.;
+        step(&mut helper, &against);
+        assert_eq!(helper.desire, 0, "released by the driver");
+    }
+
+    #[test]
+    fn a_turn_that_never_started_is_not_held() {
+        let mut helper = DesireHelper::new(false, None);
+        run(&mut helper, &turning(20., "turn left", 0.0, 0.), 30);
+        assert_eq!(helper.desire, 1);
+        run(&mut helper, &turning(20., "none", 0.0, 0.), 3);
+        assert_eq!(helper.desire, 0, "nothing to hold below 5 deg");
     }
 
     #[test]
