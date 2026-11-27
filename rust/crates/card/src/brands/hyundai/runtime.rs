@@ -213,6 +213,7 @@ impl Hyundai {
     pub fn take_logs(&mut self) -> Vec<crate::core::VehicleLog> {
         let mut logs = std::mem::take(&mut self.state.inputs.diagnostics.logs);
         logs.append(&mut self.controller.steering.logs);
+        logs.append(&mut self.controller.torque_test.logs);
         logs
     }
     pub fn take_warnings(&mut self) -> Vec<String> {

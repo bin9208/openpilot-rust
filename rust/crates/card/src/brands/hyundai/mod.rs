@@ -52,6 +52,7 @@ mod state_legacy;
 mod state_navigation;
 pub mod steering_handover;
 pub mod steering_touch;
+pub mod torque_steer;
 pub mod stock_adopt;
 pub mod stopping;
 pub mod wire;

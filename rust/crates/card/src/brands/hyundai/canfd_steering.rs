@@ -90,6 +90,36 @@ pub fn steering(writer: &mut CanWriter, input: &SteeringInput) -> Result<Vec<Fra
     Ok(frames)
 }
 
+/// `TorqueSteerTest`: the 0x12A torque request on an angle car. Fresh: the
+/// frame torque cars send through `camera_steering`. `stock`: the camera's
+/// own 0x12A with only the torque fields changed.
+pub fn torque_test_lfa(
+    writer: &mut CanWriter,
+    bus: u8,
+    request: &super::torque_steer::Request,
+    stock: Option<&Values>,
+) -> Result<Frame, Error> {
+    let torque = [
+        ("LKA_MODE", 2.),
+        ("LKA_ICON", 2.),
+        ("TORQUE_REQUEST", request.torque),
+        ("STEER_REQ", boolean(request.steer_req)),
+        ("VALUE64", 0.),
+        ("HAS_LANE_SAFETY", 0.),
+        ("LKA_ACTIVE", 0.),
+        ("DampingGain", 0.),
+    ];
+    match stock.filter(|_| request.copy_stock) {
+        Some(original) => {
+            let mut data = original.clone();
+            let counter = remove_counter(&mut data)?;
+            set(&mut data, &torque);
+            writer.frame("LFA", bus, &data, counter)
+        }
+        None => writer.frame("LFA", bus, &values(&torque), None),
+    }
+}
+
 pub fn camera_steering(
     writer: &mut CanWriter,
     input: &SteeringInput,
@@ -200,4 +230,67 @@ pub fn camera_steering(
         frames.push(writer.frame("LFA", i.bus.ecan, &data, None)?);
     }
     Ok(frames)
+}
+
+#[cfg(test)]
+mod torque_test_tests {
+    use super::*;
+    use std::path::Path;
+
+    fn writer() -> CanWriter {
+        CanWriter::new(
+            &Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../opendbc_repo/opendbc/dbc/hyundai_canfd_generated.dbc"),
+        )
+        .unwrap()
+    }
+
+    /// The bits panda and the EPS read: TORQUE_REQUEST 41|11 (+1024),
+    /// STEER_REQ 52, LKA_MODE 24|3.
+    fn decode(frame: &Frame) -> (i64, bool, u8) {
+        let v = u128::from_le_bytes(frame.data[..16].try_into().unwrap());
+        (
+            ((v >> 41) & 0x7ff) as i64 - 1024,
+            (v >> 52) & 1 == 1,
+            ((v >> 24) & 7) as u8,
+        )
+    }
+
+    #[test]
+    fn fresh_and_stock_copies_carry_the_torque_request() {
+        let mut w = writer();
+        let request = super::super::torque_steer::Request {
+            torque: -150.,
+            steer_req: true,
+            copy_stock: false,
+        };
+        let fresh = torque_test_lfa(&mut w, 1, &request, None).unwrap();
+        assert_eq!((fresh.address, fresh.bus, fresh.data.len()), (0x12a, 1, 16));
+        assert_eq!(decode(&fresh), (-150, true, 2));
+        // A stock camera 0x12A on an angle car: LKA_MODE 0, torque 0.
+        let mut stock: Values = w
+            .packer
+            .dbc
+            .message("LFA")
+            .unwrap()
+            .signals
+            .iter()
+            .map(|s| (std::sync::Arc::<str>::from(s.name.as_str()), 0.))
+            .collect();
+        stock.insert("LKA_WARNING".into(), 1.);
+        stock.insert("COUNTER".into(), 7.);
+        let copy = torque_test_lfa(
+            &mut w,
+            1,
+            &super::super::torque_steer::Request {
+                copy_stock: true,
+                ..request
+            },
+            Some(&stock),
+        )
+        .unwrap();
+        assert_eq!(decode(&copy), (-150, true, 2));
+        let bits = u128::from_le_bytes(copy.data[..16].try_into().unwrap());
+        assert_eq!((bits >> 32) & 1, 1, "LKA_WARNING kept");
+    }
 }

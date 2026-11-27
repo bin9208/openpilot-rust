@@ -42,6 +42,8 @@ pub struct Controller {
     pub steering_template_ready: bool,
     /// Comma Pedal command source on configured cars (carrot `PedalInterceptor`).
     pub pedal: Option<super::pedal::Interceptor>,
+    /// `TorqueSteerTest`: parked LFA1 torque request on an angle car.
+    pub torque_test: super::torque_steer::TorqueSteer,
 }
 
 impl Controller {
@@ -76,6 +78,7 @@ impl Controller {
             lkas_active: false,
             lane_check: 0,
             steering_template_ready: false,
+            torque_test: super::torque_steer::TorqueSteer::default(),
         })
     }
 

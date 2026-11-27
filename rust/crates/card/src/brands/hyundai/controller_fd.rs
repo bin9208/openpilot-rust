@@ -55,6 +55,37 @@ pub fn messages(
     } else {
         canfd_steering::steering(&mut c.writer, &steering)?
     };
+    if camera && steering.angle_control {
+        let cs = state.out.get_root_as_reader::<car_state::Reader<'_>>()?;
+        let gear = cs.get_gear_shifter()?;
+        let held = matches!(
+            gear,
+            car_state::GearShifter::Drive | car_state::GearShifter::Reverse
+        ) && (cs.get_brake_pressed() || cs.get_brake_hold_active())
+            && !cs.get_gas_pressed();
+        let observed = super::torque_steer::Observed {
+            ready: (gear == car_state::GearShifter::Park || held)
+                && cs.get_standstill()
+                && cs.get_v_ego().abs() < 0.01
+                && cs.get_can_valid()
+                && !cc.get_lat_active()
+                && !cs.get_steer_fault_permanent(),
+            pressed: cs.get_steering_pressed(),
+            angle: f64::from(cs.get_steering_angle_deg()),
+        };
+        let now = f64::from(c.frame) * 0.01;
+        if let Some(request) = c.torque_test.update(observed, now, &state.settings) {
+            let lfa = canfd_steering::torque_test_lfa(
+                &mut c.writer,
+                config.bus.ecan,
+                &request,
+                captures.get("lfa"),
+            )?;
+            let address = lfa.address;
+            result.retain(|frame| !(frame.address == address && frame.bus == config.bus.ecan));
+            result.push(lfa);
+        }
+    }
     if c.frame.is_multiple_of(5) && hda2 && !camera {
         result.extend(canfd_maintenance::suppress_lfa(
             &mut c.writer,
