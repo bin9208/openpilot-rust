@@ -9,7 +9,9 @@ import unittest
 from opendbc.safety.tests.libsafety import libsafety_py
 from opendbc.safety.tests.test_hyundai_spas_solo import SAFETY_HYUNDAI_CANFD, SPAS_FLAG, SPAS1, SPAS2, canfd, stalk
 
-ASK, ACTIVE, IDLE = 0x10, 0x14, 0x0C  # byte 11: mode 4 / 5 / 3 << 2
+ASK, ACTIVE, IDLE, WAKE = 0x10, 0x14, 0x0C, 0x08  # byte 11: mode 4 / 5 / 3 / 2 << 2
+STOCK_B14 = {14: 0x02}  # every stock idle SPAS1 in commaCarSegments
+SPAS2_IDLE = {3: 0x01, 4: 0x01, 20: 0x10}  # plus b15 = the SPAS1 mode
 
 
 def steer(counter: int, mode: int, angle_deci: int, extra: dict | None = None) -> bytes:
@@ -133,12 +135,12 @@ class TestHyundaiSpasSteer(unittest.TestCase):
       self.tick(200)
       self.assertFalse(self.send(ACTIVE, 40), change)
 
-  def test_fifteen_seconds_then_five_second_cooldown(self):
+  def test_twenty_seconds_then_five_second_cooldown(self):
     self.tick(1000)
     self.assertTrue(self.send(ASK))
-    for _ in range(749):  # up to 14.98 s after arming
+    for _ in range(999):  # up to 19.98 s after arming
       self.assertTrue(self.send(ACTIVE, 0))
-    self.assertFalse(self.send(ACTIVE, 0), "15 s limit")
+    self.assertFalse(self.send(ACTIVE, 0), "20 s limit")
     self.tick(2000)
     self.assertFalse(self.send(ASK), "cooldown")
     self.tick(4000)
@@ -201,6 +203,41 @@ class TestHyundaiSpasSteer(unittest.TestCase):
     self.assertTrue(self.send(ASK, 0))
     # after one 20 ms frame the bound is 3 deg; a 40 deg jump is refused
     self.assertFalse(self.send(ACTIVE, 400))
+
+  def test_v2_stock_handshake_then_steer(self):
+    # v2: mode 2 wake-up arms, then mode 3 standby, 4, 5, all with byte 14 0x02,
+    # each beside a stock idle SPAS2 whose b15 mirrors the mode.
+    self.tick(1000)
+    s2 = 0
+    angle = 0
+    for mode, frames in ((WAKE, 35), (IDLE, 100), (ASK, 25), (ACTIVE, 50)):
+      for _ in range(frames):
+        if mode == ACTIVE:
+          angle += 20
+        self.assertTrue(self.send(mode, angle, extra=STOCK_B14), (mode, angle))
+        self.assertTrue(self.tx(SPAS2, canfd(SPAS2, 32, s2, {**SPAS2_IDLE, 15: mode >> 2})), mode)
+        s2 = (s2 + 1) & 0xFF
+
+  def test_v2_arms_on_wake_only_with_the_known_bytes(self):
+    self.tick(1000)
+    self.assertFalse(self.send(IDLE, extra=STOCK_B14), "mode 3 does not arm")
+    self.assertFalse(self.send(WAKE, extra={14: 0x01}), "byte 14 only 0 or 0x02")
+    self.assertTrue(self.send(WAKE, extra=STOCK_B14))
+    self.assertFalse(self.send(ACTIVE, 0, extra={14: 0x03}))
+
+  def test_v2_spas2_idle_body_whole_only(self):
+    self.tick(1000)
+    self.assertTrue(self.send(WAKE, extra=STOCK_B14))
+    cases = (({**SPAS2_IDLE, 15: 2}, True), ({**SPAS2_IDLE, 15: 5}, True), ({**SPAS2_IDLE, 15: 6}, False),
+             ({**SPAS2_IDLE, 15: 1}, False), ({3: 0x01, 4: 0x01, 15: 3}, False),
+             ({**SPAS2_IDLE, 4: 0x02, 15: 3}, False), ({**SPAS2_IDLE, 15: 3, 21: 1}, False))
+    for i, (body, ok) in enumerate(cases):
+      self.tick(20)
+      self.assertEqual(bool(self.tx(SPAS2, canfd(SPAS2, 32, i, body))), ok, body)
+      if not ok:
+        self.setUp()
+        self.tick(1000)
+        self.assertTrue(self.send(WAKE, extra=STOCK_B14))
 
   def test_blinker_trial_still_arms(self):
     # The existing parked blinker trial (all-zero SPAS1) is unchanged.

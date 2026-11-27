@@ -15,6 +15,17 @@
 //! the EPS at 0xEA byte 5 0x42, 11-25). Stops at once on leaving that, moving, the
 //! driver's hand or lever, a stock SPAS sender, or the setting going to 0
 //! (then it ramps back first). panda (phase 13) admits only this shape.
+//!
+//! v1 (11-25, runs 1–4): the EPS took us as the PA controller (0xEA
+//! PaPlugInSta 0→1, PaModeSta 1→2 "waits for PA command") but never left 2
+//! for 4/5; the 0x56 after each run was the timeout once we stopped.
+//! `SpasSteerTestV2` = 1 copies what stock parking ECUs send at ignition in
+//! commaCarSegments (IONIQ 5/6, EV6, GV60; 18 sessions): SPAS1 mode 2 for
+//! ~0.7 s (EPS → 2), then mode 3 (EPS → 3 "standby by PA") held, every frame
+//! with byte 14 0x02; SPAS2 b3 0x01, b4 0x01, b15 the SPAS1 mode, b20 0x10.
+//! v2 runs that wake-up (0.7 s) and standby (2 s) before mode 4 (0.5 s), then
+//! the same 5 ramp/hold/back, and 0.5 s of mode 3 at the end. The 4/5 frames
+//! themselves are still unknown (no stock RSPA steering in the dataset).
 use super::spas;
 use openpilot_can::Frame;
 use openpilot_cereal::car_capnp::car_state;
@@ -23,21 +34,30 @@ use openpilot_params::Params;
 pub const KEY: &str = "SpasSteerTest";
 pub const SPAS2_KEY: &str = "SpasSteerTestSpas2";
 pub const BODY_KEY: &str = "SpasSteerTestBody";
+pub const V2_KEY: &str = "SpasSteerTestV2";
 const PERIOD: f64 = 0.02;
 const ASK: f64 = 0.1;
 /// deg per 20 ms frame: 100 deg/s (panda admits 3).
 const STEP: f64 = 2.0;
 const HOLD: f64 = 2.0;
 const IDLE_TAIL: f64 = 0.2;
-/// panda ends phase 13 at 15 s; a full 450 deg run needs
-/// 0.1 + 4.5 + 2 + 4.5 + 0.2 = 11.3 s.
-const MAX_RUN: f64 = 14.0;
+const WAKE: f64 = 0.7;
+const STANDBY: f64 = 2.0;
+const ASK_V2: f64 = 0.5;
+const TAIL_V2: f64 = 0.5;
+/// panda ends phase 13 at 20 s; a full 450 deg v2 run needs
+/// 0.7 + 2 + 0.5 + 4.5 + 2 + 4.5 + 0.5 = 14.7 s (v1 11.3 s).
+const MAX_RUN: f64 = 19.0;
 const _: () = assert!(ASK + 2. * (LIMIT / STEP * PERIOD) + HOLD + IDLE_TAIL < MAX_RUN);
+const _: () =
+    assert!(WAKE + STANDBY + ASK_V2 + 2. * (LIMIT / STEP * PERIOD) + HOLD + TAIL_V2 < MAX_RUN);
 const LIMIT: f64 = 450.;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Stage {
     Off,
+    Wake,
+    Standby,
     Ask,
     Out,
     Hold,
@@ -49,6 +69,8 @@ impl Stage {
     pub fn name(self) -> &'static str {
         match self {
             Stage::Off => "off",
+            Stage::Wake => "wake",
+            Stage::Standby => "standby",
             Stage::Ask => "ask",
             Stage::Out => "out",
             Stage::Hold => "hold",
@@ -60,12 +82,18 @@ impl Stage {
 
 /// SPAS1 as the parking ECU steers.
 pub fn steer_frame(counter: u8, mode: u8, angle_deg: f64, bus: u8) -> Frame {
+    steer_frame_with(counter, mode, angle_deg, bus, 0)
+}
+
+/// SPAS1 with byte 14 (v2: 0x02, as every stock idle frame).
+pub fn steer_frame_with(counter: u8, mode: u8, angle_deg: f64, bus: u8, byte14: u8) -> Frame {
     let mut data = vec![0u8; 24];
     data[2] = counter;
     data[3] = 0x4b;
     data[11] = (mode & 7) << 2;
     let raw = (angle_deg * 10.).round().clamp(-4600., 4600.) as i16;
     data[12..14].copy_from_slice(&raw.to_le_bytes());
+    data[14] = byte14;
     let crc = spas::checksum(0x165, &data).to_le_bytes();
     data[..2].copy_from_slice(&crc);
     Frame {
@@ -97,6 +125,24 @@ pub fn spas2_frame(counter: u8, body: bool, bus: u8) -> Frame {
     }
 }
 
+/// v2 SPAS2: the stock idle body (b3 0x01, b4 0x01, b15 the SPAS1 mode,
+/// b20 0x10), as IONIQ 5/EV6 parking ECUs send it at ignition.
+pub fn spas2_idle_frame(counter: u8, mode: u8, bus: u8) -> Frame {
+    let mut data = vec![0u8; 32];
+    data[2] = counter;
+    data[3] = 0x01;
+    data[4] = 0x01;
+    data[15] = mode;
+    data[20] = 0x10;
+    let crc = spas::checksum(0x16a, &data).to_le_bytes();
+    data[..2].copy_from_slice(&crc);
+    Frame {
+        address: 0x16a,
+        data,
+        bus,
+    }
+}
+
 fn toward(from: f64, to: f64) -> f64 {
     from + (to - from).clamp(-STEP, STEP)
 }
@@ -106,6 +152,7 @@ pub struct SpasSteer {
     settings_at: f64,
     with_spas2: bool,
     with_body: bool,
+    v2: bool,
     pub stage: Stage,
     started: f64,
     stage_at: f64,
@@ -125,6 +172,7 @@ impl Default for SpasSteer {
             settings_at: f64::NEG_INFINITY,
             with_spas2: false,
             with_body: false,
+            v2: false,
             stage: Stage::Off,
             started: 0.,
             stage_at: 0.,
@@ -180,16 +228,19 @@ impl SpasSteer {
             if setting != self.setting && setting != 0 && !self.active() {
                 if ready && !cs.get_steering_pressed() {
                     let angle = f64::from(cs.get_steering_angle_deg());
+                    self.v2 = settings.get_bool(V2_KEY).unwrap_or(false);
                     self.start_angle = angle;
                     self.command = angle;
                     self.target = f64::from(setting);
                     self.started = now;
                     self.next_tx = now;
                     self.reason = "running";
-                    self.enter(Stage::Ask, now);
+                    self.enter(if self.v2 { Stage::Wake } else { Stage::Ask }, now);
                 } else {
                     self.finish("refused_not_parked", settings);
                 }
+            } else if setting == 0 && matches!(self.stage, Stage::Wake | Stage::Standby) {
+                self.enter(Stage::Tail, now); // cancelled before steering: idle out
             } else if setting == 0 && matches!(self.stage, Stage::Ask | Stage::Out | Stage::Hold) {
                 self.enter(Stage::Back, now); // cancelled: straighten back first
             }
@@ -216,8 +267,20 @@ impl SpasSteer {
         }
         self.next_tx = (self.next_tx + PERIOD).max(now + PERIOD * 0.75);
         let mode = match self.stage {
+            Stage::Wake => {
+                if now - self.stage_at >= WAKE {
+                    self.enter(Stage::Standby, now);
+                }
+                2
+            }
+            Stage::Standby => {
+                if now - self.stage_at >= STANDBY {
+                    self.enter(Stage::Ask, now);
+                }
+                3
+            }
             Stage::Ask => {
-                if now - self.stage_at >= ASK {
+                if now - self.stage_at >= if self.v2 { ASK_V2 } else { ASK } {
                     self.enter(Stage::Out, now);
                 }
                 4
@@ -243,7 +306,7 @@ impl SpasSteer {
                 5
             }
             Stage::Tail => {
-                if now - self.stage_at >= IDLE_TAIL {
+                if now - self.stage_at >= if self.v2 { TAIL_V2 } else { IDLE_TAIL } {
                     self.finish("done", settings);
                     return Vec::new();
                 }
@@ -251,6 +314,15 @@ impl SpasSteer {
             }
             Stage::Off => return Vec::new(),
         };
+        if self.v2 {
+            let frames = vec![
+                steer_frame_with(self.counter[0], mode, self.command, bus, 0x02),
+                spas2_idle_frame(self.counter[1], mode, bus),
+            ];
+            self.counter[0] = self.counter[0].wrapping_add(1);
+            self.counter[1] = self.counter[1].wrapping_add(1);
+            return frames;
+        }
         let mut frames = vec![steer_frame(self.counter[0], mode, self.command, bus)];
         self.counter[0] = self.counter[0].wrapping_add(1);
         if self.with_spas2 {
@@ -277,7 +349,10 @@ mod tests {
                 assert_eq!(*v, 0, "byte {i}");
             }
         }
-        assert_eq!(u16::from_le_bytes([b.data[0], b.data[1]]), spas::checksum(0x16a, &b.data));
+        assert_eq!(
+            u16::from_le_bytes([b.data[0], b.data[1]]),
+            spas::checksum(0x16a, &b.data)
+        );
         let z = spas2_frame(3, false, 0);
         assert!(z.data[3..].iter().all(|v| *v == 0));
     }
@@ -312,7 +387,9 @@ mod tests {
             let mut cs = message.init_root::<car_state::Builder<'_>>();
             cs.set_steering_angle_deg(10.);
         }
-        let cs = message.get_root_as_reader::<car_state::Reader<'_>>().unwrap();
+        let cs = message
+            .get_root_as_reader::<car_state::Reader<'_>>()
+            .unwrap();
         let mut steer = SpasSteer::default();
         settings.put(KEY, target.to_string().as_bytes()).unwrap();
         let mut out = Vec::new();
@@ -344,17 +421,29 @@ mod tests {
             })
             .collect();
         assert_eq!(decoded[0].1, 4, "starts by asking");
-        assert!((decoded[0].2 - 10.).abs() < 1e-9, "at the current wheel angle");
+        assert!(
+            (decoded[0].2 - 10.).abs() < 1e-9,
+            "at the current wheel angle"
+        );
         let asks = decoded.iter().take_while(|d| d.1 == 4).count();
         assert!((5..=7).contains(&asks), "0.1 s of mode 4: {asks}");
-        assert!(decoded.iter().any(|d| (d.2 + 300.).abs() < 1e-9), "reaches the target");
+        assert!(
+            decoded.iter().any(|d| (d.2 + 300.).abs() < 1e-9),
+            "reaches the target"
+        );
         assert_eq!(decoded.last().unwrap().1, 3, "ends idle");
-        assert!((decoded.last().unwrap().2 - 10.).abs() < 1e-9, "back to the start angle");
+        assert!(
+            (decoded.last().unwrap().2 - 10.).abs() < 1e-9,
+            "back to the start angle"
+        );
         for w in decoded.windows(2) {
             assert!((w[1].2 - w[0].2).abs() <= 3.0, "panda step");
             assert!(w[1].0 - w[0].0 >= 0.015 - 1e-9, "panda spacing");
         }
-        assert!(decoded.last().unwrap().0 - decoded[0].0 < 15., "inside panda's 15 s");
+        assert!(
+            decoded.last().unwrap().0 - decoded[0].0 < 15.,
+            "inside panda's 15 s"
+        );
         for (i, (_, f)) in frames.iter().enumerate() {
             assert_eq!(f.data[2], i as u8, "counter advances by one");
         }
@@ -366,6 +455,124 @@ mod tests {
         assert_eq!(reason, "stopped_not_parked");
         assert_eq!(setting, "0");
         assert!(frames.iter().all(|(t, _)| *t < 101.));
+    }
+
+    #[test]
+    fn v2_wakes_and_stands_by_like_stock_before_asking() {
+        let temp = tempfile::tempdir().unwrap();
+        let settings = Params::open(temp.path(), "d").unwrap();
+        let mut message = capnp::message::Builder::new_default();
+        {
+            let mut cs = message.init_root::<car_state::Builder<'_>>();
+            cs.set_steering_angle_deg(10.);
+        }
+        let cs = message
+            .get_root_as_reader::<car_state::Reader<'_>>()
+            .unwrap();
+        settings.put(V2_KEY, b"1").unwrap();
+        settings.put(KEY, b"300").unwrap();
+        let mut steer = SpasSteer::default();
+        let mut spas1 = Vec::new();
+        let mut now = 100.;
+        while now < 125. {
+            let frames = steer.update(cs, true, now, 0, &settings);
+            if !frames.is_empty() {
+                assert_eq!(frames.len(), 2, "SPAS1 + SPAS2 every cycle");
+                let (s1, s2) = (&frames[0], &frames[1]);
+                assert_eq!((s1.address, s2.address), (0x165, 0x16a));
+                let mode = s1.data[11] >> 2;
+                assert_eq!(s1.data[3], 0x4b);
+                assert_eq!(s1.data[14], 0x02, "stock byte 14");
+                for (i, b) in s1.data.iter().enumerate().skip(3) {
+                    if ![3, 11, 12, 13, 14].contains(&i) {
+                        assert_eq!(*b, 0, "SPAS1 byte {i}");
+                    }
+                }
+                assert_eq!(s2.data[15], mode, "SPAS2 mirrors the mode");
+                assert_eq!((s2.data[3], s2.data[4], s2.data[20]), (0x01, 0x01, 0x10));
+                for (i, b) in s2.data.iter().enumerate().skip(3) {
+                    if ![3, 4, 15, 20].contains(&i) {
+                        assert_eq!(*b, 0, "SPAS2 byte {i}");
+                    }
+                }
+                assert_eq!(
+                    u16::from_le_bytes([s2.data[0], s2.data[1]]),
+                    spas::checksum(0x16a, &s2.data)
+                );
+                let angle = f64::from(i16::from_le_bytes([s1.data[12], s1.data[13]])) / 10.;
+                spas1.push((now, mode, angle));
+            }
+            now += 0.01;
+        }
+        assert_eq!(steer.reason, "done");
+        let runs: Vec<(u8, usize)> = spas1.iter().fold(Vec::new(), |mut acc, (_, m, _)| {
+            match acc.last_mut() {
+                Some((last, n)) if last == m => *n += 1,
+                _ => acc.push((*m, 1)),
+            }
+            acc
+        });
+        let order: Vec<u8> = runs.iter().map(|r| r.0).collect();
+        assert_eq!(
+            order,
+            vec![2, 3, 4, 5, 3],
+            "wake, standby, ask, steer, idle"
+        );
+        assert!((34..=37).contains(&runs[0].1), "0.7 s wake: {}", runs[0].1);
+        assert!(
+            (99..=102).contains(&runs[1].1),
+            "2 s standby: {}",
+            runs[1].1
+        );
+        assert!((24..=27).contains(&runs[2].1), "0.5 s ask: {}", runs[2].1);
+        assert!(
+            spas1[..runs[0].1 + runs[1].1 + runs[2].1]
+                .iter()
+                .all(|(_, _, a)| (a - 10.).abs() < 1e-9),
+            "still at the wheel until 5"
+        );
+        assert!(spas1.iter().any(|(_, _, a)| (a - 300.).abs() < 1e-9));
+        for w in spas1.windows(2) {
+            assert!((w[1].2 - w[0].2).abs() <= 3.0, "panda step");
+            assert!(w[1].0 - w[0].0 >= 0.015 - 1e-9, "panda spacing");
+        }
+        assert!(
+            spas1.last().unwrap().0 - spas1[0].0 < 20.,
+            "inside panda's 20 s"
+        );
+    }
+
+    #[test]
+    fn v2_cancel_during_standby_idles_out() {
+        let temp = tempfile::tempdir().unwrap();
+        let settings = Params::open(temp.path(), "d").unwrap();
+        let message = {
+            let mut m = capnp::message::Builder::new_default();
+            m.init_root::<car_state::Builder<'_>>();
+            m
+        };
+        let cs = message
+            .get_root_as_reader::<car_state::Reader<'_>>()
+            .unwrap();
+        settings.put(V2_KEY, b"1").unwrap();
+        settings.put(KEY, b"200").unwrap();
+        let mut steer = SpasSteer::default();
+        let mut modes = Vec::new();
+        let mut now: f64 = 100.;
+        while now < 106. {
+            if (now - 101.5).abs() < 0.005 {
+                settings.put(KEY, b"0").unwrap();
+            }
+            for f in steer.update(cs, true, now, 0, &settings) {
+                if f.address == 0x165 {
+                    modes.push(f.data[11] >> 2);
+                }
+            }
+            now += 0.01;
+        }
+        assert_eq!(steer.reason, "done");
+        assert!(!modes.contains(&4) && !modes.contains(&5), "never asked");
+        assert_eq!(*modes.last().unwrap(), 3);
     }
 
     #[test]

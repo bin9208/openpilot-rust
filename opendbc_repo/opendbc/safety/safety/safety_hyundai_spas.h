@@ -25,9 +25,10 @@ static bool hyundai_spas_drive_used;
 // SpasSteerTest (phase 13): the parking ECU's SPAS1 steering request on a car
 // with no stock SPAS sender, parked only, to see whether the EPS follows an
 // angle past the ~180 deg the LKAS path stops at. P, wheels still, pedal up,
-// lever idle, not engaged, no stock SPAS, no driver torque; 15 s at most,
-// at most 3 deg per frame, |angle| <= 460 deg, 5 s between tries.
-#define HYUNDAI_SPAS_STEER_US 15000000U
+// lever idle, not engaged, no stock SPAS, no driver torque; 20 s at most
+// (v2 adds the stock 2 -> 3 standby handshake first), at most 3 deg per
+// frame, |angle| <= 460 deg, 5 s between tries.
+#define HYUNDAI_SPAS_STEER_US 20000000U
 #define HYUNDAI_SPAS_STEER_COOLDOWN_US 5000000U
 #define HYUNDAI_SPAS_STEER_MAX 4600   // 0.1 deg
 #define HYUNDAI_SPAS_STEER_STEP 30    // 0.1 deg per accepted frame
@@ -151,8 +152,10 @@ static int hyundai_spas_steer_value(const CANPacket_t *pkt) {
   return (int)(int16_t)GET_BYTES(pkt, 12, 2);
 }
 
-// SPAS1 as the parking ECU steers: byte 3 0x4B, byte 11 mode 3/4/5 (bits 2..4),
-// bytes 12..13 the angle; every other payload byte zero.
+// SPAS1 as the parking ECU steers: byte 3 0x4B, byte 11 mode 2/3/4/5 (bits
+// 2..4; 2 is the stock wake-up before standby), bytes 12..13 the angle, byte
+// 14 0 or 0x02 (every stock idle frame in commaCarSegments carries 0x02);
+// every other payload byte zero.
 static bool hyundai_spas_steer_fits(const CANPacket_t *pkt) {
   bool ok = (GET_LEN(pkt) == 24) && hyundai_spas_crc(pkt);
   for (int i = 3; i < 24; i++) {
@@ -160,8 +163,10 @@ static bool hyundai_spas_steer_fits(const CANPacket_t *pkt) {
     if (i == 3) {
       ok = ok && (b == 0x4BU);
     } else if (i == 11) {
-      ok = ok && ((b == 0x0CU) || (b == 0x10U) || (b == 0x14U));
+      ok = ok && ((b == 0x08U) || (b == 0x0CU) || (b == 0x10U) || (b == 0x14U));
     } else if ((i == 12) || (i == 13)) {
+    } else if (i == 14) {
+      ok = ok && ((b == 0U) || (b == 0x02U));
     } else {
       ok = ok && (b == 0U);
     }
@@ -429,18 +434,26 @@ static bool hyundai_spas_tx(const CANPacket_t *pkt, uint32_t now) {
         int limit = HYUNDAI_SPAS_STEER_STEP * (int)frames;
         fits = hyundai_spas_steer_fits(pkt) && (step <= limit) && (step >= -limit);
       } else {
-        // SPAS2: all-zero, or the GV80 parking-active body as a whole
-        // (b3 0x26, b4 0x41, b5 0x19, b6 0x04, b7 0x01, b15 0x13); nothing else.
+        // SPAS2: all-zero, the GV80 parking-active body as a whole
+        // (b3 0x26, b4 0x41, b5 0x19, b6 0x04, b7 0x01, b15 0x13), or the stock
+        // idle body (v2: b3 0x01, b4 0x01, b15 the SPAS1 mode 2..5, b20 0x10);
+        // nothing else.
         fits = (GET_LEN(pkt) == 32) && hyundai_spas_crc(pkt);
-        bool zero = true, body = true;
+        bool zero = true, body = true, idle = true;
         for (int i = 3; i < 32; i++) {
           uint8_t b = GET_BYTE(pkt, i);
           zero = zero && (b == 0U);
           uint8_t want = (i == 3) ? 0x26U : (i == 4) ? 0x41U : (i == 5) ? 0x19U :
                          (i == 6) ? 0x04U : (i == 7) ? 0x01U : (i == 15) ? 0x13U : 0U;
           body = body && (b == want);
+          if (i == 15) {
+            idle = idle && (b >= 2U) && (b <= 5U);
+          } else {
+            uint8_t stock = ((i == 3) || (i == 4)) ? 0x01U : (i == 20) ? 0x10U : 0U;
+            idle = idle && (b == stock);
+          }
         }
-        fits = fits && (zero || body);
+        fits = fits && (zero || body || idle);
       }
       if (fits && hyundai_spas_tx_seen[idx]) {
         uint8_t gap = (uint8_t)(GET_BYTE(pkt, 2) - hyundai_spas_tx_counter[idx] - 1U);
@@ -458,11 +471,13 @@ static bool hyundai_spas_tx(const CANPacket_t *pkt, uint32_t now) {
       }
       return fits;
     }
-    // SpasSteerTest arms on a mode-4 (ask) SPAS1 while parked with no stock sender.
+    // SpasSteerTest arms on a mode-4 (ask, v1) or mode-2 (stock wake-up, v2)
+    // SPAS1 while parked with no stock sender.
     bool steer_cooldown = !hyundai_spas_steer_used ||
                           (get_ts_elapsed(now, hyundai_spas_steer_end) >= HYUNDAI_SPAS_STEER_COOLDOWN_US);
     if (((hyundai_spas_phase == 0U) || (hyundai_spas_phase == 7U)) && (idx == 0) && steer_cooldown &&
-        hyundai_spas_steer_fits(pkt) && (GET_BYTE(pkt, 11) == 0x10U) && hyundai_spas_steer_ready(now)) {
+        hyundai_spas_steer_fits(pkt) && ((GET_BYTE(pkt, 11) == 0x10U) || (GET_BYTE(pkt, 11) == 0x08U)) &&
+        hyundai_spas_steer_ready(now)) {
       hyundai_spas_phase = 13U;
       hyundai_spas_steer_at = now;
       hyundai_spas_steer_used = true;
