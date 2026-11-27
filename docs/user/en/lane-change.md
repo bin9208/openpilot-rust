@@ -134,10 +134,10 @@ The entry condition when automatic turn control (ATC) moves into an **existing**
 
 | Value | Behavior |
 |---:|---|
-| `0` (default) | Starts by itself only after that side's vehicle BSD signal has lit **at least once this drive**. Before then it needs steering torque in the same direction |
-| `1` | Starts by itself without having seen the BSD signal |
+| `0` | Starts by itself only after that side's vehicle BSD signal has lit **at least once this drive**. Before then it needs steering torque in the same direction |
+| `1` (default) | Starts by itself without having seen the BSD signal, on the premise that the driver checks the side and rear |
 
-On a car without BSD, or whose BSD signal does not arrive, the side and rear are judged only by radar side detection and the model's lane geometry (some cars have no radar side detection either). Use `1` only knowing this and checking yourself. A pocket lane opening beside the last lane, and the car's camera reporting a crossable line, start by themselves with either value as before.
+On a car without BSD, or whose BSD signal does not arrive, the side and rear are judged only by radar side detection and the model's lane geometry (some cars have no radar side detection either). The default `1` assumes the driver knows this and checks; set `0` to be more conservative on a car with BSD. A pocket lane opening beside the last lane, and the car's camera reporting a crossable line, start by themselves with either value as before.
 
 ### `ShareData` — ONNX lane and BSD detection
 

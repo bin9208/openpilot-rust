@@ -71,7 +71,9 @@ pub fn desire_config(params: &Params) -> Result<Config, Error> {
     Ok(Config {
         need_torque: integer(params, "LaneChangeNeedTorque")?,
         bsd: integer(params, "LaneChangeBsd")?,
-        atc_without_bsd: integer(params, "AtcLaneChangeNoBsd")? == 1,
+        // default 1: a device that has never saved the setting starts automatically
+        atc_without_bsd: params.get("AtcLaneChangeNoBsd")?.is_none()
+            || integer(params, "AtcLaneChangeNoBsd")? == 1,
         line_check: integer(params, "LaneLineCheck")?,
         delay_tenths: float(params, "LaneChangeDelay")?,
         latched_turn: f64::from(integer(params, "BlinkerLatchedTurn")?) * (1. / 3.6),
