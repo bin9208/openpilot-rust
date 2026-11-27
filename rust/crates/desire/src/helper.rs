@@ -48,6 +48,8 @@ pub struct DesireHelper {
     pub desire_log: String,
     pub lane_change_available_left: bool,
     pub lane_change_available_right: bool,
+    /// 이번 회전(ATC turn 단계)에서 포켓차로로 이미 한 번 옮겼는지
+    pub pocket_done: bool,
     #[serde(skip)]
     stalk_counts: Option<[u8; 2]>,
     #[serde(skip)]
@@ -151,6 +153,7 @@ impl Default for DesireHelper {
             desire_log: String::new(),
             lane_change_available_left: false,
             lane_change_available_right: false,
+            pocket_done: false,
             stalk_counts: None,
             queued_lane_change: 0,
             finishing_timer: 0.0,
@@ -645,6 +648,7 @@ impl DesireHelper {
         }
         if self.atc_type != kind && !(tesla && app != 0) {
             enabled = false;
+            self.pocket_done = false;
         }
         self.atc_type.clone_from(&navigation.atc_type);
         (blinker, enabled)
@@ -871,9 +875,9 @@ impl DesireHelper {
                 self.atc_type.as_str(),
                 "fork left" | "fork right" | "atc left" | "atc right"
             );
-        let atc_manual = atc_enabled
-            && !driver_enabled
-            && matches!(self.atc_type.as_str(), "fork left" | "atc left");
+        // 목적지 자동 주행: carrot 은 좌측 ATC 차선 변경과 연속 차선 변경에 핸들 밀기를
+        // 요구했다. ATC 차선 변경은 좌우·연속 모두 운전자 깜박이와 같은 안전 조건
+        // (차선 형상, 옆 차, 사각지대, 대기 시간)만 보고 스스로 시작한다.
         let atc_only = atc_requested && !driver_enabled;
         // Turn pocket: navigation asks for the lane toward a turn ("atc left/
         // right", never a fork or a driver's lever). A pocket behind centre-line
@@ -881,14 +885,27 @@ impl DesireHelper {
         // slows for it; carrot cancelled the request below MIN_SPEED and the
         // turn was missed (route 00000ccb, 단계사거리, cancelled at 29 km/h).
         // Such a request now waits below MIN_SPEED and may start there once
-        // `pocket_start_allowed`; every other gate, including the left side's
-        // steering nudge (atc_manual), stays as it is.
+        // `pocket_start_allowed`.
         let pocket = atc_only && matches!(self.atc_type.as_str(), "atc left" | "atc right");
         let pocket_blindspot = match blinker {
             1 => car.left_blindspot,
             2 => car.right_blindspot,
             _ => false,
         };
+        // 회전 단계(turn left/right)에서 회전 쪽에 포켓차로가 열리면 회전 desire 보다
+        // 먼저 한 번 옮긴다. carrot 은 이 단계에서 직진 차로에 남은 채 회전했다.
+        let pocket_request = atc_enabled
+            && !driver_enabled
+            && !trailer
+            && !self.pocket_done
+            && self.tesla.app_direction == 0
+            && matches!(self.atc_type.as_str(), "turn left" | "turn right")
+            && side.is_some_and(|side| {
+                side.edge_available
+                    && (side.lane_available_trigger || side.lane_appeared)
+                    && side.lane_change_available
+            })
+            && !pocket_blindspot;
         let retry_blocked =
             atc_only && side.is_some_and(|side| !matches!(side.lane_line_info_mod, 0 | 5));
         let mut auto_trigger = false;
@@ -899,7 +916,6 @@ impl DesireHelper {
                 side.lane_change_available
             } else {
                 self.auto_lane_change_enable
-                    && !atc_manual
                     && side.edge_available
                     && (side.lane_available_trigger || side.lane_appeared)
                     && !side.side_object_detected
@@ -938,7 +954,7 @@ impl DesireHelper {
                 ),
                 None => Maneuver::None,
             };
-            if self.tesla.enabled && self.tesla.app_direction != 0 {
+            if (self.tesla.enabled && self.tesla.app_direction != 0) || pocket_request {
                 new_type = Maneuver::LaneChange;
             }
             if self.assistant.active.as_ref().is_some_and(|a| !a.began)
@@ -990,9 +1006,10 @@ impl DesireHelper {
                         if let Some(side) = side.filter(|_| {
                             enabled
                                 && (!self.prev_desire_enabled
+                                    || pocket_request
                                     || (driver_enabled
                                         && (driver_changed || stalk_press == blinker)))
-                                && (!below_speed || pocket)
+                                && (!below_speed || pocket || pocket_request)
                         }) {
                             self.lane_change_state = State::PreLaneChange;
                             self.lane_change_ll_prob = 1.0;
@@ -1023,7 +1040,7 @@ impl DesireHelper {
                             if atc_only && last_lane(side) {
                                 self.auto_lane_change_enable = true;
                             }
-                            if !enabled || (below_speed && !pocket) {
+                            if !enabled || (below_speed && !pocket && !pocket_request) {
                                 self.lane_change_state = State::Off;
                                 self.lane_change_direction = 0;
                             } else {
@@ -1039,23 +1056,25 @@ impl DesireHelper {
                                     || solid
                                     || block_released
                                     || line_release;
-                                let start = if solid {
-                                    line_release
-                                        || (torque && !(bsd_active && self.config.bsd == 1))
-                                } else if bsd_active {
-                                    torque && self.config.bsd != 1
-                                } else if self.config.need_torque > 0 || self.next_lane_change {
-                                    torque
-                                } else if driver_enabled {
-                                    side.lane_change_available || line_release
-                                } else {
-                                    (torque
-                                        || (!atc_manual
-                                            && (auto_trigger
-                                                || side.lane_line_info_edge_detect
-                                                || block_released)))
-                                        && (side.lane_change_available || line_release)
-                                };
+                                let start = pocket_request
+                                    || if solid {
+                                        line_release
+                                            || (torque && !(bsd_active && self.config.bsd == 1))
+                                    } else if bsd_active {
+                                        torque && self.config.bsd != 1
+                                    } else if self.config.need_torque > 0
+                                        || (self.next_lane_change && !atc_only)
+                                    {
+                                        torque
+                                    } else if driver_enabled || atc_only {
+                                        side.lane_change_available || line_release
+                                    } else {
+                                        (torque
+                                            || auto_trigger
+                                            || side.lane_line_info_edge_detect
+                                            || block_released)
+                                            && (side.lane_change_available || line_release)
+                                    };
                                 // Only automatic Tesla requests wait for their own
                                 // echoed, physically confirmed lamp session.
                                 let signal_ready = !self.tesla.enabled
@@ -1093,6 +1112,9 @@ impl DesireHelper {
                                 }
                                 if can_start {
                                     self.lane_change_state = State::Starting;
+                                    if pocket_request {
+                                        self.pocket_done = true;
+                                    }
                                 }
                             }
                         } else {
@@ -1451,17 +1473,37 @@ mod pocket_tests {
     }
 
     #[test]
-    fn the_left_pocket_starts_with_the_drivers_nudge_once_it_opens() {
+    fn the_left_pocket_starts_by_itself_once_it_opens() {
         let mut helper = waiting_below_lane_change_speed("atc left");
-        run(&mut helper, &input(20., "atc left", true), 20);
-        // atc_manual: the left side never starts by itself.
-        assert_eq!(helper.lane_change_state, State::PreLaneChange);
-        let mut nudge = input(20., "atc left", true);
-        nudge.car.steering_pressed = true;
-        nudge.car.steering_torque = 1.;
-        step(&mut helper, &nudge);
-        assert_eq!(helper.lane_change_state, State::Starting);
-        assert_eq!(helper.desire, 3, "laneChangeLeft");
+        let mut started = false;
+        for _ in 0..40 {
+            step(&mut helper, &input(20., "atc left", true));
+            started |= helper.lane_change_state == State::Starting && helper.desire == 3;
+        }
+        assert!(started, "laneChangeLeft without a steering nudge");
+    }
+
+    #[test]
+    fn a_turn_enters_an_opening_pocket_once_then_turns() {
+        let mut helper = waiting_below_lane_change_speed("atc left");
+        // 포켓이 열리기 전에 회전 단계가 됨 → 직진 차로에서 회전 desire 대신 포켓을 기다림
+        run(&mut helper, &input(20., "turn left", false), 10);
+        assert!(!helper.pocket_done);
+        let mut started = false;
+        for _ in 0..40 {
+            step(&mut helper, &input(20., "turn left", true));
+            started |= helper.lane_change_state == State::Starting && helper.desire == 3;
+        }
+        assert!(started, "pocket lane change in the turn phase");
+        assert!(helper.pocket_done);
+    }
+
+    #[test]
+    fn a_turn_without_a_pocket_gives_the_turn_desire() {
+        let mut helper = DesireHelper::new(false, None);
+        run(&mut helper, &input(20., "turn left", false), 40);
+        assert_eq!(helper.desire, 1, "turnLeft");
+        assert!(!helper.pocket_done);
     }
 
     #[test]
@@ -1472,7 +1514,15 @@ mod pocket_tests {
             (20., true, true, "blind spot"),
         ] {
             let mut helper = waiting_below_lane_change_speed("atc left");
-            run(&mut helper, &input(kph, "atc left", open), 20);
+            // 좌측도 스스로 시작하므로 기다리는 동안에도 같은 조건(사각지대 포함)을 건다.
+            let mut wait = input(kph, "atc left", open);
+            wait.car.left_blindspot = blindspot;
+            run(&mut helper, &wait, 20);
+            assert_ne!(
+                helper.lane_change_state,
+                State::Starting,
+                "{why} (no nudge)"
+            );
             let mut nudge = input(kph, "atc left", open);
             nudge.car.left_blindspot = blindspot;
             nudge.car.steering_pressed = true;
