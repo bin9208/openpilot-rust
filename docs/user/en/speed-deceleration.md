@@ -334,6 +334,8 @@ In mode 2, route-turn speed enters only when turn distance is roughly between -5
 
 Route-based deceleration uses the actual path up to 300m ahead of the current position projected onto the route. A first map segment longer than 300m is clipped within that horizon; the following segment is not extended backwards. This route-clipping correction does not change the curve-speed floor, ATC target or accelerator-override settings.
 
+The route speed comes from the curvature of that path resampled every 2m with its heading smoothed over about 6m, so a sharp vertex of the route line is treated as the arc a car actually drives. Each point allows `√(1.8m/s² ÷ curvature)`, and the limit at the current position lets the car reach it after about 1 second of response at the `AutoNaviSpeedDecelRate` deceleration. For example, a 560m-radius curve allows about 114km/h and a 10m-radius intersection turn about 15km/h.
+
 ### `MapTurnSpeedFactor`
 
     route-turn candidate = route speed × factor / 100
