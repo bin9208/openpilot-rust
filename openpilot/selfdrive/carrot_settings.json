@@ -1667,6 +1667,22 @@
       "unit": 1
     },
     {
+      "group": "조향일반",
+      "name": "MapCarHeading",
+      "title": "내비 모델 지도 차량 방향(1)",
+      "descr": "N16 같은 내비 모델이 받는 흑백 경로 지도의 기준\n0: 원본(경로에 붙인 위치, 앞뒤 50m 경로 방향. 회전 50m 전부터 지도가 미리 돌아감)\n1(기본): 차량 GPS 위치와 진행 방향(약 11km/h 미만은 원본). 회전 직전 지도가 카메라와 맞아 모델이 경로를 더 잘 따름",
+      "egroup": "LATSET",
+      "etitle": "Nav model map car heading(1)",
+      "edescr": "The reference of the black-and-white route map navigation models such as N16 take\n0: original (position on the route, heading along the route 50 m behind and ahead; the map turns up to 50 m before a turn)\n1 (default): the car's GPS position and heading (original below about 11 km/h); the map matches the camera on the approach, so the model follows the route better",
+      "cgroup": "转向设置",
+      "ctitle": "导航模型地图车辆方向(1)",
+      "cdescr": "N16 等导航模型接收的黑白路线地图基准\n0: 原始 (路线上的位置, 前后 50m 路线方向; 转弯前 50m 地图就会转动)\n1(默认): 车辆 GPS 位置与行驶方向 (约 11km/h 以下用原始)",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "unit": 1
+    },
+    {
       "group": "버튼설정",
       "name": "CruiseButtonMode",
       "title": "크루즈버튼작동모드(0)",

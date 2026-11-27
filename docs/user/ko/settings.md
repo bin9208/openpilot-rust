@@ -173,13 +173,15 @@ Carrot Web 설정 화면에서는 다음 기능을 사용할 수 있습니다.
 | ONNX 차선·BSD | `ShareData`, `OnnxBsdEnabled`, `OnnxLaneThreshold`, `OnnxLaneIntervalMs`, `OnnxBsdThreshold`, `OnnxBsdSmoothingMs`, `OnnxBsdIntervalMs` | 차선 종류 인식과 별도 카메라 BSD 실행 및 세부 조정 |
 | 중앙 보정 | `PathOffset`, `CameraYawTrimDeg` | 레인모드 경로의 좌우 위치와 카메라 YAW 미세 보정 |
 | 조향감 | `SteerActuatorDelay`, `LatSmoothSec`, `LatSuspendAngleDeg`, `CustomSR`, `SteerRatioRate` | 조향 시점, 평활화, 일시중지 각도와 조향비 |
-| [차로 변경](lane-change.md)·자동 턴 | `LaneChangeNeedTorque`, `LaneChangeDelay`, `LaneChangeBsd`, `AtcLaneChangeNoBsd`, `LaneLineCheck`, `AutoTurnControl`, `AutoTurnControlRightLaneChange`, `AutoTurnControlSpeedTurn`, `AutoTurnControlTurnEnd`, `AutoTurnMapChange` | 차로 변경 진입 조건과 ATC 동작 |
+| [차로 변경](lane-change.md)·자동 턴 | `LaneChangeNeedTorque`, `LaneChangeDelay`, `LaneChangeBsd`, `AtcLaneChangeNoBsd`, `LaneLineCheck`, `AutoTurnControl`, `AutoTurnControlRightLaneChange`, `AutoTurnControlSpeedTurn`, `AutoTurnControlTurnEnd`, `AutoTurnMapChange`, `MapCarHeading` | 차로 변경 진입 조건, ATC 동작과 내비 모델 지도 기준 |
 | 레인모드 | `LatMpcPathCost`, `LatMpcMotionCost`, `LatMpcAccelCost`, `LatMpcJerkCost`, `LatMpcSteeringRateCost`, `LatMpcInputOffset`, `UseLaneLineSpeed`, `UseLaneLineCurveSpeed`, `AdjustLaneOffset`, `LanelessCentering` | 레인모드 MPC 가중치와 차선 사용 조건, 레인리스 차선중앙 보정 |
 | 고급 토크·토크 계수 | `LateralTorqueCustom`, `LateralTorqueAccelFactor`, `LateralTorqueFriction`, `LateralTorqueKpV`, `LateralTorqueKiV`, `LateralTorqueKf`, `LateralTorqueKd` | 커스텀 토크 제어 계수 |
 | 고급 토크·검색 전용 | `NNFF` | 토크 조향의 신경망 피드포워드 옵션 |
 | 고급 토크·조향 제한 | `CustomSteerMax`, `CustomSteerDeltaUp`, `CustomSteerDeltaDown`, `CustomSteerDeltaUpLC`, `CustomSteerDeltaDownLC` | 최대 조향 토크와 토크 변화율 제한 |
 
 `ATC 차선변경 BSD 없이 허용`(`AtcLaneChangeNoBsd`)은 기본값 `1`입니다. 내비 자동 턴(ATC)이 회전 전에 이미 있는 옆 차로로 옮길 때 BSD 확인 없이 스스로 시작하며, 운전자가 옆·뒤를 직접 확인한다는 전제입니다. `0`이면 그쪽 BSD가 이번 주행에서 작동한 뒤에만 스스로 시작합니다. [동작 조건](lane-change.md#atclanechangenobsd--atc-차선변경-bsd-없이-허용)을 참고하세요.
+
+`내비 모델 지도 차량 방향`(`MapCarHeading`)은 기본값 `1`입니다. N16 같은 내비 모델이 받는 흑백 경로 지도를 차량 GPS 위치와 진행 방향 기준으로 그려, 회전 직전에도 지도가 카메라에 보이는 도로와 맞습니다. `0`은 원본 방식(경로에 붙인 위치, 경로 앞뒤 50m 방향)입니다. [자세한 설명](carrot-web.md#내비-지도와-목적지-검색-navigation)을 참고하세요.
 
 `ONNX 차선·BSD 인식`(`ShareData`)은 장치에서 차선 종류를 계산하는 설정입니다. 시각 BSD는 상세 화면의 별도 `OnnxBsdEnabled` 설정으로 켜야 하며 기본값은 꺼짐입니다. 켜면 모델이 추정한 차로 폭이 2m 이상인 설정된 좌우 영역을 번갈아 검사하고 속도나 차로 변경 방향은 실행 조건으로 사용하지 않습니다. BSD 모델은 사각지대 위협, 근접 차량 없음, 멀거나 뒤쪽에 있는 차량을 구분합니다. `OnnxBsdEnabled`가 꺼지면 BSD ONNX 네트워크를 언로드하지만 차선 인식은 계속됩니다. 차선 인식과 스냅샷을 위해 비전 서비스와 카메라 구독은 유지되며 차량 자체 BSD에는 영향이 없습니다. 상세 화면은 기능 토글을 맨 위에 유지하고, 바로 아래의 분리된 카드에 BSD 감지영역 편집기를 표시합니다. 좌우 선택, 영상 갱신, 점 되돌리기, 점 초기화와 영역 저장만 기본 화면에 두며, 영상 왼쪽 위의 사각형 점 목록은 `1(좌)`, `1(우)` 형식으로 표시됩니다. 선택된 점이 없을 때 빈 화면을 누르면 별도 모드 없이 점이 추가되고, 확대·화면 이동·영역 전체 이동 없이 선택된 점만 이동합니다. 4개 편집 버튼 바로 아래의 좌우 2열 버튼으로 도로·와이드 카메라 영상을 팝업에서 확인합니다. 실행 상태·좌우 신뢰도·처리 성능과 6개 상세 설정은 우측 아래의 **고급 설정 펼치기/접기** 텍스트로 봅니다. 편집기는 마지막 카메라 영상 한 장을 보관하고, 영상이 없으면 흐린 기본 주행 예시 화면을 표시합니다. 영역 저장은 현재 세션에서 실제 카메라 영상을 받은 뒤에만 가능합니다. BSD는 기본값이 꺼짐이며 저장한 설정은 서비스 재시작 후에도 유지됩니다. 필요한 OpenCV는 업데이트에 포함되어 정상 시작 시 자동 준비됩니다. ShareData가 켜져 있어도 서비스는 onroad 초기화와 모델·CAN·Panda 준비가 완료되어 주행 준비 상태가 0.5초 유지된 뒤 시작합니다. 실제 크루즈 활성화는 필요하지 않습니다. Offroad에서는 종료하고 다음 onroad에서도 다시 기다립니다. [동작 조건과 세부값](lane-change.md#sharedata--onnx-차선bsd-인식)을 참고하세요.
 

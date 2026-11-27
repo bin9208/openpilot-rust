@@ -277,3 +277,9 @@ the car stands in P.
 The left panel shows the black-and-white route map the navigation model receives. It is rendered only while
 this page is open, Cluster HUD mode is `7`, or a navigation model or eGPU uses it. Without a destination, a
 position or guidance, the page shows why.
+
+`MapCarHeading` (default `1`) renders this map at the car's GPS position and heading. The original (`0`) puts
+the position on the route and heads the map along the route 50 m behind and ahead, so the map turns toward a
+turn up to 50 m before the car does and stops matching the road in the camera. On logged drives the car
+heading cut N16's (without desire) position error 4 s into a turn from 3.61 m to 3.27 m. Below about 11 km/h or
+without a GPS heading the original pose is used.

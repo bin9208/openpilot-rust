@@ -16,7 +16,7 @@ use openpilot_mapsd::{
     preview,
     remote::{Archive, Mapbox},
     renderer::{MapRenderer, Position},
-    route::{RouteSelection, RouteTracker},
+    route::{car_pose, RouteSelection, RouteTracker},
     tiles::{HybridTiles, Remote},
     Error,
 };
@@ -335,6 +335,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (mut next_render, mut next_config, mut was_ready) = (0f64, 0f64, false);
     let (mut demand_checked, mut wanted, mut retry_at, mut next_preview) =
         (0f64, false, 0f64, 0f64);
+    let mut car_heading = true;
     let black = vec![0u8; MAP_BYTES];
     let out = Path::new(output::PATH);
     let preview_dir = Path::new(preview::PREVIEW_PATH)
@@ -393,6 +394,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .is_some_and(|t| t.seen && t.valid && (0. ..2.).contains(&(now - t.receive_time)));
         if now >= demand_checked {
             wanted = demand(&params);
+            car_heading = text(&params, "MapCarHeading") != "0";
             demand_checked = now + 1.;
             panel_style = display::read_demand(Path::new(display::DEMAND_PATH));
         }
@@ -441,7 +443,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .as_mut()
                 .and_then(|t| t.update_pose(fix.longitude, fix.latitude, advance, 50.))
             {
-                Some((lon, lat, bearing)) => {
+                Some(pose) => {
+                    let (lon, lat, bearing) = if car_heading {
+                        car_pose(
+                            pose,
+                            fix.longitude,
+                            fix.latitude,
+                            fix.bearing,
+                            fix.speed,
+                            advance,
+                        )
+                    } else {
+                        pose
+                    };
                     match renderer.render(
                         &mut tiles,
                         Position {

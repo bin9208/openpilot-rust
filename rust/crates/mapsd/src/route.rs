@@ -124,6 +124,40 @@ impl RouteTracker {
     }
 }
 
+/// Below this speed (m/s) a GPS heading is unreliable and the map keeps the route pose.
+pub const CAR_HEADING_MIN_SPEED: f64 = 3.0;
+
+/// The map pose for the model with `MapCarHeading`: the car's own fix and heading,
+/// moved `advance` m along it, instead of the route projection headed along the
+/// +-50 m chord. The chord turns the map toward a turn up to 50 m before the car
+/// does, so the roads stop matching the camera on the approach; with the car's
+/// heading N16 without desire followed turns 3.61 -> 3.27 m at 4 s (1058 frames).
+/// Falls back to `route_pose` while slow or without a heading.
+pub fn car_pose(
+    route_pose: (f64, f64, f64),
+    longitude: f64,
+    latitude: f64,
+    bearing: f64,
+    speed: f64,
+    advance: f64,
+) -> (f64, f64, f64) {
+    if !(speed >= CAR_HEADING_MIN_SPEED)
+        || ![longitude, latitude, bearing, advance]
+            .iter()
+            .all(|v| v.is_finite())
+    {
+        return route_pose;
+    }
+    let angle = bearing.to_radians();
+    let north = advance.max(0.) * angle.cos();
+    let east = advance.max(0.) * angle.sin();
+    (
+        longitude + east / (111_320. * latitude.to_radians().cos()),
+        latitude + north / 110_540.,
+        bearing.rem_euclid(360.),
+    )
+}
+
 /// Which `navRoute` the map follows.
 ///
 /// carrot-nav's carrot_man stamps every navRoute with a `carrotRouteId` that
@@ -181,6 +215,24 @@ fn geometry_id(route: &[[f64; 2]]) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_car_heading_replaces_the_route_chord_once_moving() {
+        let route = (127.0, 37.0, 90.0);
+        let (lon, lat, bearing) = car_pose(route, 127.001, 37.001, 10.0, 8.0, 0.0);
+        assert!((lon - 127.001).abs() < 1e-12 && (lat - 37.001).abs() < 1e-12);
+        assert_eq!(bearing, 10.0);
+        let (_, ahead, _) = car_pose(route, 127.0, 37.0, 0.0, 8.0, 11.054);
+        assert!((ahead - 37.0001).abs() < 1e-9, "moved north by the advance");
+    }
+
+    #[test]
+    fn slow_or_headless_fixes_keep_the_route_pose() {
+        let route = (127.0, 37.0, 90.0);
+        assert_eq!(car_pose(route, 127.001, 37.001, 10.0, 1.0, 0.0), route);
+        assert_eq!(car_pose(route, 127.001, 37.001, f64::NAN, 8.0, 0.0), route);
+        assert_eq!(car_pose(route, 127.001, 37.001, 10.0, f64::NAN, 0.0), route);
+    }
 
     #[test]
     fn unstamped_routes_follow_geometry_and_ignore_empty_heartbeats() {
