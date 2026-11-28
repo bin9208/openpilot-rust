@@ -120,6 +120,34 @@ impl RouteState {
         Ok(Some(self.send_routes(&coords, false)?))
     }
 
+    /// The route point `distance` m past the car's projection and the route's
+    /// bearing there (north 0, east 90); None past the route's end.
+    pub fn ahead(&self, position: Point, distance: f64) -> Option<(Point, f64)> {
+        if !self.active || self.points.len() < 2 || !distance.is_finite() {
+            return None;
+        }
+        let path = path_after_distance(self.start_index, &self.points, position, distance.max(1.));
+        let total: f64 = path
+            .points
+            .windows(2)
+            .map(|w| crate::geometry::haversine(w[0], w[1]))
+            .sum();
+        if total + 1. < distance {
+            return None;
+        }
+        let end = *path.points.last()?;
+        let from = path
+            .points
+            .iter()
+            .rev()
+            .find(|p| crate::geometry::haversine(**p, end) > 2.)?;
+        let bearing = ((end.0 - from.0) * from.1.to_radians().cos())
+            .atan2(end.1 - from.1)
+            .to_degrees()
+            .rem_euclid(360.);
+        Some((end, bearing))
+    }
+
     pub fn preview(
         &mut self,
         input: RouteInput,

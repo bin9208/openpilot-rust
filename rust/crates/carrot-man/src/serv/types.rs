@@ -107,6 +107,8 @@ pub struct NavigationState {
     pub turn_info: i64,
     pub next_turn_info: i64,
     pub x_turn_distance: f64,
+    /// Node-link lanes (here, 30 m before the turn; 0 = unknown), AtcLaneCount.
+    pub atc_lanes: Option<(u8, u8)>,
     pub x_next_turn_distance: f64,
     pub main_text: String,
     pub next_main_text: String,
@@ -152,6 +154,7 @@ impl Default for NavigationState {
             turn_info: -1,
             next_turn_info: -1,
             x_turn_distance: 0.,
+            atc_lanes: None,
             x_next_turn_distance: 0.,
             main_text: String::new(),
             next_main_text: String::new(),

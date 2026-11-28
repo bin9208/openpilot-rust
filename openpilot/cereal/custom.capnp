@@ -61,6 +61,7 @@ struct CarrotMan @0x81c2f05a394cf4af {
 	positionMonoTime @44 :UInt64;
 	positionSource @45 :Text;
 	positionHeadingValid @46 :Bool;
+	atcLanes @47 :Text;
 }
 
 struct CarrotNaviState @0xaedffd8f31e7b55d {

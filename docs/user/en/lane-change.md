@@ -139,6 +139,17 @@ The entry condition when automatic turn control (ATC) moves into an **existing**
 
 On a car without BSD, or whose BSD signal does not arrive, the side and rear are judged only by radar side detection and the model's lane geometry (some cars have no radar side detection either). The default `1` assumes the driver knows this and checks; set `0` to be more conservative on a car with BSD. A pocket lane opening beside the last lane, and the car's camera reporting a crossable line, start by themselves with either value as before.
 
+### `AtcLaneCount` — ATC lane count
+
+The original ATC starts its lane changes for a turn 160-350 m ahead by road limit, whatever the road's width: at the edge of a five-lane road it must change lanes four times in that distance before a left turn. This setting starts earlier from the direction's lane count in the Korean standard node-link.
+
+| Value | Behavior |
+|---:|---|
+| `0` | The original distance |
+| `1` (default) | On a road of three or more lanes, each lane beyond two adds 5 s of travel at the road limit (up to 600 m): four lanes at 50 km/h, 200 m → 339 m |
+
+It needs the node-link file at `/data/navigation/nodelink/nodelink_kr.nlk` on the device; without it `1` behaves as the original. Build the file with `tools/navigation/nodelink_nlk.py` from `MOCT_LINK.shp` downloaded from the ITS National Transport Information Center (about 32 MB for the country). Once a second the lane counts are looked up on the link matching the heading where the car is and 30 m before the turn, and logged in `carrotMan.atcLanes` as `here,before the turn`.
+
 ### `ShareData` — ONNX lane and BSD detection
 
 Enable **Carrot Web → Settings → Driving → Steering → ONNX Lane & BSD → ONNX Lane and BSD Detection**. This setting runs the lane-type ONNX. Camera BSD has a separate `OnnxBsdEnabled` switch in the detail screen and defaults to off; an existing saved `ShareData` value is preserved. The service starts after onroad initialization and model/CAN/Panda readiness have settled for 0.5 seconds. Engaging cruise is not required. It stops offroad and waits again at the next onroad start.

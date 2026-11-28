@@ -42,6 +42,23 @@ fn interpolate(x: f64, bp: &[f64], values: &[f64]) -> f64 {
     }
     values[values.len() - 1]
 }
+/// Seconds of travel per lane to cross before a turn.
+const LANE_CHANGE_S: f64 = 5.;
+const LANE_START_MAX: f64 = 600.;
+
+/// Where a turn's ATC lane changes start. carrot starts them 160-350 m before
+/// a turn by road limit whatever the road's width; on a road of `lanes` lanes
+/// (node-link, AtcLaneCount) each lane beyond two adds LANE_CHANGE_S of travel
+/// at the road limit (4 lanes at 50 km/h: 200 -> 339 m).
+pub fn lane_start(fork_start: f64, lanes: Option<u8>, road_limit: f64) -> f64 {
+    match lanes {
+        Some(n) if n >= 3 => (fork_start
+            + f64::from(n - 2) * road_limit.max(30.) / 3.6 * LANE_CHANGE_S)
+            .clamp(fork_start, LANE_START_MAX.max(fork_start)),
+        _ => fork_start,
+    }
+}
+
 impl CarrotServ {
     pub fn update_tbt(&mut self) {
         self.nav.turn_info = turn_mapping(self.nav.turn_type, false).2;
@@ -68,18 +85,24 @@ impl CarrotServ {
             &[5., 10.],
             &[43., 60.],
         );
+        let lanes = if check && self.settings.atc_lane_count {
+            self.nav.atc_lanes.map(|(here, _)| here)
+        } else {
+            None
+        };
+        let turn_lane_start = lane_start(fork_start, lanes, self.nav.road_limit);
         let (kind, speed, end, start) = match turn_info {
             1 => (
                 "turn left",
                 turn_speed,
                 self.settings.auto_turn_end * turn_speed / 3.6,
-                fork_start,
+                turn_lane_start,
             ),
             2 => (
                 "turn right",
                 turn_speed,
                 self.settings.auto_turn_end * turn_speed / 3.6,
-                fork_start,
+                turn_lane_start,
             ),
             5 => (
                 "straight",
@@ -187,5 +210,19 @@ impl CarrotServ {
             speed,
             distance: end,
         }
+    }
+}
+
+#[cfg(test)]
+mod lane_start_tests {
+    use super::lane_start;
+
+    #[test]
+    fn wide_roads_start_the_lane_changes_earlier() {
+        assert_eq!(lane_start(200., None, 50.), 200.);
+        assert_eq!(lane_start(200., Some(2), 50.), 200.);
+        assert!((lane_start(200., Some(4), 50.) - 338.9).abs() < 0.1);
+        assert_eq!(lane_start(350., Some(8), 100.), 600.);
+        assert_eq!(lane_start(200., Some(3), 0.), 200. + 30. / 3.6 * 5.);
     }
 }

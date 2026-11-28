@@ -140,6 +140,13 @@ pub fn carrot(
     carrot.set_navi_safety_rejection(decision.safety_rejection.as_str());
     carrot.set_decel_provider(decision.decel_provider.as_str());
     carrot.set_decel_reason(decision.source.as_str());
+    carrot.set_atc_lanes(
+        state
+            .nav
+            .atc_lanes
+            .map_or(String::new(), |(here, before)| format!("{here},{before}"))
+            .as_str(),
+    );
     Ok(capnp::serialize::write_message_to_words(&output))
 }
 

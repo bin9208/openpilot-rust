@@ -15,6 +15,8 @@ pub struct Owner {
     pub events: events::EventState,
     pub legacy_timestamps: Vec<(String, i64)>,
     pub ip_address: String,
+    pub nodelink: Option<crate::nodelink::NodeLinks<std::fs::File>>,
+    pub nodelink_retry: f64,
 }
 
 impl Owner {
@@ -30,6 +32,8 @@ impl Owner {
             events: events::EventState::default(),
             legacy_timestamps: Vec::new(),
             ip_address: "0.0.0.0".into(),
+            nodelink: None,
+            nodelink_retry: 0.,
         }
     }
     pub fn stale_rgdata(&mut self, timestamp: i64, session: &str) -> bool {

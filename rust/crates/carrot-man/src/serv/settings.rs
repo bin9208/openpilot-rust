@@ -20,6 +20,9 @@ pub struct Settings {
     pub auto_turn_map_change: i64,
     pub auto_turn_control: i64,
     pub auto_turn_end: f64,
+    /// AtcLaneCount (default on): start ATC lane changes earlier on wide roads.
+    #[serde(default)]
+    pub atc_lane_count: bool,
     pub curve_lower_limit: f64,
     /// AutoCurveSpeedTurnLowerLimit (km/h, 0 = off): the vision and route
     /// curve floor near an intersection turn, in place of curve_lower_limit.
@@ -90,6 +93,7 @@ impl Settings {
             auto_turn_map_change: integer("AutoTurnMapChange")?,
             auto_turn_control: integer("AutoTurnControl")?,
             auto_turn_end: value("AutoTurnControlTurnEnd")?,
+            atc_lane_count: params.get("AtcLaneCount")?.is_none() || integer("AtcLaneCount")? == 1,
             curve_lower_limit: num_traits::ToPrimitive::to_f64(&curve_lower)
                 .ok_or(crate::Error::Contract("curve lower limit conversion"))?,
             // Unset or unreadable means off: the ordinary floor everywhere.

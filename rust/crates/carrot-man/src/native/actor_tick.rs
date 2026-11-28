@@ -155,6 +155,11 @@ pub(super) fn tick(context: Tick<'_>) -> Result<(), Error> {
         .join(";");
     if refresh {
         owner.serv.settings = crate::serv::settings::Settings::read(params)?;
+        owner.serv.nav.atc_lanes = if owner.serv.settings.atc_lane_count {
+            node_lanes(owner, mono)
+        } else {
+            None
+        };
     }
     let decision = owner.serv.tick(TickInput {
         now: mono,
@@ -185,4 +190,34 @@ pub(super) fn tick(context: Tick<'_>) -> Result<(), Error> {
     )?;
     broadcast.send(owner, &inputs, params, writes, config, mono)?;
     Ok::<_, Error>(())
+}
+
+/// Node-link lanes where the car is and 30 m before the next turn along the
+/// route (0 when that point is unknown). The file is optional: without it
+/// nothing changes; a missing file is looked for again every minute.
+fn node_lanes(owner: &mut Owner, mono: f64) -> Option<(u8, u8)> {
+    if owner.nodelink.is_none() && mono >= owner.nodelink_retry {
+        owner.nodelink_retry = mono + 60.;
+        owner.nodelink =
+            crate::nodelink::NodeLinks::open(std::path::Path::new(crate::nodelink::PATH)).ok();
+    }
+    let links = owner.nodelink.as_mut()?;
+    let gps = &owner.serv.gps;
+    if gps.latitude.abs() < 1. || gps.longitude.abs() < 1. {
+        return None;
+    }
+    let here = links
+        .matched(gps.latitude, gps.longitude, gps.bearing, 20., 45.)?
+        .lanes;
+    let distance = owner.serv.nav.x_turn_distance;
+    let before = if distance > 40. {
+        owner
+            .route
+            .ahead((gps.longitude, gps.latitude), distance - 30.)
+            .and_then(|((lon, lat), bearing)| links.matched(lat, lon, bearing, 25., 45.))
+            .map_or(0, |l| l.lanes)
+    } else {
+        0
+    };
+    Some((here, before))
 }

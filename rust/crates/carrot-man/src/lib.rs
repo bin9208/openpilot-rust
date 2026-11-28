@@ -10,6 +10,7 @@ pub mod ingress;
 #[cfg(feature = "native-skip-miri")]
 pub mod native;
 pub mod navigation;
+pub mod nodelink;
 #[cfg(feature = "native-skip-miri")]
 pub mod owner;
 #[cfg(feature = "native-skip-miri")]
