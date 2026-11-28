@@ -25,6 +25,16 @@ pub struct GeometryContext {
     pub rpy: [f64; 3],
     pub turning: bool,
 }
+/// Focal length (px) of the 1344x760 signal view: the OS04C10 road camera
+/// natively; the 1928x1208 AR0231/OX03C10 camera (focal 2648) after
+/// signal-observer scales it by 1344/1928 and keeps the middle rows.
+pub fn focal(sensor: &str) -> Option<f64> {
+    match sensor {
+        "os04c10" => Some(1141.5),
+        "ar0231" | "ox03c10" => Some(2648. * 1344. / 1928.),
+        _ => None,
+    }
+}
 impl Context {
     pub fn geometry(&self, now: f64) -> Option<GeometryContext> {
         if !self.calibration.fresh(now, 2.)
@@ -32,7 +42,7 @@ impl Context {
             || !self.device.fresh(now, 2.)
             || !self.calibrated
             || !matches!(self.device_type.as_str(), "tici" | "tizi" | "mici")
-            || self.sensor != "os04c10"
+            || !matches!(self.sensor.as_str(), "os04c10" | "ar0231" | "ox03c10")
             || self.rpy.len() != 3
             || !self.rpy.iter().all(|v| v.is_finite())
             || !self.pose.fresh(now, 0.2)
@@ -65,9 +75,21 @@ impl Context {
             .sqrt()
             .to_degrees();
         Some(GeometryContext {
-            focal: 1141.5,
+            focal: focal(&self.sensor)?,
             rpy,
             turning: yaw.abs() > 1.5 || std > 2.,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn the_full_road_camera_uses_its_scaled_focal() {
+        assert_eq!(super::focal("os04c10"), Some(1141.5));
+        let scaled = super::focal("ox03c10").unwrap();
+        assert!((scaled - 1845.91).abs() < 0.01);
+        assert_eq!(super::focal("ar0231"), Some(scaled));
+        assert_eq!(super::focal("unsupported"), None);
     }
 }
