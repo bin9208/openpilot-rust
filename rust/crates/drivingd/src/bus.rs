@@ -21,6 +21,7 @@ pub const TOPICS: &[&str] = &[
     "liveDelay",
     "carrotMan",
     "radarState",
+    "livePose",
 ];
 pub const OUTPUTS: &[&str] = &["modelV2", "drivingModelData", "cameraOdometry"];
 

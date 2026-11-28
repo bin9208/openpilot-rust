@@ -40,6 +40,22 @@ impl Card {
             }
         }
         let mut state = message.get_root::<car_state::Builder>()?;
+        // carrot card.py: canError alert text2 names the timed-out messages
+        // (at most two, one line).
+        let can_result = if state.reborrow_as_reader().get_can_valid() {
+            String::new()
+        } else {
+            vehicle
+                .invalid_can_messages()
+                .into_iter()
+                .take(2)
+                .collect::<Vec<_>>()
+                .join(", ")
+        };
+        if can_result != self.can_parser_result {
+            io.put_nonblocking("CanParserResult", can_result.as_bytes())?;
+            self.can_parser_result = can_result;
+        }
         self.vision_sources =
             xiaoge::record_sources(state.reborrow(), self.vision.as_ref(), subscribed);
         xiaoge::apply(state.reborrow(), self.vision.as_ref(), subscribed);
@@ -76,6 +92,7 @@ impl Card {
         }
         let tail_now = io.now();
         tail.set_speedcam_gas_tok_consumed(vehicle.speedcam_gas_tok_consumed());
+        tail.set_stock_adopt_kph(vehicle.stock_adopt_kph());
         tail.update(state.reborrow(), io.subscribers(), self.metric, tail_now)?;
         for (key, bytes) in tail.take_param_writes() {
             io.put_nonblocking(&key, &bytes)?;
@@ -157,13 +174,14 @@ impl Card {
             }
             if io.subscribers().all_alive(&["carControl"])? {
                 let apply_start = io.monotonic_ns();
+                let monotonic_ns = apply_start;
                 let now_ns = if self.replay {
                     self.replay_time.ok_or(Error::ReplayTimestamp)?
                 } else {
                     publication::event_time(io)?
                 };
                 let reboot = self.settings.get_bool("ImpactDashcamReboot")?;
-                let mut guarded = readiness::guard(
+                let (lateral_ready, mut guarded) = readiness::guard(
                     &mut self.lateral_startup,
                     io.subscribers(),
                     message.get_root_as_reader::<car_state::Reader>()?,
@@ -174,6 +192,45 @@ impl Card {
                         message.get_root_as_reader::<car_state::Reader>()?,
                     )?);
                 }
+                let candidate = match &guarded {
+                    Some(message) => message.get_root_as_reader()?,
+                    None => input::control(io.subscribers())?,
+                };
+                let voice_backed = {
+                    let id = candidate.get_assistant_lane_signal_id()?.to_str()?;
+                    id.is_empty() || {
+                        let seconds = monotonic_ns as f64 * 1e-9;
+                        let subs = io.subscribers();
+                        let fresh = ["carControl", "modelV2"].iter().all(|name| {
+                            subs.topic(name).is_ok_and(|t| {
+                                t.alive
+                                    && t.valid
+                                    && (0. ..0.2).contains(&(seconds - t.receive_time))
+                            })
+                        });
+                        let meta = input::model(subs)?.and_then(|m| m.get_meta().ok());
+                        candidate.get_lat_active()
+                            && fresh
+                            && meta.is_some_and(|m| {
+                                m.get_assistant_lane_signal_route()
+                                    .ok()
+                                    .and_then(|t| t.to_str().ok())
+                                    == Some("native")
+                                    && m.get_assistant_lane_signal_id()
+                                        .ok()
+                                        .and_then(|t| t.to_str().ok())
+                                        == Some(id)
+                            })
+                    }
+                };
+                let cancelled = readiness::cancelled_voice_blinkers(
+                    candidate,
+                    message.get_root_as_reader::<car_state::Reader>()?,
+                    voice_backed,
+                )?;
+                if cancelled.is_some() {
+                    guarded = cancelled;
+                }
                 let control = if let Some(message) = &guarded {
                     message
                         .get_root_as_reader::<openpilot_cereal::car_capnp::car_control::Reader>()?
@@ -181,9 +238,22 @@ impl Card {
                     input::control(io.subscribers())?
                 };
                 let applied_enabled = control.get_enabled();
+                let applied_control = if self.native_voice.is_some() {
+                    let mut copy = super::Message::new_default();
+                    copy.set_root(control)?;
+                    Some(copy)
+                } else {
+                    None
+                };
                 let result = vehicle.apply(ApplyInput {
                     control,
                     now_ns,
+                    subscribers: Some(io.subscribers()),
+                    initialized: self.initialized_previous,
+                    lateral_ready,
+                    impact_reboot: reboot,
+                    vision: self.vision.as_ref(),
+                    monotonic_ns,
                     model: input::model(io.subscribers())?,
                     radar: input::radar(io.subscribers())?,
                 });
@@ -202,6 +272,14 @@ impl Card {
                 )?;
                 io.publish("sendcan", &bytes)?;
                 let sent = io.monotonic_ns();
+                if let (Some(voice), Some(copy)) = (&mut self.native_voice, &applied_control) {
+                    voice.update(
+                        sent as f64 * 1e-9,
+                        copy.get_root_as_reader::<openpilot_cereal::car_capnp::car_control::Reader>()?,
+                        state,
+                        &output.can,
+                    );
+                }
                 self.diagnostics.stage(7, apply_start, applied);
                 self.diagnostics.stage(8, applied, sent);
                 self.diagnostics.stage(9, receive, sent);

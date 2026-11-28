@@ -1,28 +1,35 @@
-use crate::types::{Action, Gesture, Mapping, Seconds, Token};
+use crate::types::{Action, Gesture, Gestures, Mapping, Seconds, Token};
 use indexmap::IndexMap;
 
 pub(crate) struct Clicks {
     pub mapping: Mapping,
     learning: bool,
+    gestures: Option<Gestures>,
     pub pending: IndexMap<Token, Seconds>,
 }
 
 impl Clicks {
-    pub fn new(mapping: Mapping, learning: bool) -> Self {
+    pub fn new(mapping: Mapping, learning: bool, gestures: Option<Gestures>) -> Self {
         Self {
             mapping,
             learning,
+            gestures,
             pending: IndexMap::new(),
         }
     }
 
     pub fn assigned(&self, token: &Token, gesture: Gesture) -> bool {
+        let enabled = self.gestures.is_none_or(|g| match gesture {
+            Gesture::Double => g.double,
+            Gesture::Long => g.long,
+        });
         self.learning
-            || self
-                .mapping
-                .0
-                .get(&token.with_gesture(gesture))
-                .is_some_and(|action| *action != Action::None)
+            || (enabled
+                && self
+                    .mapping
+                    .0
+                    .get(&token.with_gesture(gesture))
+                    .is_some_and(|action| *action != Action::None))
     }
 
     pub fn flush(&mut self, now: Seconds) -> Vec<Token> {

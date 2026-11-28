@@ -49,6 +49,7 @@ fn clamped(value: Value, definition: Option<&Value>) -> Value {
         if number > maximum {
             number = maximum;
         }
+        number = crate::param_coercion::lift_to_nonzero_min(number, definition);
         let clamped = Value::Float(number);
         if [
             definition.get("min"),

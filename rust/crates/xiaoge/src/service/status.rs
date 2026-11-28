@@ -35,7 +35,21 @@ impl State {
             "updatedMonoTimeNanos".to_owned(),
             Value::Integer(i128::from(self.blindspot_updated)),
         );
+        let disabled_gate = crate::vision::Gate {
+            active: false,
+            side: None,
+            reason: "visual BSD is disabled",
+            lane_width: 0.0,
+            eligible_sides: Vec::new(),
+            lane_widths: [0.0; 2],
+        };
+        let gate = if self.bsd_enabled {
+            &self.gate
+        } else {
+            &disabled_gate
+        };
         let mut status = fields([
+            ("bsdEnabled", Value::Bool(self.bsd_enabled)),
             ("standalone", Value::Bool(false)),
             ("integrated", Value::Bool(true)),
             (
@@ -51,18 +65,17 @@ impl State {
             (
                 "gate",
                 object([
-                    ("active", Value::Bool(self.gate.active)),
+                    ("active", Value::Bool(gate.active)),
                     (
                         "side",
-                        Value::Text(self.gate.side.map_or("", Side::name).to_owned()),
+                        Value::Text(gate.side.map_or("", Side::name).to_owned()),
                     ),
-                    ("reason", Value::Text(self.gate.reason.to_owned())),
-                    ("laneWidth", Value::Float(self.gate.lane_width)),
+                    ("reason", Value::Text(gate.reason.to_owned())),
+                    ("laneWidth", Value::Float(gate.lane_width)),
                     (
                         "eligibleSides",
                         Value::Array(
-                            self.gate
-                                .eligible_sides
+                            gate.eligible_sides
                                 .iter()
                                 .map(|side| Value::Text(side.name().to_owned()))
                                 .collect(),
@@ -71,8 +84,8 @@ impl State {
                     (
                         "laneWidths",
                         object([
-                            ("left", Value::Float(self.gate.lane_widths[0])),
-                            ("right", Value::Float(self.gate.lane_widths[1])),
+                            ("left", Value::Float(gate.lane_widths[0])),
+                            ("right", Value::Float(gate.lane_widths[1])),
                         ]),
                     ),
                 ]),

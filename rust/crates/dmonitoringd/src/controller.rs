@@ -1,7 +1,7 @@
 use crate::{wire, Error};
 use openpilot_cereal::{
-    car_capnp::{car_params, car_state::GearShifter},
-    log_capnp::event,
+    car_capnp::{car_control, car_params, car_state, car_state::GearShifter},
+    log_capnp::{event, selfdrive_state},
 };
 use openpilot_desire::command::CommandReader;
 use openpilot_messaging::state::State;
@@ -10,6 +10,8 @@ use openpilot_params::Params;
 
 pub const TOPICS: &[&str] = &[
     "driverStateV2",
+    "carControl",
+    "longitudinalPlan",
     "liveCalibration",
     "carState",
     "selfdriveState",
@@ -66,8 +68,102 @@ macro_rules! read {
         value?
     }};
 }
+/// Pause assessment during a confirmed hold; resume on departure or stale data.
+fn stationary_pause(
+    state: &State,
+    now: f64,
+    cs: &car_state::Reader<'_>,
+    sd: &selfdrive_state::Reader<'_>,
+) -> Result<bool, Error> {
+    let services = [
+        "carState",
+        "selfdriveState",
+        "carControl",
+        "longitudinalPlan",
+    ];
+    for name in services {
+        let topic = state.topic(name)?;
+        if !topic.seen || !fresh(now, topic.log_mono_time as f64 / 1e9) {
+            return Ok(false);
+        }
+    }
+    if !state.all_checks(&services)? {
+        return Ok(false);
+    }
+    let cc = read!(state, "carControl", CarControl);
+    let plan = read!(state, "longitudinalPlan", LongitudinalPlan);
+    let stopped = cs.get_can_valid()
+        && cs.get_standstill()
+        && !cs.get_gas_pressed()
+        && matches!(
+            cs.get_gear_shifter(),
+            Ok(GearShifter::Drive | GearShifter::Low)
+        )
+        && cs.get_v_ego().is_finite()
+        && cs.get_v_ego_raw().is_finite()
+        && cs.get_v_ego().abs() < 0.1
+        && cs.get_v_ego_raw().abs() < 0.1;
+    let target = plan.get_v_target_now();
+    if !(stopped
+        && sd.get_enabled()
+        && sd.get_active()
+        && cc.get_long_active()
+        && cc.get_actuators()?.get_long_control_state()
+            == Ok(car_control::actuators::LongControlState::Stopping)
+        && target.is_finite()
+        && (0. ..0.1).contains(&target))
+    {
+        return Ok(false);
+    }
+    // Existing planner states: e2eStopped=5/red=1; lead=0.
+    if plan.get_x_state() == 5 && plan.get_traffic_state() == 1 {
+        return Ok(true);
+    }
+    if plan.get_x_state() != 0 || !plan.get_has_lead() {
+        return Ok(false);
+    }
+    let radar_topic = state.topic("radarState")?;
+    if !radar_topic.seen
+        || !fresh(now, radar_topic.log_mono_time as f64 / 1e9)
+        || !state.all_checks(&["radarState"])?
+    {
+        return Ok(false);
+    }
+    let radar = read!(state, "radarState", RadarState);
+    let errors = radar.get_radar_errors()?;
+    if errors.get_can_error()
+        || errors.get_radar_fault()
+        || errors.get_wrong_config()
+        || errors.get_radar_unavailable_temporary()
+    {
+        return Ok(false);
+    }
+    let lead = radar.get_lead_one()?;
+    Ok(lead.get_status()
+        && lead.get_d_rel().is_finite()
+        && lead.get_d_rel() > 0.
+        && lead.get_d_rel() <= 40.
+        && lead.get_v_lead().is_finite()
+        && lead.get_v_lead().abs() < 0.1)
+}
+/// Tester-only switch. It is not a setting: nothing in Carrot Web, the device
+/// UI, backups or profiles can create this file, only a shell. While it
+/// exists every drive starts with the same session disable that pressing
+/// CANCEL three times gives. Without it the normal policy applies unchanged.
+const TEST_DISABLE: &str = "/data/disable_dm_for_testing";
+
+fn apply_test_disable(params: &Params) -> Result<(), Error> {
+    if std::path::Path::new(TEST_DISABLE).exists()
+        && !params.get_bool("DriverMonitoringSessionDisabled")?
+    {
+        params.put_bool("DriverMonitoringSessionDisabled", true)?;
+    }
+    Ok(())
+}
+
 impl Controller {
     pub fn new(params: &Params) -> Result<Self, Error> {
+        apply_test_disable(params)?;
         let now = monotonic();
         let mut monitoring = DriverMonitoring2::new(
             params.get_bool("IsRhdDetected")?,
@@ -130,6 +226,7 @@ impl Controller {
             self.next_mode_check = now + 0.5;
         }
         if self.frame.is_multiple_of(40) {
+            apply_test_disable(params)?;
             let enabled = params.get_bool("DriverMonitoringEnabled")?
                 && !params.get_bool("DriverMonitoringSessionDisabled")?;
             if enabled && !self.enabled {
@@ -264,6 +361,7 @@ impl Controller {
                 && cs.get_v_ego_raw().is_finite()
                 && cs.get_v_ego().abs() < 0.1
                 && cs.get_v_ego_raw().abs() < 0.1;
+            paused = paused || (!self.demo && valid && stationary_pause(state, now, &cs, &sd)?);
             parked = !self.demo
                 && current
                 && cs.get_gear_shifter() == Ok(GearShifter::Park)

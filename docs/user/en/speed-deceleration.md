@@ -85,6 +85,8 @@ When external navigation is connected, deceleration and countdowns use external 
 
 `VehicleNaviCanControl` selects when exact camera and speed-bump distances from stock navigation are used on supported Hyundai/Kia CAN-FD vehicles. The modes below apply only without an external navigation connection. Always apply in mode `1` means independent of stock route guidance.
 
+The Kia EV4 uses stock-navigation camera and speed-bump distances and route information. Section average-speed integration is undergoing validation. Route-dependent modes require valid current-route information, and empty EV4 route messages do not extend its freshness period.
+
 A current camera warning is associated only with a nearby distance candidate with the same limit. If only a distant same-speed camera is available, the current warning uses its own virtual distance while the distant camera remains queued for a later approach.
 
 | Value | vNAVI future-event scope |
@@ -292,6 +294,8 @@ There are three distinct sources:
 - **Route-turn speed** from route/turn input
 - **Applied model driving speed** from the model's overall desired velocity
 
+Automatic turn control (ATC) handles a **U-turn** and **arrival** separately. openpilot cannot steer a U-turn, so the driver turns: ATC chimes the turn sound once 150 m before it and slows only to the turn speed (`AutoTurnControlSpeedTurn`); the original slowed to 1 km/h, a crawl in the middle of the lane. Arrival does not slow the car: the destination may be mid-lane or inside a car park, so the navigation announces it and the driver decides where to stop.
+
 ### `AutoCurveSpeedFactor`
 
 The code divides predicted yaw rate by velocity at the same point to obtain curvature. It divides the 1.9 m/s² reference lateral-acceleration budget by the setting ratio, so a higher factor produces a lower curve target. Predicted future velocity is not used directly as a driving-speed target.
@@ -305,6 +309,16 @@ The relationship is approximately inverse-square-root: changing 100% to 120% pro
 ### `AutoCurveSpeedLowerLimit`
 
 This floor applies to vision-curve and route-turn candidates. For vision curves, it applies to the curve target before remaining distance determines the current approach ceiling. Raising it prevents those sources from selecting a lower speed, which can leave insufficient slowing for a sharp curve. It is not an automatically safe minimum.
+
+### `AutoCurveSpeedTurnLowerLimit`
+
+An intersection-turn floor (km/h, default `0` = off). Only while ATC is in a left/right turn (`turn left`/`turn right`, from about 43-60 m before the turn point) and for 8 s afterwards, the vision-curve and route-turn candidates use this floor instead of `AutoCurveSpeedLowerLimit`. The 8 s keep it through the turn after the navigation has already moved on to the next instruction.
+
+- Ordinary curves, ramps and the ATC approach speed (`AutoTurnControlSpeedTurn`) are unchanged.
+- A value above `AutoCurveSpeedLowerLimit` has no effect.
+- Example: with `AutoCurveSpeedLowerLimit` 22, a 10 m-radius intersection taken at 22 km/h asks 3-4 m/s² of lateral acceleration and can saturate the steering. At 12 the turn slows further, to about 12-17 km/h depending on the model curvature and route shape.
+
+It is not an automatically safe minimum either; the driver still checks following traffic and the road.
 
 ### `TurnSpeedControlMode`
 
@@ -321,6 +335,8 @@ In mode 2, route-turn speed enters only when turn distance is roughly between -5
 > Mode `0` does not disable every model-derived speed function. `ApplyModelSpeed` changes cruise set speed separately.
 
 Route-based deceleration uses the actual path up to 300m ahead of the current position projected onto the route. A first map segment longer than 300m is clipped within that horizon; the following segment is not extended backwards. This route-clipping correction does not change the curve-speed floor, ATC target or accelerator-override settings.
+
+The route speed comes from the curvature of that path resampled every 2m with its heading smoothed over about 6m, so a sharp vertex of the route line is treated as the arc a car actually drives. Each point allows `√(1.8m/s² ÷ curvature)`, and the limit at the current position lets the car reach it after about 1 second of response at the `AutoNaviSpeedDecelRate` deceleration. For example, a 560m-radius curve allows about 114km/h and a 10m-radius intersection turn about 15km/h.
 
 ### `MapTurnSpeedFactor`
 

@@ -22,10 +22,12 @@ pub struct FrameTiming {
     pub cpu_end: f64,
     pub dropped: u32,
     pub published: bool,
+    /// Warp, hand-off, round trip and parse of the phone model's frame in ms.
+    pub jetlink: Option<[f64; 4]>,
 }
 impl FrameTiming {
-    pub fn metrics(&self) -> [(String, Number); 9] {
-        [
+    pub fn metrics(&self) -> Vec<(String, Number)> {
+        let mut metrics: Vec<(String, Number)> = [
             (
                 "camera_wait_ms",
                 Number::Float((self.camera_ready - self.loop_start) * 1000.0),
@@ -57,7 +59,25 @@ impl FrameTiming {
             ("dropped_frames", Number::Integer(i64::from(self.dropped))),
             ("published", Number::Integer(i64::from(self.published))),
         ]
-        .map(|(name, value)| (name.into(), value))
+        .into_iter()
+        .map(|(name, value)| (name.to_owned(), value))
+        .collect();
+        // Present only for frames the phone model answered, so the count of
+        // these metrics is also the number of such frames in the summary.
+        if let Some(stages) = self.jetlink {
+            for (name, value) in [
+                "jetlink_warp_ms",
+                "jetlink_handoff_ms",
+                "jetlink_roundtrip_ms",
+                "jetlink_parse_ms",
+            ]
+            .into_iter()
+            .zip(stages)
+            {
+                metrics.push((name.to_owned(), Number::Float(value)));
+            }
+        }
+        metrics
     }
 
     pub fn record(&self, diagnostics: &mut RuntimeDiagnostics, logger: &mut Logger) {
@@ -73,7 +93,8 @@ pub fn context(frame_id: u32) -> Fields {
             "backend".into(),
             Value::Text(std::any::type_name::<crate::runtime::DrivingRuntime<'_>>().into()),
         ),
-        // This daemon loads only the native internal model; Jetlink keeps that model warm.
+        // The internal model's runtime. Frames the phone model answered are
+        // told apart by the jetlink_* metrics.
         ("usbgpu".into(), Value::Bool(false)),
         ("frame_id".into(), Value::Integer(i128::from(frame_id))),
     ]

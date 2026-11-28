@@ -143,9 +143,37 @@ pub struct State {
     pub lane_updated: u64,
     pub side_at: [f64; 2],
     pub followup_until: [f64; 2],
+    /// `OnnxBsdEnabled`: visual blindspot detection is off unless it is 1.
+    pub bsd_enabled: bool,
+    /// Bumped on every enable/disable so an inference that raced the switch
+    /// can be recognised and dropped.
+    pub bsd_generation: u64,
 }
 
 impl State {
+    /// carrot's `_refresh_settings_locked`: a change of the enable switch
+    /// clears every published blindspot result and the inference pacing.
+    pub fn set_bsd_enabled(&mut self, enabled: bool) -> bool {
+        if enabled == self.bsd_enabled {
+            return false;
+        }
+        self.bsd_generation += 1;
+        self.clear_blindspot(0);
+        self.side_at = [0.0; 2];
+        self.followup_until = [0.0; 2];
+        self.metrics[0].last_inference = 0.0;
+        self.bsd_enabled = enabled;
+        true
+    }
+
+    /// No side active, no side selected; `updated` stamps the cleared result.
+    pub fn clear_blindspot(&mut self, updated: u64) {
+        self.blindspot_active = [false; 2];
+        self.blindspot_side = None;
+        self.blindspot_updated = updated;
+        self.blindspot_side_updated = [0; 2];
+    }
+
     pub fn new(config: Config, models: [Model; 2], now: f64) -> Self {
         Self {
             config,
@@ -185,6 +213,8 @@ impl State {
             lane_updated: 0,
             side_at: [0.0; 2],
             followup_until: [0.0; 2],
+            bsd_enabled: false,
+            bsd_generation: 0,
         }
     }
 
@@ -225,7 +255,8 @@ impl State {
     }
 
     pub fn side_valid(&self, side: Side, now: f64, nanos: u64) -> bool {
-        self.cameras[0].available(now)
+        self.bsd_enabled
+            && self.cameras[0].available(now)
             && self.models[0].loaded
             && self.gate.active
             && self.gate.eligible_sides.contains(&side)
@@ -234,5 +265,82 @@ impl State {
                 nanos,
                 crate::vision::BLINDSPOT_TIMEOUT_NS,
             )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A state whose left side would be valid and active if detection is on.
+    fn detecting() -> State {
+        let model = |loaded| Model {
+            path: String::new(),
+            loaded,
+            error: String::new(),
+        };
+        let mut state = State::new(Config::default(), [model(true), model(true)], 0.0);
+        state.cameras[0].last_frame = 10.0;
+        state.cameras[0].error.clear();
+        state.gate.active = true;
+        state.gate.eligible_sides = vec![Side::Left];
+        state
+    }
+    fn mark_left(state: &mut State) {
+        state.blindspot_active[0] = true;
+        state.blindspot_side = Some(Side::Left);
+        state.blindspot_updated = 10_000_000_000;
+        state.blindspot_side_updated[0] = 10_000_000_000;
+        state.side_at[0] = 10.0;
+        state.followup_until[0] = 11.5;
+    }
+
+    #[test]
+    fn visual_blindspot_is_off_until_enabled_and_a_switch_clears_results() {
+        let mut state = detecting();
+        mark_left(&mut state);
+        // Off by default: a result is never reported valid.
+        assert!(!state.bsd_enabled);
+        assert!(!state.side_valid(Side::Left, 10.0, 10_000_000_000));
+
+        assert!(state.set_bsd_enabled(true));
+        assert_eq!(state.bsd_generation, 1);
+        assert_eq!(state.blindspot_active, [false; 2]);
+        assert_eq!(state.blindspot_side_updated, [0; 2]);
+        assert_eq!(state.side_at, [0.0; 2]);
+        assert_eq!(state.followup_until, [0.0; 2]);
+
+        mark_left(&mut state);
+        assert!(state.side_valid(Side::Left, 10.0, 10_000_000_000));
+        // The same value again changes nothing.
+        assert!(!state.set_bsd_enabled(true));
+        assert_eq!(state.bsd_generation, 1);
+        assert!(state.blindspot_active[0]);
+
+        assert!(state.set_bsd_enabled(false));
+        assert_eq!(state.bsd_generation, 2);
+        assert_eq!(state.blindspot_active, [false; 2]);
+        assert_eq!(state.blindspot_side, None);
+        assert_eq!(state.blindspot_updated, 0);
+        assert!(!state.side_valid(Side::Left, 10.0, 10_000_000_000));
+    }
+
+    #[test]
+    fn status_reports_the_switch_and_hides_the_gate_while_off() {
+        let mut state = detecting();
+        let text = |state: &State| {
+            state
+                .status(10.0, 10_000_000_000)
+                .unwrap()
+                .to_json()
+                .unwrap()
+        };
+        let off = text(&state);
+        assert!(off.contains("\"bsdEnabled\": false"), "{off}");
+        assert!(off.contains("visual BSD is disabled"), "{off}");
+        state.set_bsd_enabled(true);
+        let on = text(&state);
+        assert!(on.contains("\"bsdEnabled\": true"), "{on}");
+        assert!(!on.contains("visual BSD is disabled"), "{on}");
     }
 }

@@ -69,6 +69,7 @@ pub fn run(config: Config, stop: Arc<AtomicBool>) -> Result<(), Error> {
         result
     })
 }
+const BENCH_IGNITION: &str = "/tmp/openpilot_bench_ignition";
 fn panda_input(subscriber: &SubMaster, now: f64) -> Result<Input, Error> {
     let topic = subscriber.state.topic("pandaStates")?;
     let event::Which::PandaStates(pandas) = topic
@@ -89,6 +90,9 @@ fn panda_input(subscriber: &SubMaster, now: f64) -> Result<Input, Error> {
             ignition |= panda.get_ignition_line() || panda.get_ignition_can();
         }
     }
+    // Bench testing only: this file is never created by openpilot and /tmp is
+    // cleared on reboot, so ignition stays real unless someone asks for it.
+    ignition |= !pandas.is_empty() && std::path::Path::new(BENCH_IGNITION).exists();
     let in_car = !pandas.is_empty()
         && pandas
             .get(0)

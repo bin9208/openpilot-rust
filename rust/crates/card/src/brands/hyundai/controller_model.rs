@@ -1,4 +1,4 @@
-use super::{lead::Lead, Error};
+use super::{lead::Lead, side_radar::SideLead, Error};
 use openpilot_cereal::log_capnp::{model_data_v2, radar_state};
 
 #[derive(Default)]
@@ -12,7 +12,13 @@ pub struct Model {
     pub changing: u8,
     pub desire: u16,
     pub lane_pair: Option<[f64; 2]>,
+    /// laneLineProbs[1], [2] (CcncClusterDisplay).
+    pub lane_probs: Option<[f64; 2]>,
     pub blinker_hold: u8,
+    /// radarState leadLeft / leadRight (CcncFrontRadarSide).
+    pub sides: [Option<SideLead>; 2],
+    /// carrotMan speed limit (cluster sign, SLA arrow).
+    pub nav: Option<super::cluster_extras::NavLimit>,
 }
 
 impl Model {
@@ -48,6 +54,10 @@ impl Model {
                     ret.lane_pair = Some([f64::from(left.get(0)), f64::from(right.get(0))]);
                 }
             }
+            let probs = model.get_lane_line_probs()?;
+            if probs.len() >= 3 {
+                ret.lane_probs = Some([f64::from(probs.get(1)), f64::from(probs.get(2))]);
+            }
             let desire = meta.get_desire_state()?;
             if desire.len() > 4 {
                 for index in 1..=4 {
@@ -68,6 +78,14 @@ impl Model {
                     v_rel: f64::from(lead.get_v_rel()),
                 });
             }
+            let side = |lead: openpilot_cereal::log_capnp::radar_state::lead_data::Reader<'_>| {
+                lead.get_status().then(|| SideLead {
+                    d_rel: f64::from(lead.get_d_rel()),
+                    d_path: f64::from(lead.get_d_path()),
+                    v_lead: f64::from(lead.get_v_lead()),
+                })
+            };
+            ret.sides = [side(radar.get_lead_left()?), side(radar.get_lead_right()?)];
         }
         Ok(ret)
     }

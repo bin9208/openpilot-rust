@@ -43,6 +43,7 @@ pub fn normalize_source(source: &Value) -> Result<Value, Error> {
     let source = text::stripped(source, true)?;
     Ok(
         if [
+            "voice_assistant",
             "web_ui",
             "profile",
             "restore",

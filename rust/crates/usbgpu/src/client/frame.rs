@@ -3,6 +3,42 @@ use crate::Error;
 use std::{io::Write, os::unix::fs::FileExt, time::Duration};
 
 impl Client {
+    /// Update the N16 inputs before submitting the camera frame. An unchanged
+    /// map stays in the shared input buffer until mapsd replaces or clears it.
+    pub fn set_navigation(
+        &mut self,
+        navigation: &[f32; 47],
+        map: Option<&[u8]>,
+    ) -> Result<(), Error> {
+        let address = |name| {
+            self.info
+                .layout
+                .get(name)
+                .map(|v| v.offset)
+                .ok_or(Error::Contract("worker navigation input missing"))
+        };
+        let start = address("navigation")?;
+        for (dst, value) in self.packed[start..start + 47 * 4]
+            .chunks_exact_mut(4)
+            .zip(navigation)
+        {
+            dst.copy_from_slice(&value.to_le_bytes());
+        }
+        if let Some(map) = map {
+            if map.len() != 256 * 256 {
+                return Err(Error::Contract("worker navigation map size"));
+            }
+            let start = address("nav_map")?;
+            for (dst, pixel) in self.packed[start..start + map.len() * 4]
+                .chunks_exact_mut(4)
+                .zip(map)
+            {
+                dst.copy_from_slice(&f32::from(*pixel).to_le_bytes());
+            }
+        }
+        Ok(())
+    }
+
     pub(super) fn run_inner(
         &mut self,
         frame: Frame<'_>,
@@ -42,7 +78,13 @@ impl Client {
             .stdin
             .as_mut()
             .ok_or(Error::Contract("missing worker input"))?
-            .write_all(if prepare_only { b"p" } else { b"r" })?;
+            // carrot's worker knows only 'r': its fused graph advances history
+            // and returns a full policy on catch-up frames too.
+            .write_all(if prepare_only && !self.python {
+                b"p"
+            } else {
+                b"r"
+            })?;
         let stdout = self
             .child
             .stdout
@@ -53,7 +95,9 @@ impl Client {
             Duration::from_secs(if self.first { 20 } else { 1 }),
             &self.cancelled,
         )?;
-        if response == b"0\n" && prepare_only {
+        // '0': no new output this cycle (Rust worker: prepare only; carrot's
+        // worker: it restored recurrent history and holds the last output).
+        if response == b"0\n" && (prepare_only || (self.python && !self.first)) {
             return Ok(false);
         }
         if response != b"1\n" {

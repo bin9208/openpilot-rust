@@ -4,6 +4,7 @@ use super::{
     canfd_cluster::{self, ClusterInput, ClusterMessages},
     canfd_maintenance,
     canfd_steering::{self, SteeringInput, SteeringMessages},
+    cluster_extras,
     controller::Controller,
     controller_control::Command,
     controller_hud,
@@ -27,6 +28,28 @@ pub fn messages(
     let config = &state.config;
     let camera = config.flags & f::CAMERA_SCC != 0;
     let hda2 = config.flags & f::HDA2 != 0;
+    let extras = {
+        let cs = state.out.get_root_as_reader::<car_state::Reader<'_>>()?;
+        let set_kph = f64::from(cs.get_v_cruise_cluster());
+        let button = !cs.get_button_events()?.is_empty();
+        c.cluster
+            .extras
+            .observe(c.frame, set_kph, cc.get_enabled(), button);
+        cluster_extras::ExtrasInput {
+            display: c.ccnc_keys.0,
+            probe: cluster_extras::Probe::from_debug(c.settings.debug),
+            nav: model.nav,
+            v_ego_kph: f64::from(cs.get_v_ego_cluster()) * 3.6,
+            set_kph,
+            cruise: cc.get_enabled(),
+            fcw: cc.get_hud_control()?.get_visual_alert()?
+                == car_control::h_u_d_control::VisualAlert::Fcw,
+            lane_y: model.lane_pair,
+            lane_probs: model.lane_probs,
+            lane_change: matches!(model.desire, 3 | 4),
+            second_lead: cluster_extras::second_lead(&model.leads, (&model.x, &model.y))?,
+        }
+    };
     let steering = SteeringInput {
         bus: config.bus,
         flags: config.flags,
@@ -84,6 +107,7 @@ pub fn messages(
                 lfa: captures.get("lfa"),
                 mdps: captures.get("mdps"),
                 scc: captures.get("scc_control"),
+                auto_set: c.cluster.extras.auto_set(&extras, state.metric),
             },
         )?);
         if !camera {
@@ -117,11 +141,34 @@ pub fn messages(
         c.jerk(input, command)?;
         if c.frame.is_multiple_of(100) {
             c.lane_check = super::parameters::setting_int(&state.settings, "LaneLineCheck")?;
+            c.ccnc_keys = (
+                super::parameters::setting_int(&state.settings, "CcncClusterDisplay")? > 0,
+                super::parameters::setting_int(&state.settings, "CcncTrafficBackground")? > 0,
+            );
+            c.front_radar_side = u8::try_from(
+                super::parameters::setting_int(&state.settings, "CcncFrontRadarSide")?.clamp(0, 2),
+            )
+            .map_err(|_| Error::Numeric)?;
         }
         let cs = state.out.get_root_as_reader::<car_state::Reader<'_>>()?;
         let blink_hold = if c.frame.is_multiple_of(5) && captures.get("adrv_0x1ea").is_some() {
-            c.blink_hold
-                .update(model.desire, model.lane_pair, model.blinker_hold)
+            // The lane-change lamp hold is not started or kept while the
+            // cruise CANCEL latch is set; an explicit lever request still is.
+            let hold_desire = if cs.get_cruise_cancel_state() {
+                0
+            } else {
+                model.desire
+            };
+            let hold = c
+                .blink_hold
+                .update(hold_desire, model.lane_pair, model.blinker_hold);
+            // An external physical hold wins (hyundaicanfd.py `external_hold`).
+            match c.external_hold {
+                1 => 0,
+                2 => 3,
+                3 => 4,
+                _ => hold,
+            }
         } else {
             0
         };
@@ -130,7 +177,7 @@ pub fn messages(
             flags: config.flags,
             hud: controller_hud::input(
                 (cc, state, model),
-                (&c.settings, command, c.frame, c.lane_check),
+                (&c.settings, command, c.frame, c.lane_check, c.ccnc_keys),
             )?,
             main_mode: state.main_mode,
             acc_mode: state.acc_mode,
@@ -139,12 +186,21 @@ pub fn messages(
             interlock: cs.get_brake_hold_active() || cs.get_parking_brake(),
             button_name: config.button_message(),
             lane_changing: blink_hold,
+            scc_main_ready: cs.get_can_valid()
+                && cs.get_gear_shifter()? == car_state::GearShifter::Drive
+                && !cs.get_brake_pressed(),
             corner_radar: c.settings.corner,
             debug: c.settings.debug,
             leads: &model.leads,
             path: (&model.x, &model.y),
             hud_lateral: Some(lateral),
             lane_warnings: [command.lane_warning[0] != 0., command.lane_warning[1] != 0.],
+            set_kph: f64::from(cs.get_v_cruise_cluster()),
+            v_ego_cluster: f64::from(cs.get_v_ego_cluster()),
+            metric: state.metric,
+            front_radar_side: c.front_radar_side,
+            side_leads: model.sides,
+            extras: &extras,
         };
         let source = ClusterMessages {
             lfahda: captures.get("lfahda_cluster"),
@@ -156,7 +212,12 @@ pub fn messages(
             buttons_alt2: captures.get("cruise_buttons_alt2"),
             scc: captures.get("scc_control"),
         };
-        result.extend(canfd_cluster::messages(&mut c.writer, &cluster, &source)?);
+        result.extend(canfd_cluster::messages(
+            &mut c.writer,
+            &mut c.cluster,
+            &cluster,
+            &source,
+        )?);
         result.extend(if hda2 {
             canfd_maintenance::adrv(&mut c.writer, (config.bus, config.flags, c.frame))?
         } else {
@@ -182,10 +243,15 @@ pub fn messages(
                 brake_hold: cs.get_brake_hold_active(),
                 parking_brake: cs.get_parking_brake(),
                 can_valid: cs.get_can_valid(),
+                can_timeout: cs.get_can_timeout(),
                 drive: cs.get_gear_shifter()? == car_state::GearShifter::Drive,
                 available: cruise.get_available(),
                 standstill: cs.get_standstill(),
-                paddle: state.paddle,
+                paddle: if state.paddle_hold > 0 {
+                    state.paddle.max(1)
+                } else {
+                    state.paddle
+                },
                 soft_hold: state.soft_hold != 0,
                 scc_hold: state.scc_hold,
             };
@@ -204,13 +270,19 @@ pub fn messages(
                 carrot_cruise: c.jerk.carrot_cruise,
                 carrot_accel: c.jerk.carrot_accel,
                 lead: lead::scc_fields(&model.leads, (&model.x, &model.y), Some(lateral))?,
+                signal_stop_object: cc.get_hud_control()?.get_signal_stop_object(),
+                has_lead: model.leads.iter().any(|lead| lead.status),
             };
             if camera {
-                let (frame, value) =
-                    canfd_acc::camera_acc(&mut c.writer, &scc, c.stopping.as_mut(), &i)?;
-                c.value_last = value;
-                if let Some(frame) = frame {
-                    result.push(frame);
+                // Restart hand-over (stock_adopt): send nothing, so panda
+                // keeps forwarding the camera's cruising SCC until we engage.
+                if !state.stock_adopt.pending {
+                    let (frame, value) =
+                        canfd_acc::camera_acc(&mut c.writer, &scc, c.stopping.as_mut(), &i)?;
+                    c.value_last = value;
+                    if let Some(frame) = frame {
+                        result.push(frame);
+                    }
                 }
                 result.extend(canfd_maintenance::tcs(
                     &mut c.writer,

@@ -221,6 +221,8 @@ fn geometry(
     };
     let sensor = match camera.get_sensor()? {
         log_capnp::frame_data::ImageSensor::Os04c10 => "os04c10",
+        log_capnp::frame_data::ImageSensor::Ar0231 => "ar0231",
+        log_capnp::frame_data::ImageSensor::Ox03c10 => "ox03c10",
         _ => "unsupported",
     };
     Ok(GeometryInput {

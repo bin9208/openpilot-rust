@@ -10,15 +10,18 @@ upload session automatically using its Dongle ID, and the server binds that
 session to the Dongle ID and source IP. The same server handles dashcam files
 and tmux diagnostics.
 
-Tmux diagnostics are also sent independently to
-`https://tmux.carrotpilot.app/upload`, which creates the Discord `carrot_logs`
-forum entry. The automatic onroad report includes both `tmux.log` and
-`toggle_values.json`; exception and manual reports include the tmux log. A DSM
-failure does not redirect or suppress this independent Carrot Logs copy.
+This port sends nothing to the original project by default. Carrot Logs
+(`https://tmux.carrotpilot.app/upload`, the original Discord forum) receives a
+copy only when `CARROT_TMUX_WEB_UPLOAD_URL` is set, and Discord exception
+reports only when a webhook is configured by environment variable or param;
+there is no built-in webhook. The automatic onroad report includes both
+`tmux.log` and `toggle_values.json`; exception and manual reports include the
+tmux log.
 
 In Carrot Web, **Tools > Web settings > Web upload** contains only:
 
-- Upload server (default: `https://upload.shind0.synology.me`)
+- Upload server (default: `https://lunabox.myqnapcloud.com:18443`; a saved
+  `https://upload.shind0.synology.me` is moved to this default)
 - Test connection
 
 An operator may override the base URL with `CARROT_WEB_UPLOAD_URL`. The

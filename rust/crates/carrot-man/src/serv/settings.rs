@@ -20,7 +20,14 @@ pub struct Settings {
     pub auto_turn_map_change: i64,
     pub auto_turn_control: i64,
     pub auto_turn_end: f64,
+    /// AtcLaneCount (default on): start ATC lane changes earlier on wide roads.
+    #[serde(default)]
+    pub atc_lane_count: bool,
     pub curve_lower_limit: f64,
+    /// AutoCurveSpeedTurnLowerLimit (km/h, 0 = off): the vision and route
+    /// curve floor near an intersection turn, in place of curve_lower_limit.
+    #[serde(default)]
+    pub turn_lower_limit: f64,
     pub is_metric: bool,
     pub road_limit_offset: f64,
     pub curve_factor: f64,
@@ -86,8 +93,16 @@ impl Settings {
             auto_turn_map_change: integer("AutoTurnMapChange")?,
             auto_turn_control: integer("AutoTurnControl")?,
             auto_turn_end: value("AutoTurnControlTurnEnd")?,
+            atc_lane_count: params.get("AtcLaneCount")?.is_none() || integer("AtcLaneCount")? == 1,
             curve_lower_limit: num_traits::ToPrimitive::to_f64(&curve_lower)
                 .ok_or(crate::Error::Contract("curve lower limit conversion"))?,
+            // Unset or unreadable means off: the ordinary floor everywhere.
+            turn_lower_limit: params
+                .get("AutoCurveSpeedTurnLowerLimit")?
+                .and_then(|v| std::str::from_utf8(&v).ok()?.trim().parse::<f64>().ok())
+                .filter(|v| v.is_finite())
+                .unwrap_or(0.)
+                .clamp(0., 200.),
             is_metric: params.get_bool("IsMetric")?,
             road_limit_offset: value("AutoRoadSpeedLimitOffset")?,
             curve_factor: value("AutoCurveSpeedFactor")? * 0.01,

@@ -36,6 +36,12 @@ Snapshot Filter::snapshot() const {
   auto p = filter->covs();
   return Snapshot{filter->get_filter_time(), copy(x.data(), 9), copy(p.data(), 81)};
 }
+void Filter::set_globals(rust::Slice<const double> values) {
+  size(values, 6);
+  std::copy(values.begin(), values.end(), globals.begin());
+  // Keep learned state/covariance; old rewind history used a different model.
+  filter->reset_rewind();
+}
 void Filter::pause(double time) { filter->set_filter_time(time); filter->reset_rewind(); }
 void Filter::reset(rust::Slice<const double> x, rust::Slice<const double> covariance, double time) {
   size(x, 9); size(covariance, 81);

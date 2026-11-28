@@ -48,13 +48,3 @@ pub use vision_buffer::VisionBufferDescriptor;
 pub use vision_server::UnalignedWebcamImage;
 #[cfg(feature = "native-skip-miri")]
 pub use vision_server::{RawVisionImage, VisionImage, VisionServer};
-
-#[cfg(all(test, feature = "native-skip-miri"))]
-mod abi_tests;
-
-#[cfg(all(test, feature = "native-skip-miri"))]
-#[path = "../tests/support/mod.rs"]
-mod test_process;
-
-#[cfg(all(test, feature = "native-skip-miri", not(feature = "visionipc-ion")))]
-mod vision_boundary_tests;

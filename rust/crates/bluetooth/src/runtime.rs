@@ -106,7 +106,14 @@ impl Reader {
             for (path, address) in reload.open {
                 match Input::open_interruptible(std::path::Path::new(&path), stop) {
                     Ok(input) => {
-                        self.engine.connect(&path, &address)?;
+                        let pressed = match input.pressed() {
+                            Ok(pressed) => pressed,
+                            Err(error) => {
+                                self.engine.open_error(address, error.to_string());
+                                continue;
+                            }
+                        };
+                        self.engine.connect(&path, &address, &pressed, clock()?)?;
                         self.inputs.insert(path, input);
                     }
                     Err(_) if stop.load(Ordering::Relaxed) => return Ok(()),

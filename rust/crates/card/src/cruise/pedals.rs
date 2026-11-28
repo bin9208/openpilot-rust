@@ -68,6 +68,7 @@ impl CruiseCarrot {
             let start = self.s._gas_pressed_count <= 0;
             let cancel = start && self.s._soft_hold_active > 0 && self.s._cruise_cancel_state;
             self.s._paddle_decel_active = false;
+            self.s._paddle_resume_kph = 0.;
             self.s._gas_pressed_count = (self.s._gas_pressed_count + 1).max(1);
             self.s._gas_pressed_count_last = self.s._gas_pressed_count;
             self.s._gas_pressed_value = if self.s._gas_pressed_count > 1 {
@@ -111,6 +112,7 @@ impl CruiseCarrot {
         if cs.get_brake_pressed() {
             self.s._cruise_ready = false;
             self.s._paddle_decel_active = false;
+            self.s._paddle_resume_kph = 0.;
             self.s._brake_pressed_count = (self.s._brake_pressed_count + 1).max(1);
             if self.s._brake_pressed_count == 1 && self.s.enabled_last {
                 self.s._v_cruise_kph_at_brake = self.s.v_cruise_kph;
@@ -148,6 +150,9 @@ impl CruiseCarrot {
     ) -> Result<Number, Error> {
         let ego = Number::int(self.s.v_ego_kph_set);
         let v = f64::from(cs.get_v_ego());
+        if !enabled {
+            self.s._paddle_resume_kph = 0.;
+        }
         if !enabled {
             if self.s._brake_pressed_count == -1 && self.s._soft_hold_active > 0 {
                 self.s._soft_hold_active = 2;
@@ -331,9 +336,39 @@ impl CruiseCarrot {
                         }
                     }
                 }
+            } else if self.s._paddle_decel_active && self.s._paddle_mode == 2 {
+                // PaddleMode 2: hand the paddle stop to the traffic-light
+                // stop (xState 3 slowing, 5 stopped) or to a (nearly) stopped
+                // lead and keep the driver's set speed; a hand-off at a stop
+                // otherwise left the 5 km/h floor, and any moving lead
+                // cancelled the stop request.
+                if matches!(self.s.x_state, 3 | 5) || (self.s.d_rel > 0. && v + self.s.v_rel < 1.) {
+                    self.s._paddle_decel_active = false;
+                    if v > 0.5 {
+                        // Still rolling: hold the current speed into the
+                        // stop; the set speed returns once stopped.
+                        self.s._paddle_resume_kph = speed.value;
+                        self.s._paddle_resume_cnt = 0;
+                        speed = ego;
+                    }
+                }
             } else if self.s._paddle_decel_active && (self.s.x_state == 3 || self.s.d_rel > 0.) {
                 self.s._paddle_decel_active = false;
                 speed = ego;
+            } else if self.s._paddle_resume_kph > 0. {
+                // Give the set speed back once stopped, or when the light has
+                // not asked for a stop for 1 s (green before we stopped).
+                self.s._paddle_resume_cnt = if matches!(self.s.x_state, 3 | 5) {
+                    0
+                } else {
+                    self.s._paddle_resume_cnt + 1
+                };
+                if v < 0.1 || self.s._paddle_resume_cnt > 100 {
+                    if self.s._paddle_resume_kph > speed.value {
+                        speed = Number::int(self.s._paddle_resume_kph);
+                    }
+                    self.s._paddle_resume_kph = 0.;
+                }
             }
         }
         if self.s._gas_pressed_count > self.s._gas_tok_timer {
@@ -369,7 +404,16 @@ impl CruiseCarrot {
     pub(super) fn auto_speed_up(&mut self, mut speed: Number) -> Number {
         if !self.s._pause_auto_speed_up && self.s.apply_model_speed != 0. {
             let model = self.s.model_v_kph * self.s.apply_model_speed.abs();
-            let apply = model.min(self.s.n_road_limit_speed * 1.1);
+            // carrot capped with `nRoadLimitSpeed * 1.1` unconditionally; with no
+            // road limit (0) a negative ApplyModelSpeed set the cruise speed to 0,
+            // i.e. the minimum. Without a limit only the model speed applies.
+            let apply = if self.s.n_road_limit_speed > 0. {
+                model.min(self.s.n_road_limit_speed * 1.1)
+            } else if self.s.apply_model_speed < 0. {
+                model
+            } else {
+                0.
+            };
             if self.s.apply_model_speed < 0. {
                 speed = Number::float(model.min(apply));
             } else if speed.value < apply {
@@ -447,5 +491,48 @@ impl CruiseCarrot {
             }
         }
         Ok(speed)
+    }
+}
+
+#[cfg(test)]
+pub(super) mod tests {
+    use super::super::{
+        assistant_speed::AssistantSpeed, number::Number, state::CruiseState, CruiseCarrot,
+    };
+    use openpilot_desire::command::CommandReader;
+
+    pub(in crate::cruise) fn cruise() -> CruiseCarrot {
+        let root = std::env::temp_dir().join(format!("card-cruise-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        CruiseCarrot {
+            s: CruiseState::new(0, 0, false, false),
+            params: openpilot_params::Params::open(&root, "d").unwrap(),
+            pcm_cruise: false,
+            brand: "hyundai".into(),
+            fingerprint: String::new(),
+            openpilot_longitudinal: true,
+            commands: CommandReader::new(&root, "cruise", 0.),
+            assistant_speed: AssistantSpeed::new(0.),
+            assistant_speed_valid: false,
+            long_active: false,
+            writes: Vec::new(),
+            prints: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn a_negative_model_speed_without_a_road_limit_follows_the_model() {
+        let mut c = cruise();
+        c.s.apply_model_speed = -1.;
+        c.s.model_v_kph = 72.;
+        c.s.n_road_limit_speed = 0.;
+        // carrot computed min(model, 0) here: the set speed collapsed to 0.
+        assert_eq!(c.auto_speed_up(Number::float(100.)).value, 72.);
+        c.s.n_road_limit_speed = 50.;
+        assert!((c.auto_speed_up(Number::float(100.)).value - 55.).abs() < 1e-9);
+        // A positive ratio still never raises the speed without a road limit.
+        c.s.apply_model_speed = 1.;
+        c.s.n_road_limit_speed = 0.;
+        assert_eq!(c.auto_speed_up(Number::float(40.)).value, 40.);
     }
 }

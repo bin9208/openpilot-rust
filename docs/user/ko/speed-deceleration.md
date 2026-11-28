@@ -85,6 +85,8 @@ Carrot Web 기본값 복원에 쓰이는 `carrot_settings.json`과 Params 최초
 
 `VehicleNaviCanControl`은 지원되는 Hyundai/Kia CAN-FD 차량에서 순정 내비가 제공하는 카메라·방지턱의 실제 거리를 감속에 사용할 범위를 정합니다. 아래 모드는 외부 내비가 연결되지 않았을 때만 적용하며, `1`의 항상 적용은 순정 내비 경로 안내 여부와 관계없이 적용한다는 뜻입니다.
 
+Kia EV4는 순정 내비의 카메라·방지턱 거리와 경로 정보를 연동합니다. 구간 평균속도 연동은 검증 중입니다. 경로 조건이 필요한 모드에서는 유효한 현재 경로 정보가 있어야 하며, EV4의 빈 경로 메시지는 경로 유효 시간을 연장하지 않습니다.
+
 현재 카메라 경고에는 제한속도가 같고 가까운 거리 후보만 연결합니다. 같은 속도의 먼 카메라만 있으면 현재 경고의 가상거리를 사용하며, 먼 카메라는 이후 접근을 위한 후보로 남겨 둡니다.
 
 | 값 | vNAVI 미래 이벤트 적용 범위 |
@@ -349,13 +351,15 @@ Kia PV5는 순정 내비의 같은 단속 상태·제한속도가 계속 수신�
 <a id="curve-turn"></a>
 ## 4. 커브·턴
 
-관련 설정은 `AutoCurveSpeedFactor`, `AutoCurveSpeedLowerLimit`, `TurnSpeedControlMode`, `MapTurnSpeedFactor`, `ApplyModelSpeed`입니다.
+관련 설정은 `AutoCurveSpeedFactor`, `AutoCurveSpeedLowerLimit`, `AutoCurveSpeedTurnLowerLimit`, `TurnSpeedControlMode`, `MapTurnSpeedFactor`, `ApplyModelSpeed`입니다.
 
 커브 관련 속도는 하나가 아닙니다.
 
 - **비전 커브 속도**: 모델이 본 진행 방향의 회전율과 속도로 계산
 - **경로 턴 속도**: 경로·TBT에서 받은 턴 속도에 비율 적용
 - **모델 주행속도 적용**: 모델의 전체 desired velocity를 크루즈 설정속도에 별도로 반영
+
+내비 자동 턴(ATC)은 **유턴**과 **목적지 도착**을 따로 처리합니다. 유턴은 오픈파일럿이 조향할 수 없어 운전자가 돌리며, 150m 앞에서 회전 안내음을 한 번 내고 일반 회전 속도(`AutoTurnControlSpeedTurn`)까지만 줄입니다. 원본은 1km/h까지 줄여 차로 한가운데서 기어가듯 멈췄습니다. 목적지 도착은 감속하지 않습니다. 도착 지점이 차로 한가운데나 주차장 안일 수 있어, 도착 안내는 내비가 하고 정지는 운전자가 판단합니다.
 
 ### `AutoCurveSpeedFactor`
 
@@ -384,6 +388,16 @@ Kia PV5는 순정 내비의 같은 단속 상태·제한속도가 계속 수신�
 
 이 값은 안전 최저속도를 자동으로 판단하지 않습니다. 너무 높이면 급커브 감속이 부족할 수 있습니다.
 
+### `AutoCurveSpeedTurnLowerLimit`
+
+교차로 회전 전용 최저속도입니다(km/h, 기본 `0`=끔). ATC가 좌/우회전 단계(`turn left`/`turn right`, 회전 지점 약 43~60m 전부터)에 있는 동안과 그 뒤 8초 동안만, 비전 커브와 경로 턴 후보의 최저속도로 `AutoCurveSpeedLowerLimit` 대신 이 값을 씁니다. 내비가 회전 지점을 지나 다음 안내로 넘어가도 회전을 마칠 때까지 유지하려는 8초입니다.
+
+- 일반 커브, 램프, ATC 접근 속도(`AutoTurnControlSpeedTurn`)는 바뀌지 않습니다.
+- `AutoCurveSpeedLowerLimit`보다 높게 설정하면 아무 효과가 없습니다.
+- 예: `AutoCurveSpeedLowerLimit` 22에서 반경 10m 교차로를 22km/h로 돌면 횡가속도가 3~4m/s²가 되어 조향이 따라가지 못할 수 있습니다. 이 값을 12로 두면 모델 곡률과 경로 모양에 따라 회전 중 12~17km/h까지 더 감속합니다.
+
+이 값도 안전 최저속도를 자동으로 판단하지 않습니다. 뒤차와 도로 상황을 운전자가 확인해야 합니다.
+
 ### `TurnSpeedControlMode`
 
 | 값 | 비전 커브 | 경로 턴 |
@@ -399,6 +413,8 @@ Kia PV5는 순정 내비의 같은 단속 상태·제한속도가 계속 수신�
 > `TurnSpeedControlMode=0`이 모든 모델 기반 속도 기능을 끄는 것은 아닙니다. `ApplyModelSpeed`는 별도 설정속도 기능입니다.
 
 경로 기반 감속은 현재 위치를 경로에 투영한 지점부터 최대 300m 앞의 실제 경로만 사용합니다. 첫 지도 선분이 300m보다 길어도 범위 안에서 잘라 계산하며, 그 뒤 구간을 역방향으로 연장하지 않습니다. 이 경로 절단 보정은 커브 최저속도·ATC 목표속도·가속페달 오버라이드 설정을 바꾸지 않습니다.
+
+경로 속도는 그 경로를 2m 간격으로 다시 찍고 진행 방향을 약 6m 폭으로 부드럽게 한 곡률로 계산합니다. 경로선의 꺾인 꼭짓점은 차가 실제로 도는 호처럼 다뤄집니다. 각 지점의 허용 속도는 `√(1.8m/s² ÷ 곡률)`이고, 약 1초 반응 뒤 `AutoNaviSpeedDecelRate` 감속률로 그 지점에 도달하도록 현재 위치의 상한을 정합니다. 예를 들어 반경 560m 커브는 약 114km/h, 반경 10m 교차로 회전은 약 15km/h입니다.
 
 ### `MapTurnSpeedFactor`
 

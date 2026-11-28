@@ -22,25 +22,41 @@ use std::collections::BTreeMap;
 pub struct Controller {
     pub frame: u32,
     pub writer: CanWriter,
+    /// carrot `hudControl.physicalBlinkerHold`: 0 none, 1 release, 2 left, 3 right.
+    pub external_hold: u8,
     pub settings: Settings,
     pub steering: Steering,
     pub buttons: Buttons,
     pub jerk: HyundaiJerk,
     pub lateral: LeadLateralFilter,
     pub blink_hold: super::blink_hold::BlinkHold,
+    /// carrot `create_ccnc_messages` state (PR580: camera sync, CCNC display).
+    pub cluster: super::canfd_cluster::ClusterState,
+    /// CcncClusterDisplay / CcncTrafficBackground, read every second.
+    pub ccnc_keys: (bool, bool),
+    /// CcncFrontRadarSide, read every second.
+    pub front_radar_side: u8,
     pub stopping: Option<CanfdStopping>,
     pub accel_last: f64,
     pub value_last: f64,
     pub lkas_active: bool,
     pub lane_check: i32,
     pub steering_template_ready: bool,
+    /// Comma Pedal command source on configured cars (carrot `PedalInterceptor`).
+    pub pedal: Option<super::pedal::Interceptor>,
 }
 
 impl Controller {
     pub fn new(state: &State) -> Result<Self, Error> {
         Ok(Self {
             frame: 0,
+            external_hold: 0,
             writer: CanWriter::from_dbc(std::sync::Arc::clone(&state.inputs.pt.dbc)),
+            pedal: super::pedal::configured(&state.config.candidate, state.config.flags)
+                .zip(state.inputs.pedal.as_ref())
+                .map(|(profile, parser)| {
+                    super::pedal::Interceptor::new(std::sync::Arc::clone(&parser.dbc), profile)
+                }),
             settings: Settings::new(
                 TorqueLimits::new(&state.config.candidate, state.config.flags),
                 &state.settings,
@@ -50,6 +66,9 @@ impl Controller {
             jerk: HyundaiJerk::default(),
             lateral: LeadLateralFilter::default(),
             blink_hold: super::blink_hold::BlinkHold::default(),
+            cluster: super::canfd_cluster::ClusterState::default(),
+            ccnc_keys: (false, false),
+            front_radar_side: 0,
             stopping: if state.config.flags & f::CANFD != 0 && state.config.longitudinal {
                 Some(CanfdStopping::default())
             } else {
@@ -127,7 +146,13 @@ impl Controller {
         }
         self.settings
             .lane_change(cc.get_hud_control()?.get_model_desire());
-        let model = Model::read(input.model, input.radar)?;
+        let mut model = Model::read(input.model, input.radar)?;
+        model.nav = input.subscribers.and_then(|subscribers| {
+            super::cluster_extras::NavLimit::read(
+                subscribers,
+                num_traits::ToPrimitive::to_f64(&input.now_ns).unwrap_or(0.) * 1e-9,
+            )
+        });
         let command = self.steering.update(
             (cc, state, &model, input.now_ns),
             &self.settings,
@@ -151,6 +176,7 @@ impl Controller {
         if self.frame.is_multiple_of(100)
             && state.config.flags & f::CAMERA_SCC == 0
             && state.config.longitudinal
+            && self.pedal.is_none()
         {
             let (address, bus) = if state.config.flags & f::HDA2 != 0 {
                 (0x730, state.config.bus.ecan)
@@ -178,6 +204,9 @@ impl Controller {
             }
         }
         if state.config.flags & f::CANFD != 0 {
+            if cc.get_enabled() && self.frame.is_multiple_of(2) {
+                state.stock_adopt.engaged();
+            }
             can.extend(super::controller_fd::messages(
                 self,
                 (cc, state),
@@ -200,6 +229,11 @@ impl Controller {
             command.torque
         })?);
         output.set_steering_angle_deg(float32(command.angle)?);
+        output.set_stop_object_active(
+            self.stopping
+                .as_ref()
+                .is_some_and(|stopping| stopping.stop_object_active),
+        );
         output.set_accel(float32(command.accel)?);
         self.frame += 1;
         Ok(ApplyOutput { actuators, can })

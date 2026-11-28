@@ -17,6 +17,8 @@ pub enum Action {
     CancelLong,
     LaneLeft,
     LaneRight,
+    BlinkerLeft,
+    BlinkerRight,
     PaddleDecel,
     CarrotCruise,
 }
@@ -46,6 +48,14 @@ impl Token {
         };
         Self(format!("{}@{suffix}", self.0))
     }
+}
+
+/// Which multi-press gestures a remote uses. Buttons without either fire on
+/// press instead of waiting to rule a double press or a long press out.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
+pub struct Gestures {
+    pub double: bool,
+    pub long: bool,
 }
 
 #[derive(Clone, Copy)]

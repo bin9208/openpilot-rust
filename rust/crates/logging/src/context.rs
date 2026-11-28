@@ -12,14 +12,6 @@ impl Default for GlobalContext {
     fn default() -> Self {
         let mut context = Fields::new();
         context.insert("runtime_language".into(), Value::Text("rust".into()));
-        context.insert(
-            "source_commit".into(),
-            Value::Text(env!("OPENPILOT_LOGGING_SOURCE_COMMIT").into()),
-        );
-        context.insert(
-            "source_tree".into(),
-            Value::Text(env!("OPENPILOT_LOGGING_SOURCE_TREE").into()),
-        );
         Self(Arc::new(RwLock::new(context)))
     }
 }

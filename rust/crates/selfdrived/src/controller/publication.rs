@@ -40,6 +40,8 @@ impl Controller {
         output.set_alert_sound(alert.audible_alert);
         output.set_alert_hud_visual(alert.visual_alert);
         output.set_distance_traveled(self.distance_traveled as f32);
+        output.set_atc_turn_start_mono_time(self.atc_turn_start);
+        output.set_atc_turn_direction(self.atc_turn_direction);
         publications.send(
             "selfdriveState",
             &capnp::serialize::write_message_to_words(&message),

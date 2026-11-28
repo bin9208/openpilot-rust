@@ -3,6 +3,7 @@ pub mod check;
 pub mod client;
 pub mod clock;
 pub mod hardware;
+pub mod library;
 #[cfg(feature = "native-skip-miri")]
 pub mod native_runtime;
 #[cfg(feature = "native-skip-miri")]

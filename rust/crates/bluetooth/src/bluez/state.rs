@@ -52,6 +52,8 @@ pub(super) struct State {
     pub pair: Pair,
     pub prompt: Option<Prompt>,
     pub answer: Option<oneshot::Sender<JsonValue>>,
+    /// Headless Carrot-B1 enrollment: accept the selected device's prompts.
+    pub auto_pair: bool,
 }
 
 #[derive(Clone, Default)]
@@ -84,6 +86,7 @@ impl Shared {
         let mut state = self.lock()?;
         state.target = None;
         state.prompt = None;
+        state.auto_pair = false;
         state.answer = None;
         Ok(())
     }

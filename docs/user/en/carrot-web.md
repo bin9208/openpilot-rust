@@ -1,5 +1,7 @@
 # Carrot Web User Guide
 
+For Android device discovery and the ChatGPT voice setting assistant, see the [CarrotAssist guide](carrot-assist.md). Live setting reads and changes require both local device permission and ChatGPT connection authorization.
+
 [한국어](../ko/carrot-web.md)
 
 Carrot Web is a local web interface for viewing and managing carrotpilot from a phone, tablet, or PC connected to the same network as the device. It provides driving status, settings, logs, updates, and diagnostic tools.
@@ -228,3 +230,56 @@ If only video is missing, check whether another browser owns the stream, whether
 - [Speed and Deceleration](speed-deceleration.md)
 - [Cruise and Following Gap](cruise-gap.md)
 - [Radar Tracks and Corner Radar](radar.md)
+
+### External driving model selection (`carrot-wip`)
+
+In Tools, choose N16 Nav, Flip Flop, Light speed or Light speed 2 under **External driving model**. The choice saves automatically.
+The choice applies to both eGPU and Jetson. "Internal model" in the same dialog picks the model the comma itself runs: CD210 (default), Cheddar or POPv2. POPv2 combines CD210's vision with a different comma policy (sunnypilot "Pop Model v2"). It changes at the next ignition. While a model other than CD210 drives, a white badge (`CHEDDAR`, `POPV2`) shows at the top right of the driving view. If the chosen model cannot be loaded, the drive runs on CD210, a red badge (for example `POPV2 ERROR`) shows, and this dialog reports "Last drive ran: CD210 · POPv2 could not be loaded" with the reason. A model not installed on the device is shown as "not installed" and cannot be chosen.
+Saving does not switch a running model. With ignition off and internet available, reboot
+both comma and Jetson to download, verify, and apply the choice. A new Jetson model also
+needs engine preparation. The eGPU downloads the official precompiled PKL without
+recompiling the driving model itself. At ignition the drive starts at once on the internal model
+while the eGPU model loads in the background (yellow `eGPU` badge). Once it is ready, the eGPU
+takes over when the car is stopped or the driver steers, and openpilot is not in control (green badge).
+
+A Jetlink App (Android tablet or phone) takes the choice at its next connection, without a reboot.
+The comma sends the choice while parked (ignition off) or with the ignition on in **P, stopped and not
+engaged**, and uploads the model over the cable when the App lacks it. In cars whose comma is powered
+from the harness and turns off with the ignition, choose in P. With the tablet already connected the
+link rejoins once within a second of choosing in P. During the upload and the App's engine preparation
+the comma drives on its internal model; while driving the App keeps the model it runs.
+
+`NOO supported` identifies models accepting route images and navigation inputs. Currently
+N16 supports these inputs; Flip Flop, Light speed and Light speed 2 do not. This label does not establish current
+route validity or driving performance. MD v3 has been retired from the list. Flip Flop uses
+the official ONNX replaced on 2026-10-24; its hash differs from the historical MD v3 ONNX.
+
+Choose a model in the dropdown to save it for the next reboot. The list is maintained by
+the developers; user hide, delete and restore controls are not available. Catalog updates
+arrive through Git Pull. Retired choices disappear from the list and their unused files
+are cleaned up automatically while offroad. A running retired model remains protected
+until the next boot selects the default and delivery switches the installed active model.
+Jetson cleanup waits for an offroad connection and preserves an ONNX used by any available
+model. Only the selected model is loaded into GPU memory.
+
+### Navigation map and destination search (`/navigation`)
+
+Open it with **Nav Map / 지도 검색** on the main page. With a Mapbox Public key saved under Settings → Network,
+search for a destination and select it. The selected place is used only for the current drive and is cleared
+when the drive ends or the device restarts; **Clear Mapbox destination** clears it at once.
+
+External navigation (such as the Carrot navigation app) takes priority while it is connected. Without it, the
+comma computes the route with Mapbox and publishes its guidance, which, with the route map, feeds a navigation
+model such as N16 directly. NOO therefore works from a destination chosen on the web, without a phone app. The
+position is the phone's while it is fresh, otherwise the freshest GPS fix, and the last position is kept while
+the car stands in P.
+
+The left panel shows the black-and-white route map the navigation model receives. It is rendered only while
+this page is open, Cluster HUD mode is `7`, or a navigation model or eGPU uses it. Without a destination, a
+position or guidance, the page shows why.
+
+`MapCarHeading` (default `1`) renders this map at the car's GPS position and heading. The original (`0`) puts
+the position on the route and heads the map along the route 50 m behind and ahead, so the map turns toward a
+turn up to 50 m before the car does and stops matching the road in the camera. On logged drives the car
+heading cut N16's (without desire) position error 4 s into a turn from 3.61 m to 3.27 m. Below about 11 km/h or
+without a GPS heading the original pose is used.

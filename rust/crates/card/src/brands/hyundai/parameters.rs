@@ -36,7 +36,14 @@ pub fn setting_int(settings: &Params, key: &str) -> Result<i32, Error> {
                 .skip(sign)
                 .take_while(|byte| byte.is_ascii_digit())
                 .count();
-            Ok(std::str::from_utf8(raw.get(..sign + digits).ok_or(Error::Numeric)?)?.parse()?)
+            // Not a number (or out of range) reads as 0 like a missing value;
+            // see settings_float::read for why this must not fail card.
+            Ok(
+                std::str::from_utf8(raw.get(..sign + digits).unwrap_or_default())
+                    .ok()
+                    .and_then(|text| text.parse().ok())
+                    .unwrap_or(0),
+            )
         }
         Some(_) | None => Ok(0),
     }
@@ -62,6 +69,45 @@ pub fn parameters(input: ParamsInput<'_>) -> Result<Builder<HeapAllocator>, Erro
     {
         detection.flags |= flags::CLUSTER_DIRECT_TX;
         detection.safety_param |= flags::safety::CLUSTER_DIRECT_TX;
+    }
+    // carrot interface.py (6af3073e3): select the Kick by the observed
+    // protocol and harness, never the model name. Runtime CRC/counter/driver
+    // checks still precede each new Kick request.
+    let ecan_size = |address| super::bus::size(input.fingerprints, detection.bus.ecan, address);
+    let kick = detection.flags & flags::CANFD != 0
+        && super::spas::kick_compatible_with(
+            ecan_size,
+            detection.bus.ecan,
+            detection.flags & flags::CAMERA_SCC != 0,
+        )
+        && input.settings.get_bool("CanfdBlinkerKick")?;
+    if detection.flags & flags::CANFD != 0
+        && detection.flags & flags::CAMERA_SCC != 0
+        && super::bus::size(input.fingerprints, detection.bus.cam, 0x1ea) == Some(32)
+    {
+        detection.ext_flags |= flags::ext::CANFD_INDICATOR_HOLD;
+    }
+    if kick && input.settings.get_bool("CanfdBlinkerControl")? {
+        // The Kick and the SPAS lease are exclusive; the Kick wins.
+        input.settings.put_bool("CanfdBlinkerControl", false)?;
+    }
+    // carrot interface.py: opt-in SPAS indicators need both exact ECAN SPAS
+    // messages and are exclusive with the HDA2 blinker path.
+    if detection.flags & flags::CANFD != 0
+        && input.settings.get_bool("CanfdBlinkerControl")?
+        && {
+            let size = |address| super::bus::size(input.fingerprints, detection.bus.ecan, address);
+            super::spas::compatible_with(size) || super::spas::absent_with(size)
+        }
+        && detection.flags & flags::ENABLE_BLINKERS == 0
+    {
+        detection.flags |= flags::CANFD_SPAS_BLINKERS;
+        detection.safety_param |= flags::safety::CANFD_SPAS_BLINKERS;
+    }
+    if kick {
+        // panda admits the Kick ids only with this flag; read at fingerprint
+        // time, so switching it on applies from the next onroad start.
+        detection.safety_param |= flags::safety::CANFD_BLINKER_KICK;
     }
     cp.set_brand("hyundai");
     cp.set_flags(detection.flags);
@@ -115,6 +161,39 @@ pub fn parameters(input: ParamsInput<'_>) -> Result<Builder<HeapAllocator>, Erro
     tuning.reborrow().init_kp_b_p(1).set(0, 0.);
     tuning.reborrow().init_kp_v(1).set(0, 1.);
     tuning.set_kf(1.);
+    // carrot interface.py: only an explicitly enabled, ACC-less classic-CAN
+    // adapter with the 0x201 sensor uses the Comma Pedal protocol.
+    if let Some(profile) = super::pedal::profile(input.candidate) {
+        let fp = input.fingerprints;
+        let has = |bus: u8, address: u32| super::bus::size(fp, bus, address).is_some();
+        if detection.flags & flags::CC_ONLY_CAR != 0
+            && input.settings.get_bool("CommaPedalEnabled")?
+            && detection.flags & (flags::CANFD | flags::LEGACY | flags::CAMERA_SCC) == 0
+            && super::bus::size(fp, super::pedal::BUS, super::pedal::SENSOR_ADDR) == Some(6)
+            && ![0, 2]
+                .iter()
+                .any(|bus| has(*bus, 0x420) || has(*bus, 0x421))
+        {
+            detection.flags |= flags::PEDAL_INTERCEPTOR;
+            cp.set_flags(detection.flags);
+            cp.set_enable_gas_interceptor_d_e_p_r_e_c_a_t_e_d(true);
+            cp.set_alpha_longitudinal_available(true);
+            cp.set_openpilot_longitudinal_control(true);
+            cp.set_pcm_cruise(false);
+            cp.set_radar_unavailable(true);
+            cp.set_auto_resume_sng(false);
+            cp.set_min_enable_speed(profile.min_enable_speed);
+            let mut configs = cp.reborrow().get_safety_configs()?;
+            let last = configs.len() - 1;
+            let mut safety = configs.reborrow().get(last);
+            safety.set_safety_param(
+                safety.reborrow_as_reader().get_safety_param()
+                    | flags::safety::LONG
+                    | flags::safety::PEDAL_INTERCEPTOR
+                    | profile.safety_profile,
+            );
+        }
+    }
     vehicle_params::finish(
         cp,
         input.settings,

@@ -20,6 +20,9 @@ mod update;
 pub struct Vehicle {
     pub longitudinal_control: bool,
     pub volkswagen_meb: bool,
+    /// carrot `create_tesla_traffic_stop`: Tesla, openpilot longitudinal,
+    /// not dashcam-only, CAN_TRAFFIC_STOP.
+    pub tesla_traffic_stop: bool,
 }
 
 pub struct Input<'a> {
@@ -32,6 +35,13 @@ pub struct Input<'a> {
     pub curvature: f64,
     pub coasting_checks: bool,
     pub navigation_seen: bool,
+    /// carState fields and `teslaTrafficControl` for the stop-line constraint.
+    pub tesla: crate::tesla_traffic_stop::Car,
+    /// `carControl.longActive` and all checks of carState, carControl,
+    /// selfdriveState, controlsState and modelV2.
+    pub long_active_checks: bool,
+    /// carState `logMonoTime`-domain now (boot time ns).
+    pub boot_ns: u64,
 }
 
 pub struct LongitudinalPlanner {
@@ -63,6 +73,9 @@ pub struct LongitudinalPlanner {
     coasting_param_time: f64,
     pub coasting_target: f64,
     signal_constraints: crate::signal::longitudinal::Constraints,
+    tesla_stop: Option<crate::tesla_traffic_stop::TeslaTrafficStop>,
+    pub tesla_decision: Option<crate::tesla_traffic_stop::Decision>,
+    tesla_blended: bool,
 }
 
 impl LongitudinalPlanner {
@@ -73,7 +86,13 @@ impl LongitudinalPlanner {
         acceleration: f64,
         dt: f64,
     ) -> Result<Self, Error> {
+        let tesla_stop = vehicle
+            .tesla_traffic_stop
+            .then(crate::tesla_traffic_stop::TeslaTrafficStop::default);
         Ok(Self {
+            tesla_stop,
+            tesla_decision: None,
+            tesla_blended: false,
             vehicle,
             mpc: LongitudinalMpc::load(directory, crate::types::PlannerMode::Acc, dt)?,
             fcw: false,

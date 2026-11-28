@@ -1,4 +1,5 @@
 use crate::{
+    centering::{Centering, Sample},
     config::Config,
     inputs::{Inputs, Pose},
     interface::ControlInterface,
@@ -21,6 +22,8 @@ pub struct Command {
     pub longitudinal: bool,
     pub left: bool,
     pub right: bool,
+    /// `carControl.assistantLaneSignalId` for a native voice indicator.
+    pub assistant_id: String,
     pub accel: f32,
     pub target: f32,
     pub jerk: f32,
@@ -44,9 +47,14 @@ pub struct Controls {
     pub lateral_startup: openpilot_control_policy::lateral_readiness::Gate,
     pub lateral_started: bool,
     pub lane_lines: bool,
+    /// carrot PR580 `lat_err_frames`: angle error above 3 deg in a row.
+    pub lat_err_frames: u32,
+    /// LanelessCentering's state (see `centering.rs`).
+    pub centering: Centering,
     pub turn_speed: i32,
     pub calibration: [f64; 3],
     pub pose: Option<Pose>,
+    pub physical_hold: crate::physical_hold::HoldReader,
 }
 impl Controls {
     pub fn new(
@@ -83,6 +91,7 @@ impl Controls {
         let longitudinal = Longitudinal::new(&config, params)?;
         let lateral = Lateral::new(&config, &interface, params)?;
         let vm = VehicleModel::new(config.physical.clone());
+        let physical_hold = crate::physical_hold::HoldReader::new(&config);
         Ok(Self {
             config,
             interface,
@@ -97,9 +106,12 @@ impl Controls {
             lateral_startup: Default::default(),
             lateral_started: false,
             lane_lines: false,
+            lat_err_frames: 0,
+            centering: Centering::default(),
             turn_speed,
             calibration: [0.; 3],
             pose: None,
+            physical_hold,
         })
     }
     pub fn control(
@@ -123,6 +135,7 @@ impl Controls {
             params.float("SteerRatioRate")?,
             params.float("CustomSR")?,
         );
+        self.vm.update_geometry(input.center_to_front_ratio);
         self.vm.update(maximum(live.stiffness, 0.1), ratio);
         let angle = (cs.steer_angle - live.offset).to_radians();
         self.curvature = -self.vm.curvature(angle, cs.speed, live.roll)?;
@@ -141,14 +154,23 @@ impl Controls {
         let always = cs.driving_gear && params.boolean("AlwaysLateral")? && !jetlink_lost;
         let below = cs.speed.abs() <= maximum(self.config.min_steer_speed, 0.3);
         let standstill = self.config.brand == "tesla" && self.config.standstill_steering;
-        let lateral = (input.selfdrive.active || always)
+        let lateral = input.selfdrive.current
+            && (input.selfdrive.active || always)
             && cs.lat_enabled
             && !cs.fault_temporary
             && !cs.fault_permanent
             && ((cs.standstill && standstill) || (!cs.standstill && !below));
-        let lateral = self.suspend.update(cs, lateral, params)? && lateral_ready;
-        let longitudinal =
-            input.selfdrive.enabled && !input.override_long && self.config.openpilot_long;
+        // AlwaysLateral must also stop while manager drains workers for an impact reboot.
+        let impact_reboot = params.boolean("ImpactDashcamReboot")?;
+        let lateral = self.suspend.update(cs, lateral, params)?
+            && lateral_ready
+            && !input.vehicle_fault
+            && !impact_reboot;
+        let longitudinal = input.selfdrive.enabled
+            && !input.override_long
+            && !input.vehicle_fault
+            && !impact_reboot
+            && self.config.openpilot_long;
         if !lateral {
             self.lateral.reset();
         }
@@ -198,8 +220,28 @@ impl Controls {
                 smooth(lag()?, self.desired, tau)
             }
         } else {
-            smooth(input.model.desired_curvature, self.desired, 0.1)
+            let model = &input.model;
+            let turn_or_lane = model.desire.iter().skip(1).take(4).sum::<f64>() >= 0.2;
+            let atc = input.carrot.turn_type.as_str();
+            let atc_idle = matches!(atc, "" | "none" | "straight") || atc.ends_with(" prepare");
+            let correction = self.centering.update(&Sample {
+                strength: f64::from(params.integer("LanelessCentering")?) * 0.01,
+                allowed: !model.lane_change && !turn_or_lane && atc_idle && !cs.steering_pressed,
+                speed: cs.speed,
+                model_curvature: model.desired_curvature,
+                lane_x: &model.lane_x,
+                left_y: &model.left_y,
+                right_y: &model.right_y,
+                left_prob: model.left_prob,
+                right_prob: model.right_prob,
+                path_x: &model.path_x,
+                path_y: &model.path_y,
+            });
+            smooth(model.desired_curvature + correction, self.desired, 0.1)
         };
+        if !lateral || self.lane_lines || self.config.meb() {
+            self.centering = Centering::default();
+        }
         let (desired, curvature_limited) =
             drive::clip_curvature(cs.speed, self.desired, new, live.roll)?;
         self.desired = desired;
@@ -240,12 +282,24 @@ impl Controls {
                 curvature_limited,
             },
         )?;
+        let route = input.model.assistant_route.as_str();
+        let native_voice = route == "native" && !input.model.assistant_id.is_empty() && lateral;
+        let lane_lamps = input.selfdrive.current
+            && input.model.lane_change
+            && (matches!(route, "" | "ordinary") || native_voice);
         let mut command = Command {
-            enabled: input.selfdrive.enabled,
+            enabled: input.selfdrive.enabled && !impact_reboot,
             lateral,
             longitudinal,
-            left: input.model.lane_change && input.model.lane_left,
-            right: input.model.lane_change && input.model.lane_right,
+            // carrot voice_indicator.set_lane_change_blinkers: only ordinary or
+            // admitted native voice maneuvers drive the lane-change lamps.
+            left: lane_lamps && input.model.lane_left,
+            right: lane_lamps && input.model.lane_right,
+            assistant_id: if native_voice {
+                input.model.assistant_id.clone()
+            } else {
+                String::new()
+            },
             accel: accel as f32,
             target: target as f32,
             jerk: jerk as f32,

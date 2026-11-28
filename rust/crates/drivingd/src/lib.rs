@@ -1,8 +1,12 @@
 pub mod bus;
 pub mod camera;
+pub mod camera_gap;
 pub mod clock;
 pub mod diagnostics;
+pub mod indicator;
+pub mod internal_model;
 pub mod jetlink;
+pub mod navigation;
 pub mod parameters;
 pub mod publication;
 pub mod recovery;

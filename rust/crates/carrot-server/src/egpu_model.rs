@@ -454,11 +454,20 @@ impl ModelFiles {
         }
         let manifest =
             manifest.ok_or_else(|| Error::Source("missing matching diagnostic manifest".into()))?;
+        let same_boot = fs::read_to_string(&self.telemetry.boot_id)
+            .ok()
+            .filter(|id| !id.trim().is_empty() && failure.get("boot_id").truth())
+            .map_or(Value::Null, |id| {
+                Value::Bool(failure.get("boot_id").text_eq(id.trim()))
+            });
         Ok((
             StatusCode::OK,
             Value::object([
                 ("model_id", Value::text(&manifest.model_id)),
                 ("sha256", Value::text(&manifest.sha256)),
+                ("failure_from_current_boot", same_boot),
+                ("usb_present", Value::Bool(self.present())),
+                ("delivery_status", stored_status(&self.paths.cache)),
                 ("failure", failure),
             ]),
         ))
@@ -624,6 +633,11 @@ pub async fn handle<T>(
                 fields.push((
                     "jetlink".chars().map(u32::from).collect(),
                     files.telemetry.jetlink()?,
+                ));
+                let library = crate::egpu_library::status(&app.config.repository);
+                fields.push((
+                    "library".chars().map(u32::from).collect(),
+                    Value::parse(&library.to_string())?,
                 ));
             }
             Ok((StatusCode::OK, value))

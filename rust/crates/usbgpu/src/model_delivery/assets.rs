@@ -63,7 +63,15 @@ pub(super) fn regular(root: &Path, relative: &str) -> Result<PathBuf, Error> {
 /// Missing, corrupt, out-of-package or mismatched artifacts remain unavailable.
 /// The manifest is a trusted package integrity record, not a signature authority.
 pub fn validate(root: &Path, digest: &str, model_size: u64) -> Result<Package, Error> {
-    let manifest_file = regular(root, "manifest.json")?;
+    if digest.len() != 64 || !digest.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return Err(Error::Invalid("invalid native model digest".into()));
+    }
+    let manifest_file = match regular(root, &format!("models/{digest}/manifest.json")) {
+        Err(Error::Io(e)) if e.kind() == std::io::ErrorKind::NotFound => {
+            regular(root, "manifest.json")?
+        }
+        result => result?,
+    };
     if manifest_file.metadata()?.len() > 1024 * 1024 {
         return Err(Error::Invalid("native asset manifest too large".into()));
     }
@@ -179,4 +187,45 @@ pub fn validate(root: &Path, digest: &str, model_size: u64) -> Result<Package, E
         checkpoint,
         manifest_sha256,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{library::Library, model::Manifest};
+
+    #[test]
+    fn selectable_egpu_models_ship_matching_descriptors() {
+        let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let models = repo.join("device-inputs/usbgpu-models");
+        let library = Library::for_runtime(&repo);
+        for (key, entry) in library.available().unwrap() {
+            let model: Manifest = serde_json::from_value(entry["egpu"].clone()).unwrap();
+            let root = models.join(&model.sha256);
+            let manifest: PackageManifest = serde_json::from_slice(
+                &fs::read(root.join("manifest.json")).unwrap_or_else(|e| panic!("{key}: {e}")),
+            )
+            .unwrap();
+            assert_eq!(manifest.model_sha256, model.sha256, "{key}");
+            for name in ["model.hcq.json", "model.hcq-meta.json"] {
+                let path = root.join(name);
+                let relative = format!("models/{}/{name}", model.sha256);
+                let file = manifest.files.iter().find(|f| f.path == relative).unwrap();
+                assert_eq!(file.sha256, sha256(&path).unwrap(), "{key}/{name}");
+                assert_eq!(file.bytes, path.metadata().unwrap().len(), "{key}/{name}");
+            }
+            let graph = fs::read(root.join("model.hcq.json")).unwrap();
+            crate::hcq_model::validate_descriptor(&graph, &model.sha256, model.size).unwrap();
+            let metadata: Metadata =
+                serde_json::from_slice(&fs::read(root.join("model.hcq-meta.json")).unwrap())
+                    .unwrap();
+            assert_eq!(metadata.model_sha256, model.sha256, "{key}");
+            let info = Info::new(metadata, [1344, 760]).unwrap();
+            assert_eq!(
+                info.layout.contains_key("nav_map"),
+                library.noo(&key).unwrap(),
+                "{key}"
+            );
+        }
+    }
 }

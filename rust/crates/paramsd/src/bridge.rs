@@ -30,6 +30,7 @@ pub mod ffi {
         fn snapshot(self: &Filter) -> Snapshot;
         fn reset(self: Pin<&mut Filter>, x: &[f64], covariance: &[f64], time: f64) -> Result<()>;
         fn pause(self: Pin<&mut Filter>, time: f64);
+        fn set_globals(self: Pin<&mut Filter>, values: &[f64]) -> Result<()>;
         fn observe(
             self: Pin<&mut Filter>,
             time: f64,

@@ -27,14 +27,6 @@ thiserror = "2"
 [build-dependencies]
 cxx-build = "=1.0.202"
 
-[[example]]
-name = "webcam_trace"
-required-features = ["native"]
-
-[[example]]
-name = "webcam_workers"
-required-features = ["native"]
-
 [lints.rust]
 unsafe_code = "deny"
 

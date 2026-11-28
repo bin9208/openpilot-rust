@@ -6,13 +6,34 @@ use super::{
 use crate::{json_fields::set, Value};
 
 pub(super) async fn list(context: &Context) -> Result<Reply, Failure> {
-    context.progress("fetch --all --prune", 1, 2)?;
-    let fetch = context
-        .git(&["fetch", "--all", "--prune"], 180, true)
-        .await?;
-    if fetch.code != 0 {
-        return context.result(fetch, None);
-    }
+    context.progress("fetch --all --prune --no-tags", 1, 2)?;
+    // The list reads branches only. Fetching the upstream carrot remote's new
+    // tags took 208 s on a device (2026-11-27), past the 180 s limit, and the
+    // whole list failed: tags are skipped, and a slow or failed fetch still
+    // lists the refs already fetched.
+    let fetch = match context
+        .git(&["fetch", "--all", "--prune", "--no-tags"], 180, true)
+        .await
+    {
+        Ok(fetch) if fetch.code == 0 => fetch,
+        Ok(fetch) => {
+            if context.streaming() {
+                context.append("\n(fetch failed: listing the branches already fetched)\n")?;
+            }
+            fetch
+        }
+        Err(Failure::Timeout) => {
+            if context.streaming() {
+                context.append("\n(fetch timed out: listing the branches already fetched)\n")?;
+            }
+            Completed {
+                streams: None,
+                code: 124,
+                output: "fetch timed out".into(),
+            }
+        }
+        Err(error) => return Err(error),
+    };
     context.progress("git refs", 2, 2)?;
     let local = context
         .git(

@@ -6,6 +6,7 @@ pub mod context;
 pub mod device;
 pub mod display_clock;
 pub mod impact_prompt;
+pub mod indicator_display;
 pub mod layouts;
 pub mod mici;
 pub mod onroad;

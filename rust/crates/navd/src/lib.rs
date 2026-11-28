@@ -1,11 +1,13 @@
 #![forbid(unsafe_code)]
 
 pub mod destination;
+pub mod external;
 pub mod geometry;
 pub mod instructions;
 mod json;
 #[cfg(feature = "native")]
 pub mod native;
+pub mod position;
 pub mod route;
 pub mod wire;
 

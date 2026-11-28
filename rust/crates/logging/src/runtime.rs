@@ -38,6 +38,12 @@ impl RuntimeDiagnostics {
         }
     }
 
+    /// See [`Diagnostics::with_peak_metric`].
+    pub fn with_peak_metric(mut self, metric: &str) -> Self {
+        self.diagnostics = self.diagnostics.with_peak_metric(metric);
+        self
+    }
+
     pub fn record(
         &mut self,
         logger: &mut Logger,

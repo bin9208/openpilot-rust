@@ -21,20 +21,38 @@ These timings exclude C3X camera processing and the complete USB round trip. An 
 
 ## USB and stopping
 
-The C3X needs a branch containing the Jetlink integration (#47); the app alone is insufficient. While offroad, set Carrot Web `System → Jetlink External Model → Jetlink mode` to 1 (Shadow). The default is 0 and manager restart/reboot resets it to 0. Once that integration prepares the Jetlink vendor gadget (1209:0001), use a USB 3 data cable, choose **Status → Connect comma USB**, and grant USB permission. A foreground service shows an ongoing notification.
+The C3X needs a branch that contains Jetlink; the app alone is not enough. There is no setting to turn it on or off: the `Jetlink mode` (0/1/2) of earlier guides is gone. Connect a USB 3 data cable, wait for the C3X to prepare the Jetlink vendor gadget (1209:0001), then press **Status** → **Connect comma USB** in the app and allow USB access. The app uses a connection service with a notification. The model used is the one loaded in the app.
 
 After denied permission or cable removal, reconnect manually. Use **Stop** in the app or notification to stop the service. It does not automatically reconnect after a reboot/process death. Thermal status SEVERE or above stops work; cool the device before retrying. Memory/model errors appear on the status page. An engine reporting `ready` does not authorize driving.
 
-Pending device checks: install/rotation, import, CPU and NNAPI output comparison, USB denial/detach/reconnect, 30-minute Shadow/thermal testing, full C3X 50ms latency and control disengagement on loss. Field criteria in #44/#45/#46/#47 remain open until evidence is available.
+Pending device checks: install/rotation, import, CPU and NNAPI output comparison, USB denial/detach/reconnect, 30 minutes of continuous use and thermal state, and disengagement when a phone frame is lost. Field criteria in #44/#45/#46/#47 remain open until evidence is available.
 
-## C3X selection and validation boundary
+## How the C3X moves to the phone model and back
 
-Shadow keeps native control and never waits for external results before publishing native output. Native inference continues every frame during external activation to preserve fallback history. A separate 50ms local communication deadline isolates a stalled USB-owner process. The full budget runs from C3X warp through external response/parsing to immediately before publication, unlike the standalone app benchmark.
+When the phone is connected and its model is ready, the C3X moves to the phone model by itself once all of these hold:
 
-Mode 2 requests activation. No passed device-validation profile is supplied, so it retains the native model. Profiles bind source and executed artifact SHA-256, tablet model, Android API, requested backend, app/ORT version, warp contract, numerical comparison and at least 30 minutes of full latency/loss evidence. App 0.1.1 transmits the required identity in its handshake; changing version/backend invalidates an older match. Do not turn benchmark success into an activation flag.
+- The internal model has produced at least three outputs and the camera calibration has been received.
+- Vehicle state, driving state and the control command are valid and at most 0.25 s old.
+- The car is fully stopped, or the driver is holding the wheel.
 
-The first active timeout/detach/wrong-frame/NaN discards external output and latches loss. It enters the external-model-loss no-entry/soft-disable path; AlwaysLateral-only steering cannot bypass loss. Native success/reconnection does not clear it. Stop, disengage cruise and lateral control, acknowledge through 0 or a ready 1, then make a new request through 2. Old frames are never relabelled fresh.
+After the move these conditions are not checked again while driving.
 
-Gadget recovery is deferred offroad. Toggle 0 → 1 and reconnect the app while parked; stuck kernel I/O may require a parked device restart. `JetlinkStatus` describes preparation/errors; `modelV2.jetlink` and `drivingModelData.jetlink` logs carry source/loss/session/timing. C3X QCOM device builds, physical USB speed, camera pixel comparison and drive acceptance remain separate validation work.
+While the phone model is used, the C3X's internal model does not run. The C3X shrinks the camera images to the model's input size, sends them to the phone and publishes the phone's answer. It waits up to 0.15 s per frame. A frame slower than 0.05 s is still used and is logged as `Jetlink slow frame`.
 
-Initial C3X support requires CTV3 with its original bytes preserved. Preparation rejects an executed artifact with a different hash or a missing handshake hash. An acceptance record cannot be reused for a differently converted file with the same source name/shapes.
+If the phone keeps answering later than the frame period (0.05 s), the frame rate falls below 20 per second. Below 16 a communication-issue warning appears and openpilot disengages. This happens when the phone gets hot and its inference slows down. Cool the phone.
+
+When a phone frame is lost (over 0.15 s, cable removed, invalid answer):
+
+- From that frame on the internal model answers again, starting from an empty history.
+- A communication-issue warning is raised for 5 s and openpilot disengages, so that the model never changes silently under control.
+- After those 5 s the C3X moves to the phone model again when the conditions above hold (stopped, or wheel held). Nothing needs to be pressed.
+
+The USB gadget is not reconfigured while driving. If kernel I/O is stuck and cannot be released, restart the device while parked. There has been a case where the USB link dropped physically during a drive and did not come back; the cause is not known yet.
+
+## Checking the logs
+
+- In the drive log (rlog), `drivingModelData.jetlink` and `modelV2.jetlink` carry, per frame, the source (`native`/`jetlink`), the phase (`ACTIVE`/`PREPARING`/`READY`/`LOST`) and the time taken (`executionMs`).
+- `runtimeTiming` events in the same log carry per-second summaries: from `modeld`, `jetlink_warp_ms`, `jetlink_handoff_ms`, `jetlink_roundtrip_ms`, `jetlink_parse_ms`; from `jetlinkd`, `usb_exchange_ms` and the phone's own `server_gpu_ms`, `server_queue_ms`, `server_total_ms`. `usb_exchange_ms` minus `server_total_ms` is the time spent on the USB transfer.
+- Link state and failure reasons are in `/dev/shm/carrot-jetlink.json` and `/dev/shm/carrot-jetlink-model.json`.
+
+The figures in this guide are the values in the code. Driving on the phone model has not been confirmed enough on a vehicle yet.

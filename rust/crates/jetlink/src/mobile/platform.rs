@@ -18,7 +18,7 @@ pub(crate) struct Paths {
 impl Paths {
     pub fn device() -> Self {
         Self {
-            gadget: "/sys/kernel/config/usb_gadget/carrot_jetlink".into(),
+            gadget: crate::gadget::GADGET.into(),
             net: "/sys/class/net".into(),
             state: "/dev/shm/jetlink-mobile".into(),
             leases: "/dev/shm/jetlink-mobile-leases".into(),

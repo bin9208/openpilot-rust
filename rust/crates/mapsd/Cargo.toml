@@ -1,0 +1,35 @@
+[package]
+name = "openpilot-mapsd"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+native = ["dep:ureq", "dep:openpilot-messaging", "dep:openpilot-cereal", "dep:openpilot-params", "dep:signal-hook", "dep:capnp", "dep:rustix", "dep:openpilot-logging"]
+
+[dependencies]
+flate2 = "1"
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+ureq = { version = "=3.4.2", features = ["rustls", "gzip"], optional = true }
+openpilot-messaging = { path = "../messaging", optional = true }
+openpilot-cereal = { path = "../cereal", optional = true }
+openpilot-params = { path = "../params", optional = true }
+signal-hook = { version = "0.3", optional = true }
+capnp = { version = "=0.27.2", optional = true }
+rustix = { version = "1", features = ["time", "process", "thread"], optional = true }
+openpilot-navd = { path = "../navd" }
+openpilot-logging = { path = "../logging", optional = true }
+
+[[bin]]
+name = "openpilot-mapsd"
+path = "src/main.rs"
+required-features = ["native"]
+
+[[example]]
+name = "replay_maps"
+required-features = ["native"]

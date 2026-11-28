@@ -1,5 +1,9 @@
-//! Provision the exclusively owned Jetlink gadget independently of vehicle ignition.
+//! Carrot tools/jetlink/setup_gadget.sh: provision the Jetlink FunctionFS gadget.
 use crate::Error;
+
+pub const NAME: &str = "jetlink";
+pub const GADGET: &str = "/sys/kernel/config/usb_gadget/jetlink";
+pub const FFS_MOUNT: &str = "/dev/ffs-jetlink";
 use std::{
     fs,
     os::unix::fs::symlink,
@@ -8,21 +12,25 @@ use std::{
 };
 struct Paths {
     config: PathBuf,
-    usb: PathBuf,
-    params: PathBuf,
     udc: PathBuf,
     mount: PathBuf,
-    machine_id: PathBuf,
+    serial: PathBuf,
+    handoff_flag: PathBuf,
+    road: PathBuf,
+    data_role: PathBuf,
+    tici: PathBuf,
 }
 impl Paths {
     fn device() -> Self {
         Self {
             config: "/sys/kernel/config".into(),
-            usb: "/sys/bus/usb/devices".into(),
-            params: "/data/params/d".into(),
             udc: "/sys/class/udc".into(),
-            mount: "/dev/ffs-carrot-jetlink".into(),
-            machine_id: "/etc/machine-id".into(),
+            mount: FFS_MOUNT.into(),
+            serial: "/proc/device-tree/serial-number".into(),
+            handoff_flag: "/data/jetlink-adb-handoff".into(),
+            road: "/data/params/d".into(),
+            data_role: "/sys/class/usbpd/usbpd0/current_dr".into(),
+            tici: "/TICI".into(),
         }
     }
 }
@@ -101,13 +109,6 @@ pub fn egpu_present(usb: &Path) -> Result<bool, Error> {
     Ok(false)
 }
 fn setup(paths: &Paths, platform: &impl Platform) -> Result<(), Error> {
-    if ["UsbGpuActive", "UsbGpuLoading"]
-        .iter()
-        .any(|key| value(&paths.params.join(key)) == "1")
-        || egpu_present(&paths.usb)?
-    {
-        return Err(Error::Contract("eGPU owns USB"));
-    }
     if !platform.mounted(&paths.config)? {
         platform.mount("configfs", "none", &paths.config, None)?;
     }
@@ -116,8 +117,21 @@ fn setup(paths: &Paths, platform: &impl Platform) -> Result<(), Error> {
         return Err(Error::Contract("configfs/USB controller unavailable"));
     }
     for entry in fs::read_dir(&gadgets)? {
-        let controller = entry?.path().join("UDC");
-        if controller.exists() && !value(&controller).is_empty() {
+        let entry = entry?.path();
+        let owner = entry
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .into_owned();
+        let controller = entry.join("UDC");
+        if owner != NAME && controller.exists() && !value(&controller).is_empty() {
+            if owner == "g1" {
+                // Only the explicitly opted-in default ADB gadget is handed over.
+                match adb_handoff(paths, &value(&controller)) {
+                    Ok(()) => continue,
+                    Err(reason) => return Err(Error::Native(reason)),
+                }
+            }
             return Err(Error::Native(format!(
                 "USB gadget '{}' already holds the device controller ({})",
                 controller
@@ -129,7 +143,7 @@ fn setup(paths: &Paths, platform: &impl Platform) -> Result<(), Error> {
             )));
         }
     }
-    let gadget = gadgets.join("carrot_jetlink");
+    let gadget = gadgets.join(NAME);
     fs::create_dir_all(&gadget)?;
     for (name, value) in [
         ("idVendor", "0x1209"),
@@ -144,18 +158,21 @@ fn setup(paths: &Paths, platform: &impl Platform) -> Result<(), Error> {
     let configuration = gadget.join("configs/c.1");
     fs::create_dir_all(&strings)?;
     fs::create_dir_all(configuration.join("strings/0x409"))?;
-    fs::write(strings.join("manufacturer"), "carrotpilot\n")?;
+    fs::write(strings.join("manufacturer"), "zoompilot\n")?;
     fs::write(strings.join("product"), "jetlink\n")?;
-    fs::write(strings.join("serialnumber"), fs::read(&paths.machine_id)?)?;
+    let serial = fs::read(&paths.serial)
+        .map(|bytes| String::from_utf8_lossy(&bytes).replace('\0', ""))
+        .unwrap_or_else(|_| "0001".into());
+    fs::write(strings.join("serialnumber"), format!("{}\n", serial.trim()))?;
     fs::write(
         configuration.join("strings/0x409/configuration"),
-        "Jetlink inference\n",
+        "jetlink inference link\n",
     )?;
     fs::write(configuration.join("bmAttributes"), "0xC0\n")?;
     fs::write(configuration.join("MaxPower"), "8\n")?;
-    let function = gadget.join("functions/ffs.carrot_jetlink");
+    let function = gadget.join(format!("functions/ffs.{NAME}"));
     fs::create_dir_all(&function)?;
-    let link = configuration.join("ffs.carrot_jetlink");
+    let link = configuration.join(format!("ffs.{NAME}"));
     if !link.is_symlink() {
         symlink(&function, link)?;
     }
@@ -164,7 +181,7 @@ fn setup(paths: &Paths, platform: &impl Platform) -> Result<(), Error> {
     if !platform.mounted(&paths.mount)? {
         platform.mount(
             "functionfs",
-            "carrot_jetlink",
+            NAME,
             &paths.mount,
             Some(&format!("uid={uid},gid={gid}")),
         )?;
@@ -173,6 +190,84 @@ fn setup(paths: &Paths, platform: &impl Platform) -> Result<(), Error> {
         return Err(Error::Contract("FunctionFS ep0 unavailable"));
     }
     platform.own_udc(&gadget.join("UDC"), uid)?;
+    Ok(())
+}
+/// Carrot tools/jetlink/adb_handoff.py: release the default ADB gadget only
+/// when /data/jetlink-adb-handoff exists, the car is offroad and the port is in
+/// device role. Returns the bracketed reason the web card shows on refusal.
+fn adb_handoff(paths: &Paths, controller: &str) -> Result<(), String> {
+    use std::os::unix::fs::MetadataExt;
+    let deny = |code: &str, detail: String| Err(format!("[adb-handoff:{code}] {detail}"));
+    let Ok(flag) = fs::symlink_metadata(&paths.handoff_flag) else {
+        return deny(
+            "opt_in_missing",
+            format!(
+                "ADB handoff permission is missing ({})",
+                paths.handoff_flag.display()
+            ),
+        );
+    };
+    if controller != "a600000.dwc3" {
+        return deny(
+            "controller",
+            format!("Unsupported controller {controller:?}"),
+        );
+    }
+    if !flag.is_file()
+        || flag.nlink() != 1
+        || flag.uid() != rustix::process::geteuid().as_raw()
+        || flag.mode() & 0o022 != 0
+    {
+        return deny(
+            "opt_in_invalid",
+            format!(
+                "Unsafe permission marker: uid={}, mode={:04o}",
+                flag.uid(),
+                flag.mode() & 0o7777
+            ),
+        );
+    }
+    if !paths.tici.is_file() {
+        return deny(
+            "platform",
+            "Required /TICI platform marker is missing".into(),
+        );
+    }
+    let offroad = value(&paths.road.join("IsOffroad"));
+    let onroad = value(&paths.road.join("IsOnroad"));
+    if offroad.trim() != "1" || onroad.trim() != "0" {
+        return deny(
+            "offroad",
+            format!("Offroad required: IsOffroad={offroad:?}, IsOnroad={onroad:?}"),
+        );
+    }
+    let role = value(&paths.data_role);
+    if role.trim() != "ufp" {
+        return deny(
+            "usb_role",
+            format!("USB device role required: current_dr={role:?}"),
+        );
+    }
+    let adb = paths.config.join("usb_gadget/g1");
+    let (vendor, product) = (
+        value(&adb.join("idVendor")).to_lowercase(),
+        value(&adb.join("idProduct")).to_lowercase(),
+    );
+    if !matches!(vendor.trim(), "0x04d8" | "04d8") || !matches!(product.trim(), "0x1234" | "1234") {
+        return deny(
+            "gadget_identity",
+            format!("Expected ADB 04d8:1234, got {vendor}/{product}"),
+        );
+    }
+    if fs::write(adb.join("UDC"), "\n").is_err() {
+        return deny("write_failed", "g1 UDC unbind write failed".into());
+    }
+    if !value(&adb.join("UDC")).trim().is_empty() {
+        return deny(
+            "still_bound",
+            "g1 UDC remains bound after the unbind write".into(),
+        );
+    }
     Ok(())
 }
 pub fn provision_device() -> Result<(), Error> {
@@ -209,85 +304,83 @@ mod tests {
     fn fixture(root: &Path) -> Paths {
         let paths = Paths {
             config: root.join("config"),
-            usb: root.join("usb"),
-            params: root.join("params"),
             udc: root.join("udc"),
             mount: root.join("ffs"),
-            machine_id: root.join("machine-id"),
+            serial: root.join("serial"),
+            handoff_flag: root.join("handoff"),
+            road: root.join("params"),
+            data_role: root.join("dr"),
+            tici: root.join("TICI"),
         };
         for path in [
             &paths.config.join("usb_gadget"),
-            &paths.usb,
-            &paths.params,
             &paths.udc,
             &paths.mount,
+            &paths.road,
         ] {
             fs::create_dir_all(path).unwrap();
         }
-        fs::write(paths.params.join("IsOffroad"), "1").unwrap();
-        fs::write(&paths.machine_id, "synthetic\n").unwrap();
+        fs::write(&paths.serial, "abc123\0").unwrap();
         fs::write(paths.mount.join("ep0"), "").unwrap();
         paths
     }
     #[test]
     fn writes_original_attributes_without_binding_the_controller() {
-        // Given ordinary directories and an OS-only fixture for privileged operations.
         let dir = tempfile::tempdir().unwrap();
         let paths = fixture(dir.path());
         let os = OsFixture::default();
-        // When the real provisioning policy runs, then original attributes are written and binding is left to FunctionFS.
         setup(&paths, &os).unwrap();
-        let gadget = paths.config.join("usb_gadget/carrot_jetlink");
+        let gadget = paths.config.join("usb_gadget/jetlink");
         assert_eq!(fs::read(gadget.join("idVendor")).unwrap(), b"0x1209\n");
         assert_eq!(
-            fs::read(gadget.join("configs/c.1/MaxPower")).unwrap(),
-            b"8\n"
+            fs::read(gadget.join("strings/0x409/manufacturer")).unwrap(),
+            b"zoompilot\n"
         );
         assert_eq!(
             fs::read(gadget.join("strings/0x409/serialnumber")).unwrap(),
-            b"synthetic\n"
+            b"abc123\n"
         );
-        assert!(gadget.join("configs/c.1/ffs.carrot_jetlink").is_symlink());
+        assert!(gadget.join("configs/c.1/ffs.jetlink").is_symlink());
         assert!(!gadget.join("UDC").exists());
         assert_eq!(os.calls.borrow().len(), 1);
     }
     #[test]
-    fn provisions_usb_after_vehicle_ignition() {
+    fn refuses_bound_adb_without_opt_in_and_hands_over_with_it() {
         let dir = tempfile::tempdir().unwrap();
         let paths = fixture(dir.path());
-        fs::write(paths.params.join("IsOffroad"), "0").unwrap();
-        fs::write(paths.params.join("IsOnroad"), "1").unwrap();
+        let adb = paths.config.join("usb_gadget/g1");
+        fs::create_dir(&adb).unwrap();
+        fs::write(adb.join("UDC"), "a600000.dwc3\n").unwrap();
+        fs::write(adb.join("idVendor"), "0x04d8").unwrap();
+        fs::write(adb.join("idProduct"), "0x1234").unwrap();
+        let error = setup(&paths, &OsFixture::default())
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("opt_in_missing"), "{error}");
+        assert!(!paths.config.join("usb_gadget/jetlink").exists());
+        fs::write(&paths.handoff_flag, "").unwrap();
+        fs::set_permissions(
+            &paths.handoff_flag,
+            std::os::unix::fs::PermissionsExt::from_mode(0o644),
+        )
+        .unwrap();
+        fs::write(&paths.tici, "").unwrap();
+        fs::write(paths.road.join("IsOffroad"), "1").unwrap();
+        fs::write(paths.road.join("IsOnroad"), "0").unwrap();
+        fs::write(&paths.data_role, "ufp").unwrap();
         setup(&paths, &OsFixture::default()).unwrap();
-        assert!(paths
-            .config
-            .join("usb_gadget/carrot_jetlink/configs/c.1/ffs.carrot_jetlink")
-            .is_symlink());
+        assert_eq!(fs::read_to_string(adb.join("UDC")).unwrap().trim(), "");
     }
     #[test]
-    fn refuses_egpu_and_existing_controller_ownership_before_mutation() {
-        for kind in 1..4 {
-            // Given a conflicting source condition in isolated files.
-            let dir = tempfile::tempdir().unwrap();
-            let paths = fixture(dir.path());
-            match kind {
-                1 => fs::write(paths.params.join("UsbGpuLoading"), "1").unwrap(),
-                2 => {
-                    let device = paths.usb.join("bridge");
-                    fs::create_dir(&device).unwrap();
-                    fs::write(device.join("idVendor"), "3801").unwrap();
-                    fs::write(device.join("idProduct"), "0001").unwrap();
-                }
-                _ => {
-                    let other = paths.config.join("usb_gadget/other");
-                    fs::create_dir(&other).unwrap();
-                    fs::write(other.join("UDC"), "owned\n").unwrap();
-                }
-            }
-            // When setup is requested, then no Jetlink gadget directory or privileged operation appears.
-            let os = OsFixture::default();
-            assert!(setup(&paths, &os).is_err());
-            assert!(!paths.config.join("usb_gadget/carrot_jetlink").exists());
-            assert!(os.calls.borrow().is_empty());
-        }
+    fn refuses_another_bound_gadget_before_mutation() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = fixture(dir.path());
+        let other = paths.config.join("usb_gadget/other");
+        fs::create_dir(&other).unwrap();
+        fs::write(other.join("UDC"), "owned\n").unwrap();
+        let os = OsFixture::default();
+        assert!(setup(&paths, &os).is_err());
+        assert!(!paths.config.join("usb_gadget/jetlink").exists());
+        assert!(os.calls.borrow().is_empty());
     }
 }

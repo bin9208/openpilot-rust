@@ -26,23 +26,3 @@ signal-hook = "0.3"
 
 [lints]
 workspace = true
-
-[[example]]
-name = "ui_render"
-required-features = ["native"]
-
-[[example]]
-name = "form_render"
-required-features = ["native"]
-
-[[example]]
-name = "network_render"
-required-features = ["native"]
-
-[[example]]
-name = "polygon_render"
-required-features = ["native"]
-
-[[example]]
-name = "application_run"
-required-features = ["native"]

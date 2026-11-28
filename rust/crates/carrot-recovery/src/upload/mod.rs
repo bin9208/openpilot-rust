@@ -67,8 +67,11 @@ fn web_base(config: &Config) -> Result<String, Error> {
             .trim()
             .into();
     }
-    if configured.is_empty() {
-        configured = "https://upload.shind0.synology.me".into();
+    if configured.is_empty()
+        || openpilot_web_upload::LEGACY_WEB_UPLOAD_URLS
+            .contains(&configured.trim_end_matches('/').to_lowercase().as_str())
+    {
+        configured = openpilot_web_upload::DEFAULT_WEB_UPLOAD_URL.into();
     }
     let base = configured.trim_end_matches('/');
     if !base.starts_with("http://") && !base.starts_with("https://") {
@@ -164,12 +167,13 @@ fn dsm(config: &Config, fields: &[(&str, String)], raw: &[u8]) -> Result<Value, 
 
 fn carrot_logs(fields: &[(&str, String)], raw: &[u8]) -> Result<Value, Error> {
     let configured = env("CARROT_TMUX_WEB_UPLOAD_URL");
-    let url = if configured.is_empty() {
-        "https://tmux.carrotpilot.app/upload"
-    } else {
-        &configured
+    if configured.is_empty() {
+        return Ok(Value::object([
+            ("configured", Value::Bool(false)),
+            ("ok", Value::Bool(false)),
+        ]));
     }
-    .trim_end_matches('/');
+    let url = configured.trim_end_matches('/');
     if !url.starts_with("http://") && !url.starts_with("https://") {
         return Err(Error::Source(
             "Carrot Logs URL must start with http:// or https://".into(),
@@ -211,7 +215,10 @@ pub fn destinations(config: &Config, reason: &str) -> Result<Value, Error> {
     let discord = discord::send(config, reason, &raw, &dsm)?;
     let results = [("dsm", dsm), ("carrot_logs", carrot), ("discord", discord)];
     let ok = results.iter().any(|(_, value)| value.get("ok").truth());
-    let partial = ok && results.iter().any(|(_, value)| !value.get("ok").truth());
+    let partial = ok
+        && results.iter().any(|(_, value)| {
+            !value.get("ok").truth() && value.get("configured") != &Value::Bool(false)
+        });
     let error = if ok {
         String::new()
     } else {

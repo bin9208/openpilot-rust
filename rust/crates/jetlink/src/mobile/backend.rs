@@ -129,10 +129,18 @@ impl Backend for MobileBackend {
     fn idle(&mut self) -> Result<(), Error> {
         self.client.as_mut().ok_or(Error::Closed)?.idle()
     }
+    fn session_start(&mut self) -> Result<(), Error> {
+        self.client.as_mut().ok_or(Error::Closed)?.session_start()
+    }
     fn source_sof(&mut self, source_sof: u64) {
         if let Some(client) = &mut self.client {
             client.set_source_sof(source_sof);
         }
+    }
+    /// The tablet's own inference, queue and total times, so `runtimeTiming`
+    /// (jetlinkd) carries `server_*` for a tablet as it does for a Jetson.
+    fn last_timings(&self) -> Option<[f64; 3]> {
+        self.client.as_ref().and_then(Backend::last_timings)
     }
     fn connect(&mut self) -> Result<Identity, Error> {
         if self.mode == Mode::Ios && self.version != Version::V3 {
@@ -146,6 +154,9 @@ impl Backend for MobileBackend {
             Client::app(transport, self.cache.clone())
         };
         client.status = Arc::clone(&self.status);
+        if !self.legacy {
+            client.set_aux(crate::aux::shared());
+        }
         let owner = Arc::clone(&self.owner);
         let cancel = Arc::clone(&self.cancel);
         client.set_connected_check(Arc::new(move || {

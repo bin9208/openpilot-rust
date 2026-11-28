@@ -1,5 +1,6 @@
 use super::{
     bus::CanBus,
+    camera_sync::{CameraSync, SyncInput},
     cluster_fields,
     cluster_hud::{self, HudInput},
     flags as f,
@@ -21,6 +22,15 @@ pub struct ClusterMessages<'a> {
     pub scc: Option<&'a Values>,
 }
 
+/// Cluster state carrot keeps on `create_ccnc_messages`.
+#[derive(Default)]
+pub struct ClusterState {
+    pub sync: CameraSync,
+    pub display: super::ccnc_display::CcncDisplay,
+    pub side_radar: super::side_radar::SideRadar,
+    pub extras: super::cluster_extras::Extras,
+}
+
 pub struct ClusterInput<'a> {
     pub bus: CanBus,
     pub flags: u32,
@@ -38,12 +48,35 @@ pub struct ClusterInput<'a> {
     pub path: (&'a [f64], &'a [f64]),
     pub hud_lateral: Option<f64>,
     pub lane_warnings: [bool; 2],
+    pub scc_main_ready: bool,
+    /// For the camera set-speed/gap sync (carrot PR580).
+    pub set_kph: f64,
+    pub v_ego_cluster: f64,
+    pub metric: bool,
+    /// CcncFrontRadarSide and the radar side leads it draws.
+    pub front_radar_side: super::side_radar::Mode,
+    pub side_leads: [Option<super::side_radar::SideLead>; 2],
+    /// CcncClusterDisplay extras and the CanfdDebug probe.
+    pub extras: &'a super::cluster_extras::ExtrasInput,
+}
+
+/// The camera's SCC output is replaced only with openpilot longitudinal control.
+/// Keep its MAIN available for OEM display objects independently of engagement.
+pub(super) fn keep_stock_scc_main(i: &ClusterInput<'_>, source: &ClusterMessages<'_>) -> bool {
+    i.corner_radar > 0
+        && source.scc.is_some()
+        && source.lfahda.is_some()
+        && i.scc_main_ready
+        && i.speed.is_finite()
+        && i.speed > 3.
+        && !i.interlock
 }
 
 pub use super::cluster_buttons::alt2_request;
 
 pub fn messages(
     writer: &mut CanWriter,
+    state: &mut ClusterState,
     i: &ClusterInput<'_>,
     source: &ClusterMessages<'_>,
 ) -> Result<Vec<Frame>, Error> {
@@ -65,7 +98,29 @@ pub fn messages(
             result.push(alt2_request(writer, i, source)?);
         } else if let Some(original) = source.buttons {
             let mut data = original.clone();
+            let driver_pressed = get(original, "LFA_BTN")? != 0.
+                || get(original, "CRUISE_BUTTONS")? != 0.
+                || original
+                    .get("ADAPTIVE_CRUISE_MAIN_BTN")
+                    .copied()
+                    .unwrap_or(0.)
+                    != 0.
+                || original
+                    .get("NORMAL_CRUISE_MAIN_BTN")
+                    .copied()
+                    .unwrap_or(0.)
+                    != 0.;
             data.insert("NORMAL_CRUISE_MAIN_BTN".into(), 0.);
+            state.sync.note_driver(frame, driver_pressed);
+            if keep_stock_scc_main(i, source)
+                && !i.hud.enabled
+                && !i.main_mode
+                && !driver_pressed
+                && frame % 200 > 10
+                && frame % 200 <= 16
+            {
+                data.insert("ADAPTIVE_CRUISE_MAIN_BTN".into(), 1.);
+            }
             if lfa == 0. && !frame.is_multiple_of(200) && frame % 200 < 12 {
                 data.insert("LFA_BTN".into(), 1.);
             }
@@ -85,6 +140,29 @@ pub fn messages(
                     if frame % 30 > 10 && frame % 30 <= 16 && !i.stopping {
                         data.insert("CRUISE_BUTTONS".into(), 2.);
                     }
+                } else if let Some(button) = source
+                    .scc
+                    .map(|scc| {
+                        Ok::<_, Error>(state.sync.button(
+                            &SyncInput {
+                                camera_set: get(scc, "VSetDis")?,
+                                camera_gap: get(scc, "DISTANCE_SETTING")?,
+                                acc_mode: i.acc_mode,
+                                set_kph: i.set_kph,
+                                v_ego: i.speed,
+                                v_ego_cluster: i.v_ego_cluster,
+                                metric: i.metric,
+                                bars: i.hud.gap,
+                            },
+                            frame,
+                        ))
+                    })
+                    .transpose()?
+                    .filter(|button| *button != 0)
+                {
+                    // carrot PR580: keep the camera's stock SCC set speed and
+                    // gap in step for a drop-out hand-over.
+                    data.insert("CRUISE_BUTTONS".into(), f64::from(button));
                 } else if source
                     .adrv1ea
                     .is_some_and(|data| data.get("HDA_MODE2") == Some(&0.))
@@ -102,7 +180,8 @@ pub fn messages(
         if let Some(original) = source.adrv161 {
             let mut data = original.clone();
             let counter = remove_counter(&mut data)?;
-            cluster_hud::hud(&mut data, &i.hud)?;
+            cluster_hud::hud(&mut data, &i.hud, &mut state.display)?;
+            super::cluster_extras::adrv161(&mut data, i.extras)?;
             result.push(writer.frame("ADRV_0x161", i.bus.ecan, &data, counter)?);
         }
         if let Some(original) = source.adrv200 {
@@ -143,6 +222,10 @@ pub fn messages(
                 data.insert("FF_DETECT".into(), front + 2.);
             }
             cluster_fields::front_lead(&mut data, (i.leads, i.path, i.hud.enabled, i.hud_lateral))?;
+            state
+                .side_radar
+                .apply(&mut data, i.front_radar_side, i.side_leads, i.speed)?;
+            super::cluster_extras::ccnc162(&mut data, i.extras)?;
             if (i.lane_warnings[0] && !i.hud.blinker[0])
                 || (i.lane_warnings[1] && !i.hud.blinker[1])
             {
@@ -152,7 +235,17 @@ pub fn messages(
             if i.debug > 0 {
                 set(&mut data, &[("FAULT_LSS", 0.), ("FAULT_DAS", 0.)]);
             }
-            result.push(writer.frame("CCNC_0x162", i.bus.ecan, &data, counter)?);
+            let mut message = writer.frame("CCNC_0x162", i.bus.ecan, &data, counter)?;
+            // CcncClusterDisplay: HDP icon while cruise or steering is engaged;
+            // bit 188 has no DBC name, so checked clusters only.
+            if i.hud.ccnc.display && i.hud.ccnc.non_dbc_car && (i.hud.enabled || i.hud.active) {
+                super::ccnc_display::set_raw_bits(
+                    &mut message,
+                    &[super::ccnc_display::HDP_ICON_BIT],
+                    1,
+                );
+            }
+            result.push(message);
         }
     }
     if i.corner_radar > 0 && hda == 0. {
@@ -166,6 +259,7 @@ pub fn messages(
                 .into_iter()
                 .enumerate()
                 .map(|(index, value)| (format!("BYTE_{}", index + 1), value))
+                .map(|(k, v)| (std::sync::Arc::<str>::from(k), v))
                 .collect();
             result.push(writer.frame("NEW_MSG_4B9", i.bus.cam, &data, None)?);
         }
@@ -179,6 +273,8 @@ pub struct LfaClusterAlert<'a> {
     pub lfa: Option<&'a Values>,
     pub mdps: Option<&'a Values>,
     pub scc: Option<&'a Values>,
+    /// HDA_AutoSetSpdSta / UpdtSta / Val (cluster_extras).
+    pub auto_set: Option<[f64; 3]>,
 }
 
 pub fn lfa_cluster(
@@ -223,6 +319,7 @@ pub fn lfa_cluster(
     {
         data.insert("HDA_InfoPUDis".into(), 5.);
     }
+    super::cluster_extras::apply_auto_set(&mut data, alert.auto_set);
     Ok(vec![writer.frame(
         "LFAHDA_CLUSTER",
         bus.ecan,

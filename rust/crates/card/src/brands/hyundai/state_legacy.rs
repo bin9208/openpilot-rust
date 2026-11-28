@@ -115,8 +115,39 @@ pub fn update(state: &mut State, mut ret: car_state::Builder<'_>, now: u64) -> R
             now,
         )?)?);
     }
+    let pedal = super::pedal::configured(&state.config.candidate, flags);
+    if let Some(profile) = pedal {
+        if let Some(parser) = &mut state.inputs.pedal {
+            state.pedal.update(parser, profile)?;
+        }
+        let (message, signal) = profile.cruise_ready;
+        let ready = pt(state, (message, signal), now)?;
+        let (address, bit) = profile.cruise_enabled_bit;
+        let parser = &state.inputs.pt;
+        let payload = parser.raw.get(&address).cloned().unwrap_or_default();
+        let enabled = payload.len() == 8
+            && u64::from_le_bytes(payload[..8].try_into().map_err(|_| Error::Numeric)?)
+                & (1 << bit)
+                != 0;
+        let message_state = parser.states.get(&address);
+        let stamp = message_state
+            .and_then(|s| s.timestamps.back().copied())
+            .unwrap_or(0);
+        let cruise_valid = stamp > 0
+            && payload.len() == 8
+            && message_state.is_some_and(|s| s.valid(parser.last_update));
+        state.pedal_cruise_blocked = !cruise_valid || ready != 0. || enabled;
+        let speed = pt(state, profile.cruise_speed, now)? * speed_unit;
+        let mut cruise = ret.reborrow().get_cruise_state()?;
+        cruise.set_enabled(enabled);
+        // OEM Cruise ready/engaged takes priority; Carrot's main-switch and
+        // controls-initialisation gate stays as well.
+        let available = cruise.reborrow_as_reader().get_available();
+        cruise.set_available(available && !state.pedal_cruise_blocked);
+        cruise.set_speed(float32(speed)?);
+    }
     ret.set_brake(0.);
-    if flags & f::CC_ONLY_CAR == 0 {
+    if flags & f::CC_ONLY_CAR == 0 || pedal.is_some() {
         let brake = pt(state, ("TCS13", "DriverOverride"), now)? == 2.;
         ret.set_brake_pressed(brake);
         ret.set_brake_hold_active(pt(state, ("TCS15", "AVH_LAMP"), now)? == 2.);
@@ -126,7 +157,14 @@ pub fn update(state: &mut State, mut ret: car_state::Builder<'_>, now: u64) -> R
         ret.set_acc_faulted(pt(state, ("TCS13", "ACCEnable"), now)? != 0.);
         ret.set_brake_lights(pt(state, ("TCS13", "BrakeLight"), now)? != 0. || brake);
     }
+    if pedal.is_some() {
+        // ACCEnable describes a nonexistent SCC on this adapter.
+        ret.set_acc_faulted(state.pedal.faulted());
+    }
     super::legacy_powertrain::update(state, ret.reborrow(), now)?;
+    if pedal.is_some() && state.pedal.valid {
+        ret.set_gas_pressed(state.pedal.gas_pressed);
+    }
     if flags & f::CC_ONLY_CAR == 0 && (!state.config.longitudinal || flags & f::CAMERA_SCC != 0) {
         let (name, command) = if flags & f::USE_FCA != 0 {
             ("FCA11", "FCA_CmdAct")
@@ -155,6 +193,7 @@ pub fn update(state: &mut State, mut ret: car_state::Builder<'_>, now: u64) -> R
                     .inputs
                     .signal(cruise_channel, "FCA11", "FCA_Status", now)?
                     == 3.;
+            ret.set_stock_scc_fault(fault);
             if fault {
                 warning = false;
                 braking = false;

@@ -62,8 +62,7 @@ pub fn web_settings(path: &Path) -> Fields {
         .unwrap_or_default();
     let url = openpilot_web_upload::normalize_base_url(&text, DEFAULT_WEB_UPLOAD_URL)
         .unwrap_or_else(|_| DEFAULT_WEB_UPLOAD_URL.into());
-    let url = if ["https://op.wjcloud.kr", "https://shind0.synology.me"]
-        .contains(&url.to_lowercase().as_str())
+    let url = if openpilot_web_upload::LEGACY_WEB_UPLOAD_URLS.contains(&url.to_lowercase().as_str())
     {
         DEFAULT_WEB_UPLOAD_URL.into()
     } else {

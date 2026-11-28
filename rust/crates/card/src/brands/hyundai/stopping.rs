@@ -2,6 +2,7 @@
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 pub const DT: f64 = 0.02;
+pub const ENTRY_SPEED: f64 = 0.7;
 pub const MOVING_SPEED: f64 = 0.10;
 pub const STOP_LOWER_BAND: f64 = 0.20;
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
@@ -51,6 +52,8 @@ pub struct CanfdStopping {
     pub stopped_time: f64,
     #[serde(skip)]
     pub warnings: Vec<String>,
+    #[serde(skip)]
+    pub stop_object_active: bool,
 }
 impl Default for CanfdStopping {
     fn default() -> Self {
@@ -61,6 +64,7 @@ impl Default for CanfdStopping {
             reason: Cow::Borrowed("inactive"),
             stopped_time: 0.,
             warnings: Vec::new(),
+            stop_object_active: false,
         }
     }
 }

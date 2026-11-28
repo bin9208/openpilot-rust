@@ -46,6 +46,9 @@ impl<T: Transport + ?Sized> Transport for Box<T> {
     }
 }
 type HelloCheck = Box<dyn Fn(&Value) -> Result<(), Error> + Send>;
+/// INFER_REQ flag: a uint8 256x256 route map follows the packed floats
+/// (the modified Jetlink app; the server keeps it until the next one).
+pub const NAV_MAP_FLAG: u32 = 1 << 3;
 pub struct Client<T: Transport> {
     transport: T,
     sequence: u32,
@@ -55,6 +58,10 @@ pub struct Client<T: Transport> {
     session: Option<crate::session_contract::SessionContract>,
     app: Option<AppSelection>,
     telemetry_at: u64,
+    /// rendered_ns of the last route map sent to a navigation graph; Some(0)
+    /// after a blank one; None when the server's copy is unknown (new
+    /// session or a reset), so the next frame sends the current map.
+    map_sent: Option<u64>,
     idle_at: u64,
     hello_timeout: Duration,
     hello_check: Option<HelloCheck>,
@@ -64,14 +71,80 @@ pub struct Client<T: Transport> {
     wifi: Option<crate::wifi::Publisher>,
     app_request_pending: bool,
     client_nonce: Option<String>,
+    /// Carrot's auxiliary vision (`crate::aux`): set when this link may carry it.
+    aux: Option<std::sync::Arc<crate::aux::Hub>>,
+    /// The App said `carrot_aux_v1` and the session is up: the hub is live.
+    aux_live: bool,
+    /// When `after_reply` last looked for a pick made in P (ns).
+    pick_checked_at: u64,
     pub status: std::sync::Arc<std::sync::Mutex<Value>>,
     pub hello_complete: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
 struct AppSelection {
     cache: std::path::PathBuf,
     connected: std::sync::Arc<dyn Fn() -> bool + Send + Sync>,
+    /// Parked: `IsOffroad and not IsOnroad`, as carrot's daemon reads it.
+    parked: std::sync::Arc<dyn Fn() -> bool + Send + Sync>,
+    /// Our engine request was given back to the App and must be made again
+    /// before the next modeld session.
+    released: bool,
+    /// `at` of the comma's pick named in the last hello; a new pick made
+    /// while parked reconnects so the App hears it.
+    pick_at: Option<f64>,
+}
+fn parked() -> bool {
+    let read = |name: &str| std::fs::read_to_string(format!("/data/params/d/{name}"));
+    read("IsOffroad").is_ok_and(|value| value.trim() == "1")
+        && !read("IsOnroad").is_ok_and(|value| value.trim() == "1")
+}
+/// `at` of the pick named in the last hello of this process, as f64 bits;
+/// 0 for none. In P (`crate::park`) only a pick not named yet rejoins, so
+/// shifting into P does not drop the link every time.
+static NAMED_PICK_AT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+fn named_pick_at() -> Option<f64> {
+    let bits = NAMED_PICK_AT.load(std::sync::atomic::Ordering::Acquire);
+    (bits != 0).then(|| f64::from_bits(bits))
 }
 impl<T: Transport> Client<T> {
+    /// The hidden_state range a protocol-3 stateful session leaves out of
+    /// replies. carrot's client asked for the whole vector (WANT_HIDDEN)
+    /// though nothing on the comma reads a stateful graph's hidden state.
+    fn omitted_hidden(&self) -> Option<[usize; 2]> {
+        let contract = self.session_contract();
+        (contract.version == wire::Version::V3 && contract.spec.stateful())
+            .then(|| contract.spec.range("hidden_state").ok())
+            .flatten()
+    }
+
+    /// HELLO: our identity, and on protocol 3 the model picked on the comma.
+    fn hello_payload(
+        &mut self,
+        nonce: &str,
+    ) -> Result<(Vec<u8>, Option<crate::app_pick::AppPick>), Error> {
+        let mut hello = json!({"client":{"name":"jetlinkd-rs","nonce":nonce}});
+        let pick = self
+            .app
+            .as_ref()
+            // Only while parked: a link that drops and rejoins on the road
+            // keeps the model the App runs; the pick goes at the next park.
+            // In P, stopped and disengaged counts (crate::park): in cars whose
+            // comma turns off with the ignition there is no other park.
+            .filter(|app| {
+                self.transport.version() == wire::Version::V3
+                    && ((app.parked)() || crate::park::in_park())
+            })
+            .and_then(|app| crate::app_pick::current(&app.cache));
+        if let Some(pick) = &pick {
+            // Inside `client`: the App reads the pick from the hello's client.
+            hello["client"]["pick"] = pick.hello(crate::now_ns() as f64 / 1e9);
+            NAMED_PICK_AT.store(pick.at.to_bits(), std::sync::atomic::Ordering::Release);
+        }
+        if let Some(app) = &mut self.app {
+            app.pick_at = pick.as_ref().map(|pick| pick.at);
+        }
+        Ok((serde_json::to_vec(&hello)?, pick))
+    }
+
     pub fn new(transport: T) -> Self {
         Self {
             transport,
@@ -82,6 +155,7 @@ impl<T: Transport> Client<T> {
             session: None,
             app: None,
             telemetry_at: 0,
+            map_sent: None,
             idle_at: 0,
             hello_timeout: Duration::from_secs(5),
             hello_check: None,
@@ -91,6 +165,9 @@ impl<T: Transport> Client<T> {
             wifi: None,
             app_request_pending: false,
             client_nonce: None,
+            aux: None,
+            aux_live: false,
+            pick_checked_at: 0,
             status: std::sync::Arc::new(std::sync::Mutex::new(json!({}))),
             hello_complete: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
         }
@@ -100,6 +177,9 @@ impl<T: Transport> Client<T> {
         client.app = Some(AppSelection {
             cache,
             connected: std::sync::Arc::new(|| true),
+            parked: std::sync::Arc::new(parked),
+            released: false,
+            pick_at: None,
         });
         client
     }
@@ -172,7 +252,25 @@ impl<T: Transport> Client<T> {
         if !self.ready || self.app.is_none() || crate::now_ns() < self.idle_at {
             return Ok(());
         }
-        self.release_app_request()?;
+        // Carrot's daemon gives its engine request back only while parked, so
+        // the App's "Use Model" does not compete with it there. While driving
+        // the request must stay: without it the phone answers NOT_READY to the
+        // first real frame, which made the link drop and reconnect in a loop.
+        if self.app.as_ref().is_some_and(|app| (app.parked)()) {
+            if let Some(app) = &self.app {
+                let picked = crate::app_pick::current(&app.cache).map(|pick| pick.at);
+                if self.transport.version() == wire::Version::V3
+                    && picked.is_some()
+                    && picked != app.pick_at
+                {
+                    // Rejoin: the next hello carries the new pick.
+                    return Err(Error::Contract("model picked on the comma"));
+                }
+            }
+            self.release_app_request()?;
+        } else if self.picked_in_park() {
+            return Err(Error::Contract("model picked on the comma"));
+        }
         self.idle_at = crate::now_ns().saturating_add(2_000_000_000);
         let deadline = Deadline::after(Duration::from_millis(500))?;
         let sequence = self.send(12, b"{}", deadline)?;
@@ -183,6 +281,47 @@ impl<T: Transport> Client<T> {
         crate::selection::check_loaded(&self.session_contract().spec, &state)?;
         self.report("ready", "ready", None, Some(&state));
         Ok(())
+    }
+    /// A pick made on the comma that the App has not heard, while in P,
+    /// stopped and disengaged (`crate::park`): the link rejoins so the next
+    /// hello carries it. Only a pick not named before counts.
+    fn picked_in_park(&self) -> bool {
+        let Some(app) = &self.app else {
+            return false;
+        };
+        if self.transport.version() != wire::Version::V3 || !crate::park::in_park() {
+            return false;
+        }
+        let picked = crate::app_pick::current(&app.cache).map(|pick| pick.at);
+        picked.is_some() && picked != app.pick_at && picked != named_pick_at()
+    }
+    /// Lets this link carry carrot's auxiliary vision when the App offers it.
+    pub fn set_aux(&mut self, hub: std::sync::Arc<crate::aux::Hub>) {
+        self.aux = Some(hub);
+    }
+    /// One auxiliary message, right after a driving reply (`crate::aux`).
+    fn pump_aux(&mut self) -> Result<(), Error> {
+        if !self.aux_live {
+            return Ok(());
+        }
+        let Some(next) = self.aux.as_ref().and_then(|hub| hub.next_outbound()) else {
+            return Ok(());
+        };
+        self.send(
+            next.0,
+            &next.1,
+            Deadline::after(Duration::from_millis(250))?,
+        )?;
+        Ok(())
+    }
+    fn deliver_aux(&self, message: &Message) -> bool {
+        if !crate::aux::is_aux(message.header.kind) {
+            return false;
+        }
+        if let Some(hub) = &self.aux {
+            hub.deliver(message.header.kind, &message.payload);
+        }
+        true
     }
     pub fn set_connected_check(
         &mut self,
@@ -214,6 +353,7 @@ impl<T: Transport> Client<T> {
             );
             match self.transport.receive(poll) {
                 Err(Error::Deadline) => continue,
+                Ok(message) if self.deliver_aux(&message) => continue,
                 result => return result,
             }
         }
@@ -224,7 +364,9 @@ impl<T: Transport> Client<T> {
         }
         self.require_setup()?;
         let deadline = Deadline::after(Duration::from_secs(2))?;
-        let sequence = self.send(1, &serde_json::to_vec(&json!({"client":{"name":"jetlinkd-rs","nonce":self.client_nonce.as_deref().unwrap_or("")}}))?, deadline)?;
+        let nonce = self.client_nonce.clone().unwrap_or_default();
+        let payload = self.hello_payload(&nonce)?.0;
+        let sequence = self.send(1, &payload, deadline)?;
         let hello: Value =
             serde_json::from_slice(&self.expect_setup(2, sequence, deadline)?.payload)?;
         if hello["protocol"].as_u64() != Some(self.transport.version() as u64) {
@@ -232,6 +374,72 @@ impl<T: Transport> Client<T> {
         }
         crate::selection::check_loaded(&self.session_contract().spec, &hello)?;
         self.app_request_pending = false;
+        if let Some(app) = &mut self.app {
+            app.released = true;
+        }
+        Ok(())
+    }
+    /// Before a modeld session: ask for the engine again if it was given back
+    /// while parked (daemon.py `if not requested: ... ensure_engine`). Runs
+    /// outside every frame deadline.
+    pub fn session_start(&mut self) -> Result<(), Error> {
+        if !self.ready || !self.app.as_ref().is_some_and(|app| app.released) {
+            return Ok(());
+        }
+        let result = self.request_engine_again();
+        if result.is_err() {
+            self.close();
+        }
+        result
+    }
+    fn request_engine_again(&mut self) -> Result<(), Error> {
+        let spec = self.session_contract().spec.clone();
+        let deadline = Deadline::after(Duration::from_millis(500))?;
+        let sequence = self.send(12, b"{}", deadline)?;
+        let state: Value = serde_json::from_slice(&self.expect(13, sequence, deadline)?.payload)?;
+        crate::selection::check_loaded(&spec, &state)?;
+        let deadline = Deadline::after(Duration::from_secs(30))?;
+        let sequence = self.send(
+            3,
+            &serde_json::to_vec(
+                &json!({"sha256":spec.sha256,"nbytes":spec.nbytes,"frame_skip":spec.frame_skip}),
+            )?,
+            deadline,
+        )?;
+        let mut state: Value =
+            serde_json::from_slice(&self.expect_setup(4, sequence, deadline)?.payload)?;
+        loop {
+            match state["state"].as_str() {
+                Some("ready") => break,
+                Some("failed" | "need_upload") => {
+                    return Err(Error::Contract("App engine unavailable"))
+                }
+                _ => {}
+            }
+            let message = self.receive_setup(deadline)?;
+            if message.header.kind == 14 {
+                return Err(Error::Contract("App engine error"));
+            }
+            if message.header.kind == 4 {
+                let candidate: Value = serde_json::from_slice(&message.payload)?;
+                if candidate["sha256"].is_null() || candidate["sha256"] == spec.sha256 {
+                    state = candidate;
+                }
+            }
+        }
+        let session = crate::session_contract::SessionContract::parse(
+            state["spec"].clone(),
+            self.transport.version(),
+        )?;
+        if session.spec != spec {
+            return Err(Error::Contract(
+                "model contract changed before local inference",
+            ));
+        }
+        self.app_request_pending = true;
+        if let Some(app) = &mut self.app {
+            app.released = false;
+        }
         Ok(())
     }
     fn provision_wifi(&mut self, initial: bool) -> Result<(), Error> {
@@ -286,6 +494,9 @@ impl<T: Transport> Client<T> {
             if message.header.kind == kind && message.header.sequence == sequence {
                 return Ok(message);
             }
+            if self.deliver_aux(&message) {
+                continue;
+            }
             if message.header.kind == 13 {
                 if let Some(session) = &self.session {
                     crate::selection::check_loaded(
@@ -331,11 +542,8 @@ impl<T: Transport> Client<T> {
         File::open("/dev/urandom")?.read_exact(&mut nonce)?;
         let nonce: String = nonce.iter().map(|v| format!("{v:02x}")).collect();
         self.client_nonce = Some(nonce.clone());
-        let seq = self.send(
-            1,
-            &serde_json::to_vec(&json!({"client":{"name":"jetlinkd-rs","nonce":nonce}}))?,
-            deadline,
-        )?;
+        let (payload, pick) = self.hello_payload(&nonce)?;
+        let seq = self.send(1, &payload, deadline)?;
         let mut hello: Value = serde_json::from_slice(&self.expect(2, seq, deadline)?.payload)?;
         if hello["protocol"].as_u64() != Some(self.transport.version() as u64) {
             return Err(Error::Contract(
@@ -354,6 +562,8 @@ impl<T: Transport> Client<T> {
             self.provision_wifi(true)?;
         }
         self.boot_update(&hello)?;
+        let aux_offered = hello[crate::aux::CAPABILITY] == true;
+        let aux_compact = hello[crate::aux::CAPABILITY_V2] == true;
         let path = if self.transport.gadget() {
             "usb"
         } else {
@@ -369,7 +579,11 @@ impl<T: Transport> Client<T> {
                 "select and prepare a driving model in the App",
             ));
         }
-        if follows_app {
+        // The App answers with the newer of its pick and ours; when that is
+        // ours, ask for it whatever the App has loaded (hot swap), else
+        // follow the App's own choice.
+        let ours = pick.filter(|pick| follows_app && pick.won(&hello));
+        if follows_app && ours.is_none() {
             let until = Deadline::after(Duration::from_secs(300))?;
             while hello["loaded"].is_null() {
                 self.report("loading", "app-selection", None, None);
@@ -396,7 +610,9 @@ impl<T: Transport> Client<T> {
         crate::selection::approved(&app.cache)?;
         let fallback =
             crate::model_spec::ModelSpec::parse(crate::model_spec::LEGACY_JSON.as_bytes())?;
-        let selected = if follows_app {
+        let selected = if let Some(pick) = &ours {
+            pick.spec.sha256.clone()
+        } else if follows_app {
             hello["loaded"]
                 .as_str()
                 .ok_or(Error::Contract("App loaded model identity"))?
@@ -411,7 +627,7 @@ impl<T: Transport> Client<T> {
         if !preloaded {
             self.require_setup()?;
         }
-        if follows_app {
+        if follows_app && ours.is_none() {
             let deadline = Deadline::after(Duration::from_secs(2))?;
             let sequence = self.send(12, b"{}", deadline)?;
             let current: Value =
@@ -420,7 +636,9 @@ impl<T: Transport> Client<T> {
                 return Err(Error::Contract("App engine changed before approval"));
             }
         }
-        let bytes = if selected == fallback.sha256 {
+        let bytes = if let Some(pick) = &ours {
+            pick.spec.nbytes
+        } else if selected == fallback.sha256 {
             fallback.nbytes
         } else {
             0
@@ -433,15 +651,32 @@ impl<T: Transport> Client<T> {
         )?;
         let mut state: Value =
             serde_json::from_slice(&self.expect_setup(4, seq, deadline)?.payload)?;
-        if state["state"] == "need_upload" && !follows_app {
-            state = self.prepare_legacy_model(&fallback)?;
+        if state["state"] == "need_upload" {
+            if let Some(pick) = &ours {
+                state = match self.upload_picked_model(pick) {
+                    // A cable pulled mid-way is not the pick's fault.
+                    Err(Error::Closed) => return Err(Error::Closed),
+                    Err(error) => {
+                        if let Some(app) = &self.app {
+                            crate::app_pick::failed(&app.cache, pick);
+                        }
+                        return Err(error);
+                    }
+                    Ok(state) => state,
+                };
+            } else if !follows_app {
+                state = self.prepare_legacy_model(&fallback)?;
+            }
         }
         let deadline = Deadline::after(Duration::from_secs(900))?;
         loop {
             match state["state"].as_str() {
                 Some("ready") => break,
                 Some("failed" | "need_upload") => {
-                    return Err(Error::Contract("App engine unavailable"))
+                    if let (Some(pick), Some(app)) = (&ours, &self.app) {
+                        crate::app_pick::failed(&app.cache, pick);
+                    }
+                    return Err(Error::Contract("App engine unavailable"));
                 }
                 _ => {}
             }
@@ -467,6 +702,10 @@ impl<T: Transport> Client<T> {
         }
         if selected == fallback.sha256 && session.spec != fallback {
             return Err(Error::Contract("source Cinque v2 model contract changed"));
+        }
+        if ours.is_some() {
+            // Loaded now at our request; the hello still names the old one.
+            hello["loaded"] = json!(selected);
         }
         if follows_app {
             crate::selection::check_loaded(&session.spec, &hello)?;
@@ -523,8 +762,14 @@ impl<T: Transport> Client<T> {
                 true,
             )?;
         }
+        // Held until the device is parked; see idle_inner.
         self.app_request_pending = follows_app;
-        self.release_app_request()?;
+        if aux_offered {
+            if let Some(hub) = &self.aux {
+                hub.set_link(true, aux_compact);
+                self.aux_live = true;
+            }
+        }
         self.last_frame = None;
         self.telemetry_at = 0;
         self.idle_at = crate::now_ns().saturating_add(2_000_000_000);
@@ -642,29 +887,72 @@ impl<T: Transport> Client<T> {
         if want_state {
             self.telemetry_at = crate::now_ns().saturating_add(1_000_000_000);
         }
+        let map = if self.session_contract().spec.navigation() {
+            if reset {
+                self.map_sent = None; // RESET_QUEUES clears the server's map
+            }
+            openpilot_mapsd::output::changed_image(&mut self.map_sent, crate::now_ns())
+        } else {
+            None
+        };
+        // A stateful graph's hidden_state never feeds back from the comma: ask
+        // the server to leave it out (64 KB a frame) and zero-fill it below.
+        let omitted = self.omitted_hidden();
         let flags = u32::from(reset)
-            | if self.transport.version() == wire::Version::V3 {
+            | if self.transport.version() == wire::Version::V3 && omitted.is_none() {
                 4
             } else {
                 0
             }
-            | if want_state { 2 } else { 0 };
+            | if want_state { 2 } else { 0 }
+            | if map.is_some() { NAV_MAP_FLAG } else { 0 };
         payload.extend(flags.to_le_bytes());
         payload.extend(warped);
         for value in packed {
             payload.extend(value.to_le_bytes());
+        }
+        if let Some(map) = map {
+            payload.extend_from_slice(&map);
         }
         let seq = self.send(8, &payload, deadline)?;
         if self.phase_enabled {
             self.phase.sent(self.source_sof);
         }
         let response = self.expect(9, seq, deadline)?;
-        let end = 20 + self.session_contract().spec.output_count()? * 4;
-        if response.payload.len() < end
-            || wire::word(&response.payload, 0) != frame
-            || wire::word(&response.payload, 4) != 0
-        {
-            return Err(Error::Contract("peer inference frame/status/length"));
+        let full = self.session_contract().spec.output_count()?;
+        let omitted_len = omitted.map_or(0, |[start, stop]| stop - start);
+        let end = 20 + (full - omitted_len) * 4;
+        if response.payload.len() < 20 {
+            return Err(Error::Contract("inference response is missing its header"));
+        }
+        // Report which check failed, as the source client does: one merged
+        // message hid why a phone refused every real frame while driving.
+        let (answered, status) = (
+            wire::word(&response.payload, 0),
+            wire::word(&response.payload, 4),
+        );
+        if status != 0 {
+            let name = match status {
+                1 => "NOT_READY",
+                2 => "BAD_SHAPE",
+                3 => "INFER_FAILED",
+                4 => "NOT_FINITE",
+                _ => "unknown status",
+            };
+            return Err(Error::Peer(format!(
+                "inference failed: {name} ({status}) for frame {answered}"
+            )));
+        }
+        if answered != frame {
+            return Err(Error::Peer(format!(
+                "inference response frame {answered}, expected {frame}"
+            )));
+        }
+        if response.payload.len() < end {
+            return Err(Error::Peer(format!(
+                "inference response is {} bytes, expected {end}",
+                response.payload.len()
+            )));
         }
         if let Ok(mut status) = self.status.lock() {
             status["timings"] = json!([
@@ -685,6 +973,16 @@ impl<T: Transport> Client<T> {
             self.report("ready", "ready", None, Some(&state));
         }
         let output = rpc::decode_floats(&response.payload[20..end])?;
+        let output = match omitted {
+            Some([start, stop]) => {
+                let mut whole = Vec::with_capacity(full);
+                whole.extend_from_slice(&output[..start]);
+                whole.resize(stop, 0.);
+                whole.extend_from_slice(&output[start..]);
+                whole
+            }
+            None => output,
+        };
         self.session_contract().check_output(&output)?;
         deadline.remaining()?;
         self.last_frame = Some(frame);
@@ -693,13 +991,36 @@ impl<T: Transport> Client<T> {
 }
 impl<T: Transport> Backend for Client<T> {
     fn after_reply(&mut self) -> Result<(), Error> {
-        self.provision_wifi(false)
+        self.provision_wifi(false)?;
+        // modeld keeps the link busy onroad, so idle() rarely runs there: a
+        // pick made in P is looked for here too, once a second.
+        let now = crate::now_ns();
+        if now >= self.pick_checked_at {
+            self.pick_checked_at = now.saturating_add(1_000_000_000);
+            if self.picked_in_park() {
+                return Err(Error::Contract("model picked on the comma"));
+            }
+        }
+        self.pump_aux()
     }
     fn idle(&mut self) -> Result<(), Error> {
         Client::idle(self)
     }
+    fn session_start(&mut self) -> Result<(), Error> {
+        Client::session_start(self)
+    }
     fn source_sof(&mut self, source_sof: u64) {
         self.set_source_sof(source_sof);
+    }
+    fn last_timings(&self) -> Option<[f64; 3]> {
+        // The peer reports microseconds; the status file keeps them as sent.
+        let status = self.status.lock().ok()?;
+        let timings = status.get("timings")?.as_array()?;
+        Some([
+            timings.first()?.as_f64()? / 1000.0,
+            timings.get(1)?.as_f64()? / 1000.0,
+            timings.get(2)?.as_f64()? / 1000.0,
+        ])
     }
     fn session_contract(&self) -> &crate::session_contract::SessionContract {
         self.session
@@ -731,6 +1052,12 @@ impl<T: Transport> Backend for Client<T> {
         self.dead
     }
     fn close(&mut self) {
+        if self.aux_live {
+            self.aux_live = false;
+            if let Some(hub) = &self.aux {
+                hub.set_live(false);
+            }
+        }
         if !self.dead {
             self.dead = true;
             self.wifi = None;
@@ -956,6 +1283,7 @@ mod tests {
         transport.replies.push_back(output);
         let mut client = Client::app(transport, cache.path().to_owned());
         let identity = client.connect().unwrap();
+        client.release_app_request().unwrap();
         assert_eq!(identity["artifact_sha256"], spec["sha256"]);
         assert_eq!(client.session_contract().packed_count(), 12);
         let hellos: Vec<Value> = client
@@ -1006,9 +1334,10 @@ mod tests {
         let parsed =
             crate::model_spec::ModelSpec::parse(crate::model_spec::LEGACY_JSON.as_bytes()).unwrap();
         let mut transport = app_wire(&spec, 3);
+        transport.replies.pop_back();
         transport
             .replies
-            .push_back(reply(15, 9, 0, &vec![0.; parsed.output_count().unwrap()]));
+            .push_back(reply(14, 9, 0, &vec![0.; parsed.output_count().unwrap()]));
         let client = Client::app(transport, cache.path().to_owned());
         let directory = tempfile::tempdir().unwrap();
         let path = directory.path().join("owner.sock");
@@ -1052,6 +1381,7 @@ mod tests {
             .push_back(json_reply(13, 16, json!({"loaded":null})));
         let mut client = Client::app(transport, cache.path().to_owned());
         client.connect().unwrap();
+        client.release_app_request().unwrap();
         client.idle_at = 0;
         client.idle().unwrap();
         let snapshot = client.status.lock().unwrap().clone();
@@ -1114,7 +1444,102 @@ mod tests {
         assert!(crate::selection::approved(cache.path()).unwrap().is_none());
     }
     #[test]
-    fn app_request_release_onroad_checks_fresh_loaded_identity() {
+    fn comma_pick_that_wins_is_requested_downloaded_and_uploaded() {
+        let cache = tempfile::tempdir().unwrap();
+        let data = b"carrot-n16-onnx-fixture";
+        let mut spec =
+            crate::model_spec::ModelSpec::parse(include_bytes!("../data/n16.json")).unwrap();
+        {
+            use sha2::Digest;
+            spec.sha256 = format!("{:x}", sha2::Sha256::digest(data));
+        }
+        spec.nbytes = data.len() as u64;
+        // A verified copy is cached already, so no network is touched.
+        std::fs::write(cache.path().join(format!("{}.onnx", spec.sha256)), data).unwrap();
+        let pick = crate::app_pick::AppPick {
+            model: "n16".into(),
+            name: "N16 Nav".into(),
+            url: "https://invalid.example/big_driving_supercombo.onnx".into(),
+            at: 1_700_000_000.,
+            spec: spec.clone(),
+        };
+        crate::app_pick::write(cache.path(), &pick).unwrap();
+        let legacy: Value = serde_json::from_str(crate::model_spec::LEGACY_JSON).unwrap();
+        // The App runs Cinque v2 and answers with our pick as the newer one.
+        let hello = json!({"protocol":3,"backend":"ort","device":"coreml-Apple M4","runtime_version":"1.22.0","loaded":legacy["sha256"],"pick":{"sha256":spec.sha256,"by":"comma"},"telemetry":{"device_model":"Mac","android_api":"none","backend_requested":"coreml","app_version":"test"}});
+        let wire_spec = serde_json::to_value(&spec).unwrap();
+        let mut replies: VecDeque<Message> = vec![
+            json_reply(2, 1, hello),
+            json_reply(4, 2, json!({"state":"need_upload","sha256":spec.sha256})),
+            json_reply(
+                4,
+                3,
+                json!({"state":"need_upload","sha256":spec.sha256,"chunk":8}),
+            ),
+            // chunks go out as 4, 5, 6 with no answer; UPLOAD_DONE is 7
+            json_reply(
+                4,
+                7,
+                json!({"state":"ready","sha256":spec.sha256,"spec":wire_spec}),
+            ),
+        ]
+        .into();
+        let mut count = spec.output_count().unwrap();
+        if spec.stateful() {
+            let [start, end] = spec.range("hidden_state").unwrap();
+            count -= end - start;
+        }
+        for frame in 0..10 {
+            replies.push_back(reply(8 + frame, frame, 0, &vec![0.; count]));
+        }
+        let mut client = Client::app(
+            AppWire {
+                replies,
+                sent: Vec::new(),
+                closed: false,
+            },
+            cache.path().to_owned(),
+        );
+        client.app.as_mut().unwrap().parked = std::sync::Arc::new(|| true);
+        let identity = client.connect().unwrap();
+        assert_eq!(identity["artifact_sha256"], spec.sha256);
+        let sent: Vec<(Header, Vec<u8>)> = client
+            .transport
+            .sent
+            .iter()
+            .map(|bytes| {
+                let header =
+                    Header::decode_version(bytes[..32].try_into().unwrap(), wire::Version::V3)
+                        .unwrap();
+                let length = header.length as usize;
+                (header, bytes[32..32 + length].to_vec())
+            })
+            .collect();
+        let first: Value = serde_json::from_slice(&sent[0].1).unwrap();
+        assert_eq!(first["client"]["pick"]["ref"], "n16");
+        assert_eq!(first["client"]["pick"]["sha256"], spec.sha256);
+        let request: Value = serde_json::from_slice(&sent[1].1).unwrap();
+        assert_eq!(sent[1].0.kind, 3);
+        assert_eq!(request["sha256"], spec.sha256);
+        assert_eq!(request["nbytes"], spec.nbytes);
+        let uploaded: Vec<u8> = sent
+            .iter()
+            .filter(|(header, _)| header.kind == 5)
+            .flat_map(|(_, payload)| payload[8..].to_vec())
+            .collect();
+        assert_eq!(uploaded, data);
+        // The App keeps its own copy now.
+        assert!(!cache.path().join(format!("{}.onnx", spec.sha256)).exists());
+        assert_eq!(
+            crate::selection::approved(cache.path())
+                .unwrap()
+                .unwrap()
+                .sha256,
+            spec.sha256
+        );
+    }
+    #[test]
+    fn app_request_release_checks_fresh_loaded_identity() {
         let cache = tempfile::tempdir().unwrap();
         let spec: Value = serde_json::from_str(crate::model_spec::LEGACY_JSON).unwrap();
         let parsed =
@@ -1126,6 +1551,7 @@ mod tests {
             .push_back(json_reply(13, 15, json!({"loaded":spec["sha256"]})));
         let mut client = Client::app(transport, cache.path().to_owned());
         client.connect().unwrap();
+        client.release_app_request().unwrap();
         assert!(!client.app_request_pending);
         assert_eq!(client.transport.sent.len(), 14);
         client.idle().unwrap();
@@ -1142,12 +1568,70 @@ mod tests {
             json!({"protocol":3,"loaded":"b".repeat(64)}),
         ));
         let mut client = Client::app(transport, cache.path().to_owned());
-        assert!(client.connect().is_err());
+        client.connect().unwrap();
+        assert!(client.app_request_pending);
+        // Parked: giving the request back finds another model loaded and closes.
+        client.app.as_mut().unwrap().parked = std::sync::Arc::new(|| true);
+        client.idle_at = 0;
+        assert!(client.idle().is_err());
         assert!(client.dead());
         assert_eq!(
             crate::selection::approved(cache.path()).unwrap().unwrap(),
             parsed
         );
+    }
+    #[test]
+    fn engine_request_is_kept_while_driving_and_made_again_after_parking() {
+        let cache = tempfile::tempdir().unwrap();
+        let spec: Value = serde_json::from_str(crate::model_spec::LEGACY_JSON).unwrap();
+        let mut transport = app_wire(&spec, 3);
+        let release = transport.replies.pop_back().unwrap();
+        // Driving idle: only the state poll (sequence 14).
+        transport
+            .replies
+            .push_back(json_reply(13, 14, json!({"loaded":spec["sha256"]})));
+        // Parked idle: release HELLO (15), then the state poll (16).
+        transport.replies.push_back(json_reply(
+            2,
+            15,
+            serde_json::from_slice(&release.payload).unwrap(),
+        ));
+        transport
+            .replies
+            .push_back(json_reply(13, 16, json!({"loaded":spec["sha256"]})));
+        // Next modeld session: state poll (17) and the engine request (18).
+        transport
+            .replies
+            .push_back(json_reply(13, 17, json!({"loaded":spec["sha256"]})));
+        transport.replies.push_back(json_reply(
+            4,
+            18,
+            json!({"state":"ready","sha256":spec["sha256"],"spec":spec}),
+        ));
+        let mut client = Client::app(transport, cache.path().to_owned());
+        client.connect().unwrap();
+        assert!(client.app_request_pending);
+        let connected = client.transport.sent.len();
+
+        client.app.as_mut().unwrap().parked = std::sync::Arc::new(|| false);
+        client.idle_at = 0;
+        client.idle().unwrap();
+        assert!(client.app_request_pending);
+        assert_eq!(client.transport.sent.len(), connected + 1);
+        client.session_start().unwrap();
+        assert_eq!(client.transport.sent.len(), connected + 1);
+
+        client.app.as_mut().unwrap().parked = std::sync::Arc::new(|| true);
+        client.idle_at = 0;
+        client.idle().unwrap();
+        assert!(!client.app_request_pending);
+        assert_eq!(client.transport.sent.len(), connected + 3);
+
+        client.session_start().unwrap();
+        assert!(client.app_request_pending);
+        assert_eq!(client.transport.sent.len(), connected + 5);
+        client.session_start().unwrap();
+        assert_eq!(client.transport.sent.len(), connected + 5);
     }
     #[test]
     fn android_first_connection_waits_for_app_selection_and_engine_preparation() {
@@ -1171,6 +1655,7 @@ mod tests {
         );
         let mut client = Client::app(wire, cache.path().to_owned());
         let identity = client.connect().unwrap();
+        client.release_app_request().unwrap();
         assert_eq!(identity["artifact_sha256"], spec["sha256"]);
         assert!(!client.app_request_pending);
         assert_eq!(client.transport.sent.len(), 15);
@@ -1189,6 +1674,7 @@ mod tests {
         next["sha256"] = json!("b".repeat(64));
         let mut client = Client::app(app_wire(&next, 3), cache.path().to_owned());
         client.connect().unwrap();
+        client.release_app_request().unwrap();
         assert_eq!(client.session_contract().spec.sha256, "b".repeat(64));
         assert_eq!(
             crate::selection::approved(cache.path()).unwrap().unwrap(),

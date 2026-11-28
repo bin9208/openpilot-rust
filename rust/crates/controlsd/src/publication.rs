@@ -31,7 +31,7 @@ pub fn publish(
     let mut car = Builder::new_default();
     {
         let mut event = car.init_root::<event::Builder<'_>>();
-        event.set_valid(input.car.can_valid);
+        event.set_valid(input.car.can_valid && input.selfdrive.current);
 
         let mut cc = event.init_car_control();
         cc.set_enabled(command.enabled);
@@ -39,6 +39,7 @@ pub fn publish(
         cc.set_long_active(command.longitudinal);
         cc.set_left_blinker(command.left);
         cc.set_right_blinker(command.right);
+        cc.set_assistant_lane_signal_id(command.assistant_id.as_str());
         {
             let mut actuators = cc.reborrow().init_actuators();
             actuators.set_long_control_state(state(controls.longitudinal.state));
