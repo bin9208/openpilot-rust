@@ -6,6 +6,13 @@ use std::collections::{HashMap, VecDeque};
 use std::io::{self, Read, Seek, SeekFrom};
 
 pub const PATH: &str = "/data/navigation/nodelink/nodelink_kr.nlk";
+/// The file is too large for the repository: carrot-man downloads this pinned
+/// release asset when PATH is missing or differs (tools/navigation/nodelink_nlk.py
+/// builds it; publish a new asset and change these two to update it).
+pub const URL: &str =
+    "https://github.com/bin9208/openpilot-rust/releases/download/nodelink-20261128/nodelink_kr.nlk";
+pub const SHA256: &str = "d4700dc164948e745aee40b2d13c86c053e80be683fd424d527531c25096fef0";
+const MAX_BYTES: u64 = 64 << 20;
 const TILE: f64 = 0.01;
 const UNIT: f64 = 0.25;
 const METERS: f64 = 111_320.;
@@ -178,6 +185,53 @@ impl<R: Read + Seek> NodeLinks<R> {
     }
 }
 
+fn sha256(path: &std::path::Path) -> io::Result<String> {
+    use sha2::{Digest, Sha256};
+    let mut file = std::fs::File::open(path)?;
+    let mut hasher = Sha256::new();
+    io::copy(&mut file, &mut hasher)?;
+    Ok(hasher
+        .finalize()
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect())
+}
+
+/// Make `path` the pinned file: keep it when its hash matches, otherwise
+/// download URL beside it with curl and move it in once the hash matches.
+pub fn ensure(path: &std::path::Path) -> io::Result<()> {
+    if sha256(path).is_ok_and(|h| h == SHA256) {
+        return Ok(());
+    }
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    let part = path.with_extension("nlk.part");
+    let status = std::process::Command::new("curl")
+        .args([
+            "-fsSL",
+            "--proto",
+            "=https",
+            "--retry",
+            "3",
+            "--max-time",
+            "900",
+        ])
+        .arg("--max-filesize")
+        .arg(MAX_BYTES.to_string())
+        .arg("-o")
+        .arg(&part)
+        .arg(URL)
+        .stdin(std::process::Stdio::null())
+        .status()?;
+    let valid = status.success() && sha256(&part).is_ok_and(|h| h == SHA256);
+    if !valid {
+        let _ = std::fs::remove_file(&part);
+        return Err(invalid("node-link download failed or hash mismatch"));
+    }
+    std::fs::rename(&part, path)
+}
+
 fn decode(blob: &[u8]) -> Option<Vec<Chunk>> {
     let count = u32::from_le_bytes(blob.get(..4)?.try_into().ok()?) as usize;
     let mut at = 4;
@@ -254,6 +308,17 @@ mod tests {
         assert_eq!(links.matched(lat, lon, 90., 20., 45.).unwrap().lanes, 4);
         let (lat, lon) = at(300., 360.);
         assert_eq!(links.matched(lat, lon, 0., 20., 45.), None, "too far");
+    }
+
+    #[test]
+    fn file_hashes_are_sha256_hex() {
+        let path = std::env::temp_dir().join(format!("nlk-hash-{}", std::process::id()));
+        std::fs::write(&path, b"abc").unwrap();
+        assert_eq!(
+            sha256(&path).unwrap(),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+        let _ = std::fs::remove_file(path);
     }
 
     #[test]

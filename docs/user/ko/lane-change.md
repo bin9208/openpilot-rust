@@ -148,7 +148,7 @@ BSD가 없거나 신호가 들어오지 않는 차는 옆·뒤 차량을 레이�
 | `0` | 원본 거리 |
 | `1` (기본) | 지금 도로가 3차로 이상이면 늘어난 차로 1개당 제한속도로 5초 갈 거리를 더합니다(최대 600m). 4차로·50km/h면 200m → 339m |
 
-표준노드링크 파일이 기기의 `/data/navigation/nodelink/nodelink_kr.nlk`에 있어야 하며, 없으면 `1`이어도 원본과 같습니다. 파일은 ITS 국가교통정보센터에서 받은 `MOCT_LINK.shp`로 `tools/navigation/nodelink_nlk.py`를 실행해 만듭니다(전국 약 32MB). 차로 수는 1초마다 지금 위치와 회전 30m 앞 지점에서 진행 방향이 맞는 링크로 찾고, `carrotMan.atcLanes`에 `지금,회전 앞` 형태로 기록합니다.
+표준노드링크 파일(전국 약 32MB)은 저장소에 넣지 않고, 업데이트 뒤 carrot-man이 `/data/navigation/nodelink/nodelink_kr.nlk`가 없거나 해시가 다르면 GitHub Release(`nodelink-20261128`)에서 한 번 받아 둡니다. 받기 전이나 받지 못하면 `1`이어도 원본과 같고, 실패하면 1시간 뒤 다시 시도합니다. 파일은 ITS 국가교통정보센터의 `MOCT_LINK.shp`로 `tools/navigation/nodelink_nlk.py`를 실행해 만듭니다. 차로 수는 1초마다 지금 위치와 회전 30m 앞 지점에서 진행 방향이 맞는 링크로 찾고, `carrotMan.atcLanes`에 `지금,회전 앞` 형태로 기록합니다.
 
 ### `ShareData` — ONNX 차선·BSD 인식
 

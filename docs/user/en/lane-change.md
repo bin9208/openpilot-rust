@@ -148,7 +148,7 @@ The original ATC starts its lane changes for a turn 160-350 m ahead by road limi
 | `0` | The original distance |
 | `1` (default) | On a road of three or more lanes, each lane beyond two adds 5 s of travel at the road limit (up to 600 m): four lanes at 50 km/h, 200 m → 339 m |
 
-It needs the node-link file at `/data/navigation/nodelink/nodelink_kr.nlk` on the device; without it `1` behaves as the original. Build the file with `tools/navigation/nodelink_nlk.py` from `MOCT_LINK.shp` downloaded from the ITS National Transport Information Center (about 32 MB for the country). Once a second the lane counts are looked up on the link matching the heading where the car is and 30 m before the turn, and logged in `carrotMan.atcLanes` as `here,before the turn`.
+The node-link file (about 32 MB for the country) is not in the repository: after an update carrot-man downloads it once from the GitHub release `nodelink-20261128` when `/data/navigation/nodelink/nodelink_kr.nlk` is missing or its hash differs. Until then, or if the download fails, `1` behaves as the original; a failed download is retried after an hour. The file is built with `tools/navigation/nodelink_nlk.py` from `MOCT_LINK.shp` of the ITS National Transport Information Center. Once a second the lane counts are looked up on the link matching the heading where the car is and 30 m before the turn, and logged in `carrotMan.atcLanes` as `here,before the turn`.
 
 ### `ShareData` — ONNX lane and BSD detection
 

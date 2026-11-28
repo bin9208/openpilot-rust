@@ -193,13 +193,36 @@ pub(super) fn tick(context: Tick<'_>) -> Result<(), Error> {
 }
 
 /// Node-link lanes where the car is and 30 m before the next turn along the
-/// route (0 when that point is unknown). The file is optional: without it
-/// nothing changes; a missing file is looked for again every minute.
+/// route (0 when that point is unknown). The file is fetched on its own thread
+/// (nodelink::ensure: kept when its hash matches, else downloaded); until it is
+/// ready nothing changes, and a failed fetch is tried again after an hour.
 fn node_lanes(owner: &mut Owner, mono: f64) -> Option<(u8, u8)> {
-    if owner.nodelink.is_none() && mono >= owner.nodelink_retry {
-        owner.nodelink_retry = mono + 60.;
-        owner.nodelink =
-            crate::nodelink::NodeLinks::open(std::path::Path::new(crate::nodelink::PATH)).ok();
+    if owner.nodelink.is_none() {
+        let state = owner.nodelink_fetch.load(Ordering::Acquire);
+        if state == 2 {
+            owner.nodelink =
+                crate::nodelink::NodeLinks::open(std::path::Path::new(crate::nodelink::PATH)).ok();
+            if owner.nodelink.is_none() {
+                owner.nodelink_fetch.store(3, Ordering::Release);
+                owner.nodelink_retry = mono + 3600.;
+            }
+        } else if (state == 0 || state == 3) && mono >= owner.nodelink_retry {
+            owner.nodelink_fetch.store(1, Ordering::Release);
+            owner.nodelink_retry = mono + 3600.;
+            let fetch = std::sync::Arc::clone(&owner.nodelink_fetch);
+            let spawned = std::thread::Builder::new()
+                .name("nodelink-fetch".into())
+                .spawn(move || {
+                    let done = crate::nodelink::ensure(std::path::Path::new(crate::nodelink::PATH));
+                    if let Err(error) = &done {
+                        eprintln!("carrot_man: node-link file unavailable: {error}");
+                    }
+                    fetch.store(if done.is_ok() { 2 } else { 3 }, Ordering::Release);
+                });
+            if spawned.is_err() {
+                owner.nodelink_fetch.store(3, Ordering::Release);
+            }
+        }
     }
     let links = owner.nodelink.as_mut()?;
     let gps = &owner.serv.gps;
