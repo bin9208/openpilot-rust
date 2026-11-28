@@ -294,6 +294,8 @@ There are three distinct sources:
 - **Route-turn speed** from route/turn input
 - **Applied model driving speed** from the model's overall desired velocity
 
+Automatic turn control (ATC) handles a **U-turn** and **arrival** separately. openpilot cannot steer a U-turn, so the driver turns: ATC chimes the turn sound once 150 m before it and slows only to the turn speed (`AutoTurnControlSpeedTurn`); the original slowed to 1 km/h, a crawl in the middle of the lane. Arrival does not slow the car: the destination may be mid-lane or inside a car park, so the navigation announces it and the driver decides where to stop.
+
 ### `AutoCurveSpeedFactor`
 
 The code divides predicted yaw rate by velocity at the same point to obtain curvature. It divides the 1.9 m/s² reference lateral-acceleration budget by the setting ratio, so a higher factor produces a lower curve target. Predicted future velocity is not used directly as a driving-speed target.
