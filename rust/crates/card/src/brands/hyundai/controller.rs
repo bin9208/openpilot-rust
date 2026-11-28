@@ -146,7 +146,13 @@ impl Controller {
         }
         self.settings
             .lane_change(cc.get_hud_control()?.get_model_desire());
-        let model = Model::read(input.model, input.radar)?;
+        let mut model = Model::read(input.model, input.radar)?;
+        model.nav = input.subscribers.and_then(|subscribers| {
+            super::cluster_extras::NavLimit::read(
+                subscribers,
+                num_traits::ToPrimitive::to_f64(&input.now_ns).unwrap_or(0.) * 1e-9,
+            )
+        });
         let command = self.steering.update(
             (cc, state, &model, input.now_ns),
             &self.settings,

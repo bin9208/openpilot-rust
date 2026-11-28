@@ -17,6 +17,8 @@ pub struct Model {
     pub blinker_hold: u8,
     /// radarState leadLeft / leadRight (CcncFrontRadarSide).
     pub sides: [Option<SideLead>; 2],
+    /// carrotMan speed limit (cluster sign, SLA arrow).
+    pub nav: Option<super::cluster_extras::NavLimit>,
 }
 
 impl Model {

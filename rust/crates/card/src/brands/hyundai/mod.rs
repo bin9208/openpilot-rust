@@ -8,6 +8,7 @@ pub mod canfd_cluster;
 pub mod canfd_maintenance;
 pub mod canfd_steering;
 pub mod ccnc_display;
+pub mod cluster_extras;
 pub mod cluster_fields;
 pub mod cluster_hud;
 pub mod config;

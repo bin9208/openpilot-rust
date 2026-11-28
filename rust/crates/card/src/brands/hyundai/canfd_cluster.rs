@@ -28,6 +28,7 @@ pub struct ClusterState {
     pub sync: CameraSync,
     pub display: super::ccnc_display::CcncDisplay,
     pub side_radar: super::side_radar::SideRadar,
+    pub extras: super::cluster_extras::Extras,
 }
 
 pub struct ClusterInput<'a> {
@@ -55,6 +56,8 @@ pub struct ClusterInput<'a> {
     /// CcncFrontRadarSide and the radar side leads it draws.
     pub front_radar_side: super::side_radar::Mode,
     pub side_leads: [Option<super::side_radar::SideLead>; 2],
+    /// CcncClusterDisplay extras and the CanfdDebug probe.
+    pub extras: &'a super::cluster_extras::ExtrasInput,
 }
 
 /// The camera's SCC output is replaced only with openpilot longitudinal control.
@@ -178,6 +181,7 @@ pub fn messages(
             let mut data = original.clone();
             let counter = remove_counter(&mut data)?;
             cluster_hud::hud(&mut data, &i.hud, &mut state.display)?;
+            super::cluster_extras::adrv161(&mut data, i.extras)?;
             result.push(writer.frame("ADRV_0x161", i.bus.ecan, &data, counter)?);
         }
         if let Some(original) = source.adrv200 {
@@ -221,6 +225,7 @@ pub fn messages(
             state
                 .side_radar
                 .apply(&mut data, i.front_radar_side, i.side_leads, i.speed)?;
+            super::cluster_extras::ccnc162(&mut data, i.extras)?;
             if (i.lane_warnings[0] && !i.hud.blinker[0])
                 || (i.lane_warnings[1] && !i.hud.blinker[1])
             {
@@ -268,6 +273,8 @@ pub struct LfaClusterAlert<'a> {
     pub lfa: Option<&'a Values>,
     pub mdps: Option<&'a Values>,
     pub scc: Option<&'a Values>,
+    /// HDA_AutoSetSpdSta / UpdtSta / Val (cluster_extras).
+    pub auto_set: Option<[f64; 3]>,
 }
 
 pub fn lfa_cluster(
@@ -312,6 +319,7 @@ pub fn lfa_cluster(
     {
         data.insert("HDA_InfoPUDis".into(), 5.);
     }
+    super::cluster_extras::apply_auto_set(&mut data, alert.auto_set);
     Ok(vec![writer.frame(
         "LFAHDA_CLUSTER",
         bus.ecan,

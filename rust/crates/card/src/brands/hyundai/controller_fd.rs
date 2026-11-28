@@ -4,6 +4,7 @@ use super::{
     canfd_cluster::{self, ClusterInput, ClusterMessages},
     canfd_maintenance,
     canfd_steering::{self, SteeringInput, SteeringMessages},
+    cluster_extras,
     controller::Controller,
     controller_control::Command,
     controller_hud,
@@ -27,6 +28,28 @@ pub fn messages(
     let config = &state.config;
     let camera = config.flags & f::CAMERA_SCC != 0;
     let hda2 = config.flags & f::HDA2 != 0;
+    let extras = {
+        let cs = state.out.get_root_as_reader::<car_state::Reader<'_>>()?;
+        let set_kph = f64::from(cs.get_v_cruise_cluster());
+        let button = !cs.get_button_events()?.is_empty();
+        c.cluster
+            .extras
+            .observe(c.frame, set_kph, cc.get_enabled(), button);
+        cluster_extras::ExtrasInput {
+            display: c.ccnc_keys.0,
+            probe: cluster_extras::Probe::from_debug(c.settings.debug),
+            nav: model.nav,
+            v_ego_kph: f64::from(cs.get_v_ego_cluster()) * 3.6,
+            set_kph,
+            cruise: cc.get_enabled(),
+            fcw: cc.get_hud_control()?.get_visual_alert()?
+                == car_control::h_u_d_control::VisualAlert::Fcw,
+            lane_y: model.lane_pair,
+            lane_probs: model.lane_probs,
+            lane_change: matches!(model.desire, 3 | 4),
+            second_lead: cluster_extras::second_lead(&model.leads, (&model.x, &model.y))?,
+        }
+    };
     let steering = SteeringInput {
         bus: config.bus,
         flags: config.flags,
@@ -84,6 +107,7 @@ pub fn messages(
                 lfa: captures.get("lfa"),
                 mdps: captures.get("mdps"),
                 scc: captures.get("scc_control"),
+                auto_set: c.cluster.extras.auto_set(&extras, state.metric),
             },
         )?);
         if !camera {
@@ -176,6 +200,7 @@ pub fn messages(
             metric: state.metric,
             front_radar_side: c.front_radar_side,
             side_leads: model.sides,
+            extras: &extras,
         };
         let source = ClusterMessages {
             lfahda: captures.get("lfahda_cluster"),
