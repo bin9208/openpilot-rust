@@ -479,6 +479,8 @@ Other:
 
 `SignalAssistMode` defaults to `0`. Mode `0` disables auxiliary recognition, display and control; `1` enables recognition throughout driving, display, alerts and the stopped-red departure veto; `2` also enables moving-red preparation. Modes `1` and `2` display observations even when longitudinal control is inactive. The ring shows recognition and the centre dot shows actual assistance. Previous results dim for at most two seconds from capture, then turn unknown/gray; this display memory is never a control input.
 
+Signal assistance was built for the 1344×760 road camera (OS04C10). With the 1928×1208 road camera (AR0231/OX03C10, most comma 3 and 3X units) the frame is scaled to 1344 wide and its middle 760 rows give the same view, and distances use the focal 2648×1344/1928 (about 1846 px). On logged fcamera stops this detector found the red while stopped in 68% of day and 47% of night frames.
+
 The stopped-red departure veto is limited to stopping and creeping at up to 5km/h. Above 5km/h, its previous stop memory is cleared so losing a lead after departure cannot reactivate that stop. This does not confirm green or authorize acceleration; normal model and lead control and explicit driver holds remain active.
 
 Mode `2` gradually requests acceleration toward approximately −0.5m/s² after qualifying red evidence, with no lead, pedal input or turn and a speed above 5km/h and below 82km/h. At night, at least two persistent red lamps must have compatible placement and road-direction support; inferred housing size is not used as a stopping distance.
