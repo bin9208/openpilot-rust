@@ -41,6 +41,7 @@ pub mod parser_inputs;
 pub mod pedal;
 mod runtime;
 pub mod settings_float;
+pub mod side_radar;
 pub mod spas;
 pub mod spas_signals;
 pub mod stalks;

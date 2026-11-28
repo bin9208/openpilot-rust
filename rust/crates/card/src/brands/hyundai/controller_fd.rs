@@ -121,6 +121,10 @@ pub fn messages(
                 super::parameters::setting_int(&state.settings, "CcncClusterDisplay")? > 0,
                 super::parameters::setting_int(&state.settings, "CcncTrafficBackground")? > 0,
             );
+            c.front_radar_side = u8::try_from(
+                super::parameters::setting_int(&state.settings, "CcncFrontRadarSide")?.clamp(0, 2),
+            )
+            .map_err(|_| Error::Numeric)?;
         }
         let cs = state.out.get_root_as_reader::<car_state::Reader<'_>>()?;
         let blink_hold = if c.frame.is_multiple_of(5) && captures.get("adrv_0x1ea").is_some() {
@@ -170,6 +174,8 @@ pub fn messages(
             set_kph: f64::from(cs.get_v_cruise_cluster()),
             v_ego_cluster: f64::from(cs.get_v_ego_cluster()),
             metric: state.metric,
+            front_radar_side: c.front_radar_side,
+            side_leads: model.sides,
         };
         let source = ClusterMessages {
             lfahda: captures.get("lfahda_cluster"),

@@ -1,4 +1,4 @@
-use super::{lead::Lead, Error};
+use super::{lead::Lead, side_radar::SideLead, Error};
 use openpilot_cereal::log_capnp::{model_data_v2, radar_state};
 
 #[derive(Default)]
@@ -15,6 +15,8 @@ pub struct Model {
     /// laneLineProbs[1], [2] (CcncClusterDisplay).
     pub lane_probs: Option<[f64; 2]>,
     pub blinker_hold: u8,
+    /// radarState leadLeft / leadRight (CcncFrontRadarSide).
+    pub sides: [Option<SideLead>; 2],
 }
 
 impl Model {
@@ -74,6 +76,14 @@ impl Model {
                     v_rel: f64::from(lead.get_v_rel()),
                 });
             }
+            let side = |lead: openpilot_cereal::log_capnp::radar_state::lead_data::Reader<'_>| {
+                lead.get_status().then(|| SideLead {
+                    d_rel: f64::from(lead.get_d_rel()),
+                    d_path: f64::from(lead.get_d_path()),
+                    v_lead: f64::from(lead.get_v_lead()),
+                })
+            };
+            ret.sides = [side(radar.get_lead_left()?), side(radar.get_lead_right()?)];
         }
         Ok(ret)
     }

@@ -34,6 +34,8 @@ pub struct Controller {
     pub cluster: super::canfd_cluster::ClusterState,
     /// CcncClusterDisplay / CcncTrafficBackground, read every second.
     pub ccnc_keys: (bool, bool),
+    /// CcncFrontRadarSide, read every second.
+    pub front_radar_side: u8,
     pub stopping: Option<CanfdStopping>,
     pub accel_last: f64,
     pub value_last: f64,
@@ -66,6 +68,7 @@ impl Controller {
             blink_hold: super::blink_hold::BlinkHold::default(),
             cluster: super::canfd_cluster::ClusterState::default(),
             ccnc_keys: (false, false),
+            front_radar_side: 0,
             stopping: if state.config.flags & f::CANFD != 0 && state.config.longitudinal {
                 Some(CanfdStopping::default())
             } else {

@@ -488,7 +488,8 @@
             "CanfdDebug",
             "HDPuse",
             "CcncClusterDisplay",
-            "CcncTrafficBackground"
+            "CcncTrafficBackground",
+            "CcncFrontRadarSide"
           ]
         },
         {
@@ -2245,6 +2246,22 @@
       "default": 0,
       "unit": 1,
       "control": "toggle"
+    },
+    {
+      "group": "시작",
+      "name": "CcncFrontRadarSide",
+      "title": "CCNC 계기판 옆 차로 차량(전방레이더)",
+      "descr": "0: 끔(기본), 1: 켬, 2: 표시 시험(왼쪽 15 m·오른쪽 30 m에 고정 차량).\n코너레이더가 없는 HDA1 차량에서도 순정 HDA2처럼 계기판에 옆 차로 차량을 그립니다. 전방레이더 트랙에서 radard가 고른 왼쪽·오른쪽 차로의 가장 가까운 차량(leadLeft·leadRight)을 CCNC 0x162의 LF·RF 칸에 회색 차로 넣습니다.\n- 적용: 「CCNC 계기판 순정형 표시」와 같은 차량(카메라 SCC에 오픈파일럿 롱컨, 카메라의 0x162를 받는 차량)이며 레이더 트랙(EnableRadarTracks)이 켜져 있어야 합니다. 순정(코너레이더)이 이미 채운 칸은 바꾸지 않습니다.\n- 표시 범위: 앞쪽 4~60 m, 경로에서 옆으로 1.8~5 m. 내 차가 18 km/h 이상일 때 7 km/h 미만인 물체(주차 차량·구조물)는 그리지 않습니다. 0.15초 이상 보이면 그리고, 사라져도 0.5초 유지합니다.\n- 전방레이더는 바로 옆·뒤를 보지 못하므로 옆에 나란히 있거나 뒤에 있는 차(LR·RR)는 그리지 않습니다.\n- 2는 계기판이 이 칸을 그리는지 확인하는 시험용입니다. 약 1초 안에 반영됩니다.",
+      "egroup": "START",
+      "etitle": "CCNC cluster side-lane cars (front radar)",
+      "edescr": "0: Off (default), 1: On, 2: Display test (fixed cars at 15 m left and 30 m right).\nDraws adjacent-lane cars on the cluster like stock HDA2, also on HDA1 cars without corner radar. The nearest car in the left and right lane that radard picks from the front radar tracks (leadLeft / leadRight) goes into the LF / RF slots of CCNC 0x162 as a grey car.\n- Applies to the same cars as CCNC cluster stock-style display (camera SCC with openpilot longitudinal control, camera 0x162 received) with radar tracks (EnableRadarTracks) on. A slot the stock sender (corner radar) already fills is left alone.\n- Range: 4 to 60 m ahead, 1.8 to 5 m to the side of the path. While we drive at 18 km/h or more, objects slower than 7 km/h (parked cars, roadside objects) are not drawn. A car is drawn after 0.15 s and held 0.5 s after it drops out.\n- The front radar does not see beside or behind the car, so cars alongside or behind (LR / RR) are not drawn.\n- 2 is a test to check that the cluster draws these slots. Applies within about 1 s.",
+      "cgroup": "启动设置",
+      "ctitle": "CCNC 仪表相邻车道车辆(前雷达)",
+      "cdescr": "0: 关闭(默认), 1: 开启, 2: 显示测试(左 15 m、右 30 m 固定车辆)。\n在没有角雷达的 HDA1 车型上, 也像原厂 HDA2 一样在仪表上显示相邻车道车辆。radard 从前雷达轨迹中选出的左右车道最近车辆(leadLeft / leadRight)作为灰色车辆写入 CCNC 0x162 的 LF / RF 栏位。\n- 适用: 与「CCNC 仪表原厂式显示」相同的车型(摄像头 SCC 且使用 openpilot 纵向控制, 收到摄像头 0x162), 且需开启雷达轨迹(EnableRadarTracks)。原厂(角雷达)已填写的栏位不会改变。\n- 显示范围: 前方 4~60 m, 距行驶路径横向 1.8~5 m。本车 18 km/h 以上时, 不显示低于 7 km/h 的物体(停放车辆、路边设施)。持续 0.15 秒以上才显示, 消失后保持 0.5 秒。\n- 前雷达看不到正侧方和后方, 因此不显示并排或后方车辆(LR / RR)。\n- 2 用于确认仪表是否显示这些栏位。约1秒内生效。",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "unit": 1
     },
     {
       "group": "시작",

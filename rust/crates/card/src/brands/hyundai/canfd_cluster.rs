@@ -27,6 +27,7 @@ pub struct ClusterMessages<'a> {
 pub struct ClusterState {
     pub sync: CameraSync,
     pub display: super::ccnc_display::CcncDisplay,
+    pub side_radar: super::side_radar::SideRadar,
 }
 
 pub struct ClusterInput<'a> {
@@ -51,6 +52,9 @@ pub struct ClusterInput<'a> {
     pub set_kph: f64,
     pub v_ego_cluster: f64,
     pub metric: bool,
+    /// CcncFrontRadarSide and the radar side leads it draws.
+    pub front_radar_side: super::side_radar::Mode,
+    pub side_leads: [Option<super::side_radar::SideLead>; 2],
 }
 
 /// The camera's SCC output is replaced only with openpilot longitudinal control.
@@ -214,6 +218,9 @@ pub fn messages(
                 data.insert("FF_DETECT".into(), front + 2.);
             }
             cluster_fields::front_lead(&mut data, (i.leads, i.path, i.hud.enabled, i.hud_lateral))?;
+            state
+                .side_radar
+                .apply(&mut data, i.front_radar_side, i.side_leads, i.speed)?;
             if (i.lane_warnings[0] && !i.hud.blinker[0])
                 || (i.lane_warnings[1] && !i.hud.blinker[1])
             {
